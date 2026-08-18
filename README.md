@@ -170,6 +170,43 @@ beskyttet med det samme. Mangler den både `organizationId` og en plass i lista
 over tabeller som arver tilhørighet fra en forelder, nekter systemet å starte.
 Kjør `npm run sjekk:isolering` for å se dekningen.
 
+## Legge systemet ut på nett
+
+Systemet trenger en server som kjører Node **og** en PostgreSQL-database. Det
+kan ikke ligge på GitHub Pages eller annen statisk hosting — der finnes verken
+database eller innlogging.
+
+Vercel og Neon fungerer godt sammen og har begge et gratisnivå:
+
+**1. Lag databasen først.** I Vercel: `Storage` → `Create Database` →
+Neon Postgres. Vercel legger inn tilkoblingsstrengene som miljøvariabler
+automatisk.
+
+**2. Importer repoet** i Vercel (`Add New` → `Project`).
+
+**3. Legg inn miljøvariablene** før første utrulling:
+
+| Variabel | Verdi |
+|---|---|
+| `DATABASE_URL` | Settes automatisk av databaseintegrasjonen (den med pool) |
+| `DIRECT_DATABASE_URL` | Den «unpooled» strengen — migrasjonene trenger den |
+| `AUTH_SECRET` | Din egen, generer med kommandoen under |
+| `ANTHROPIC_API_KEY` | Valgfri — slår på assistenten |
+| `SMTP_*` | Valgfri — lar systemet sende bestillinger selv |
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+```
+
+**4. Deploy.** Bygget kjører migrasjonene selv, så databasen får riktig
+struktur ved hver utrulling.
+
+**5. Lag den første bedriften.** Databasen er tom, så `/registrer` er åpen.
+Opprett bedriften din der, og steng den etterpå med `TILLAT_REGISTRERING`.
+
+> Kjør aldri `npm run db:seed` mot produksjonsdatabasen — den sletter alt.
+> Den nekter å kjøre når `NODE_ENV=production`, men vær likevel oppmerksom.
+
 ## Sikkerhet
 
 Tre ting må være i orden før systemet tas i bruk av andre enn deg selv.
