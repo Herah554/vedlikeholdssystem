@@ -1,32 +1,67 @@
+import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 
 /**
- * Tabeller som eies av én organisasjon. Alle disse har kolonnen
- * organizationId, og ingen spørring mot dem skal noen gang kjøre uten
- * at den er filtrert på riktig organisasjon.
+ * Flerklient-isolering.
  *
- * Utenfor lista står Organization (selve klienten) og tabeller som arver
- * tilhørigheten fra forelderen sin: ChecklistItem, AssetPart og ChatMessage.
+ * Tabeller som eies av én organisasjon har kolonnen organizationId, og ingen
+ * spørring mot dem skal noen gang kjøre uten at den er filtrert på riktig
+ * organisasjon.
+ *
+ * Lista over hvilke tabeller det gjelder utledes fra Prisma sine egne
+ * metadata i stedet for å skrives for hånd. Det er ikke elegansen som er
+ * poenget: en håndskrevet liste ble faktisk glemt oppdatert da bestillinger
+ * kom til, og resultatet var at én kunde kunne se en annens bestillinger.
+ * Utledes lista fra schemaet, er en ny tabell beskyttet i samme øyeblikk som
+ * den får en organizationId-kolonne.
  */
-const TENANT_MODELS = new Set([
-  "User",
-  "Asset",
-  "WorkOrder",
-  "TimeEntry",
-  "Supplier",
-  "Part",
-  "PartUsage",
-  "StockMovement",
-  "PmPlan",
-  "CostCenter",
-  "Budget",
-  "Dashboard",
-  "Conversation",
-  "Comment",
-  "Attachment",
-  "AuditLog",
-  "Counter",
+
+type FeltListe = Record<string, string> | undefined;
+const prismaMeta = Prisma as unknown as Record<string, FeltListe>;
+
+function harOrganisasjonsfelt(modell: string): boolean {
+  const felter = prismaMeta[`${modell}ScalarFieldEnum`];
+  return Boolean(felter && "organizationId" in felter);
+}
+
+const ALLE_MODELLER = Object.values(Prisma.ModelName) as string[];
+
+const TENANT_MODELS = new Set(ALLE_MODELLER.filter(harOrganisasjonsfelt));
+
+/**
+ * Tabeller som med vilje ikke har organizationId.
+ *
+ * De arver tilhørigheten fra forelderen sin — en sjekklistelinje hører til
+ * arbeidsordren, en bestillingslinje til bestillingen — og nås aldri direkte
+ * uten å gå gjennom den. Organization er selve klienten.
+ *
+ * Lista må vedlikeholdes bevisst: dukker det opp en ny tabell som verken har
+ * organizationId eller står her, stopper systemet med en gang i stedet for å
+ * la den ligge ubeskyttet.
+ */
+const ARVER_TILHORIGHET = new Set([
+  "Organization",
+  "ChecklistItem",
+  "AssetPart",
+  "PurchaseOrderLine",
+  "ChatMessage",
 ]);
+
+const udekket = ALLE_MODELLER.filter(
+  (m) => !TENANT_MODELS.has(m) && !ARVER_TILHORIGHET.has(m),
+);
+
+if (udekket.length > 0) {
+  throw new Error(
+    `Flerklient-isolering: modellen(e) ${udekket.join(", ")} har verken ` +
+      "organizationId eller står oppført som en tabell som arver tilhørighet " +
+      "fra en forelder.\n\n" +
+      "Legg til organizationId i prisma/schema.prisma hvis tabellen eies av " +
+      "én organisasjon, eller før den opp i ARVER_TILHORIGHET i " +
+      "src/lib/tenant.ts hvis den nås gjennom en forelder. Uten et av delene " +
+      "ville data kunne lekke mellom kunder.",
+  );
+}
 
 /** Operasjoner der organizationId skal tvinges inn i where-betingelsen. */
 const FILTERED_OPERATIONS = new Set([
@@ -61,8 +96,6 @@ const CREATING_OPERATIONS = new Set([
  * og hver innsetting får feltet satt. Det betyr at selv om noen glemmer
  * filteret i en spørring lenger oppe i koden, kan de fortsatt ikke nå data
  * som tilhører en annen kunde.
- *
- * Sikkerheten hviler altså ikke på at hver enkelt utvikler husker filteret.
  */
 export function dbForOrg(organizationId: string) {
   return prisma.$extends({
@@ -105,6 +138,9 @@ export function dbForOrg(organizationId: string) {
 }
 
 export type TenantDb = ReturnType<typeof dbForOrg>;
+
+/** Tabellene som er under flerklient-beskyttelse. Brukes av tester. */
+export const beskyttedeModeller = (): string[] => [...TENANT_MODELS].sort();
 
 /**
  * Henter neste løpenummer for en organisasjon, f.eks. arbeidsordrenummer.

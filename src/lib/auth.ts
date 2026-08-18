@@ -9,14 +9,52 @@ import type { Role } from "@/generated/prisma/client";
 const COOKIE_NAME = "vedlikehold_sesjon";
 const SESSION_DAYS = 30;
 
+/**
+ * Verdier som har ligget i eksempelfiler og dokumentasjon.
+ *
+ * Havner en av dem i produksjon, kan hvem som helst som har lest koden lage
+ * gyldige innloggingstokens for hvilken som helst bruker. Derfor nekter
+ * systemet å starte i det hele tatt i stedet for å advare i en logg ingen leser.
+ */
+const KJENTE_PLASSHOLDERE = [
+  "dev-only-secret",
+  "generer-med-openssl",
+  "minst-32-tegn-langt-tilfeldig-passord",
+  "endre-meg",
+  "change-me",
+];
+
 function secretKey(): Uint8Array {
   const secret = process.env.AUTH_SECRET;
+
   if (!secret || secret.length < 32) {
     throw new Error(
       "AUTH_SECRET mangler eller er kortere enn 32 tegn. Sett den i .env — " +
-        "uten den kan ikke innloggingstokens signeres trygt.",
+        "uten den kan ikke innloggingstokens signeres trygt.\n" +
+        "Generer en med: openssl rand -base64 32",
     );
   }
+
+  if (process.env.NODE_ENV === "production") {
+    const lav = secret.toLowerCase();
+
+    if (KJENTE_PLASSHOLDERE.some((p) => lav.includes(p))) {
+      throw new Error(
+        "AUTH_SECRET er fortsatt eksempelverdien fra .env.example. Den står " +
+          "i koden og kan leses av alle. Sett en ekte nøkkel før systemet " +
+          "settes i drift:\n  openssl rand -base64 32",
+      );
+    }
+
+    // En nøkkel som «aaaaaaaa…» er 32 tegn lang, men har ingen entropi
+    if (new Set(secret).size < 12) {
+      throw new Error(
+        "AUTH_SECRET har for få forskjellige tegn til å være tilfeldig. " +
+          "Generer en ekte nøkkel: openssl rand -base64 32",
+      );
+    }
+  }
+
   return new TextEncoder().encode(secret);
 }
 
@@ -90,10 +128,44 @@ export async function getSession(): Promise<Session | null> {
   }
 }
 
+/**
+ * Sesjonen, men bare hvis kontoen fortsatt finnes og er aktiv.
+ *
+ * Tokenet alene er ikke nok. Det er signert og gyldig i 30 dager, så uten en
+ * kontroll mot databasen ville en bruker som blir deaktivert — eller hvis
+ * organisasjon blir slettet — fortsatt komme inn helt til tokenet gikk ut.
+ * Det koster ett oppslag per sidevisning, og er verdt det.
+ *
+ * Både beskyttede sider og innloggingssiden må bruke denne. Bruker den ene
+ * bare tokenet, ender de opp med å sende brukeren fram og tilbake mellom seg.
+ */
+export async function gyldigSesjon(): Promise<Session | null> {
+  const session = await getSession();
+  if (!session) return null;
+
+  const bruker = await prisma.user.findFirst({
+    where: {
+      id: session.userId,
+      organizationId: session.organizationId,
+      isActive: true,
+    },
+    select: { id: true },
+  });
+
+  return bruker ? session : null;
+}
+
 /** Sesjon eller omdirigering til innlogging. Brukes i alle beskyttede sider. */
 export async function requireSession(): Promise<Session> {
-  const session = await getSession();
-  if (!session) redirect("/logg-inn");
+  const session = await gyldigSesjon();
+
+  if (!session) {
+    // Kapselen kan ikke slettes herfra — det er bare server-handlinger og
+    // rutebehandlere som får endre informasjonskapsler. Det gjør ingenting:
+    // den gir ikke tilgang lenger, og overskrives ved neste innlogging.
+    redirect("/logg-inn?utlopt=1");
+  }
+
   return session;
 }
 

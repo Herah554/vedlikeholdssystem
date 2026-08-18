@@ -16,7 +16,7 @@ function SendKnapp() {
   );
 }
 
-export function RegistrerSkjema() {
+export function RegistrerSkjema({ krevKode }: { krevKode: boolean }) {
   const [state, action] = useActionState<Resultat, FormData>(registrerBedrift, {
     ok: true,
   });
@@ -33,12 +33,32 @@ export function RegistrerSkjema() {
         </div>
       )}
 
+      {krevKode && (
+        <Field
+          label="Invitasjonskode"
+          required
+          hint="Du får koden av den som drifter serveren"
+        >
+          <Input name="kode" required autoComplete="off" />
+        </Field>
+      )}
+
       <Field label="Firmanavn" required>
-        <Input name="firma" required autoFocus placeholder="Nordvik Industri AS" />
+        <Input
+          name="firma"
+          required
+          autoFocus
+          defaultValue={state.verdier?.firma}
+          placeholder="Nordvik Industri AS"
+        />
       </Field>
 
       <Field label="Organisasjonsnummer">
-        <Input name="orgNumber" placeholder="912345678" />
+        <Input
+          name="orgNumber"
+          defaultValue={state.verdier?.orgNumber}
+          placeholder="912345678"
+        />
       </Field>
 
       <div className="border-t border-kant pt-4">
@@ -46,7 +66,12 @@ export function RegistrerSkjema() {
 
         <div className="space-y-4">
           <Field label="Navn" required>
-            <Input name="navn" required placeholder="Ola Nordmann" />
+            <Input
+              name="navn"
+              required
+              defaultValue={state.verdier?.navn}
+              placeholder="Ola Nordmann"
+            />
           </Field>
 
           <Field label="E-post" required hint="Brukes til innlogging">
@@ -55,6 +80,7 @@ export function RegistrerSkjema() {
               type="email"
               required
               autoComplete="username"
+              defaultValue={state.verdier?.email}
               placeholder="ola@firma.no"
             />
           </Field>

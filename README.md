@@ -151,6 +151,7 @@ organisasjonen med sin første administrator, og den ser aldri noe fra de andre.
 | `npm run db:seed` | Legg inn testdata (**sletter eksisterende data**) |
 | `npm run db:studio` | Åpne Prisma Studio for å se i databasen |
 | `npm run db:reset` | Nullstill databasen helt |
+| `npm run sjekk:isolering` | Kontroller at alle tabeller er dekket av flerklient-filteret |
 
 ## Hvordan dataadskillelsen virker
 
@@ -162,6 +163,44 @@ Det betyr at sikkerheten ikke hviler på at hver enkelt utvikler husker å filtr
 Selv om noen glemmer det i en spørring, kan de fortsatt ikke nå data som tilhører
 en annen kunde. Rå SQL går utenom utvidelsen, så der oppgis organisasjonen
 eksplisitt — se kommentarene i [`src/lib/statistikk.ts`](src/lib/statistikk.ts).
+
+Hvilke tabeller som er dekket utledes fra Prisma-schemaet, ikke fra en liste
+noen må huske å oppdatere. Får en ny tabell en `organizationId`, er den
+beskyttet med det samme. Mangler den både `organizationId` og en plass i lista
+over tabeller som arver tilhørighet fra en forelder, nekter systemet å starte.
+Kjør `npm run sjekk:isolering` for å se dekningen.
+
+## Sikkerhet
+
+Tre ting må være i orden før systemet tas i bruk av andre enn deg selv.
+
+**1. `AUTH_SECRET`.** Den signerer innloggingstokens. Er den svak, kan hvem som
+helst lage gyldige tokens for hvilken som helst bruker. Systemet nekter å starte
+i produksjon hvis nøkkelen er en av eksempelverdiene eller mangler tilfeldighet.
+
+```bash
+openssl rand -base64 32
+```
+
+**2. Registrering av nye bedrifter.** Så lenge databasen er tom er `/registrer`
+åpen, slik at den aller første bedriften kan opprettes. Deretter er den stengt
+til du bevisst åpner den:
+
+```
+TILLAT_REGISTRERING="ja"
+REGISTRERING_KODE="valgfri-invitasjonskode"
+```
+
+Sperren håndheves i server-handlingen, ikke bare i grensesnittet — en stengt
+side hjelper ikke hvis noen sender skjemaet rett til serveren.
+
+**3. Testdata.** `npm run db:seed` sletter alt og oppretter kontoer med et
+passord som står i koden. Den nekter å kjøre i produksjon, og passordet kan
+overstyres med `SEED_PASSWORD`.
+
+I tillegg kontrolleres en innlogget økt mot databasen ved hver sidevisning.
+Deaktiverer du en bruker, er hen ute umiddelbart — ikke først når tokenet går
+ut om 30 dager.
 
 ## Roller
 
@@ -179,8 +218,6 @@ eksplisitt — se kommentarene i [`src/lib/statistikk.ts`](src/lib/statistikk.ts
   fungerer godt, men semantisk vektorsøk ville funnet flere formuleringer av samme feil.
 - Vedleggsmodellen finnes i databasen, men filopplasting er ikke bygget i
   grensesnittet ennå.
-- Registreringssiden er åpen for alle som når serveren. Skal systemet ligge
-  på åpent internett, bør den settes bak en invitasjon eller slås av.
 - Prisma sitt CLI-verktøy har en kjent sårbarhet i `deepmerge-ts`. Den kjører kun
   lokalt ved migrering, ikke i den ferdige appen, og det finnes ingen ikke-brytende
   oppdatering ennå.

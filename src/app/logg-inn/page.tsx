@@ -2,14 +2,17 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Wrench } from "lucide-react";
-import { getSession } from "@/lib/auth";
+import { gyldigSesjon } from "@/lib/auth";
 import { LoginSkjema } from "./skjema";
 
 export const metadata: Metadata = { title: "Logg inn" };
 
-export default async function LoggInnSide() {
+export default async function LoggInnSide(props: PageProps<"/logg-inn">) {
   // Allerede innlogget? Da er det ingen grunn til å vise skjemaet.
-  if (await getSession()) redirect("/dashbord");
+  if (await gyldigSesjon()) redirect("/dashbord");
+
+  const sp = await props.searchParams;
+  const utlopt = sp.utlopt === "1";
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-flate-dempet px-4 py-12">
@@ -25,6 +28,13 @@ export default async function LoggInnSide() {
             Logg inn for å se arbeidsordrene dine
           </p>
         </div>
+
+        {utlopt && (
+          <div className="mb-4 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-200 ring-inset dark:bg-amber-500/15 dark:text-amber-300 dark:ring-amber-500/30">
+            Økten er ikke gyldig lenger. Det kan være fordi kontoen din er
+            deaktivert, eller fordi du har vært utlogget en stund.
+          </div>
+        )}
 
         <div className="kort p-6">
           <LoginSkjema />

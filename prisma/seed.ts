@@ -33,12 +33,39 @@ function dagerFram(dager: number, time = 9): Date {
 }
 
 async function main() {
+  // Denne filen sletter alt og legger inn kontoer med et kjent passord.
+  // Kjøres den mot en produksjonsdatabase, er både dataene borte og systemet
+  // åpent for alle som har lest koden.
+  if (
+    process.env.NODE_ENV === "production" &&
+    process.env.TILLAT_SEED_I_PRODUKSJON?.toLowerCase() !== "ja"
+  ) {
+    throw new Error(
+      "Nekter å legge inn testdata i produksjon — dette sletter ALT som ligger " +
+        "i databasen og oppretter kontoer med et kjent passord.\n" +
+        "Er det virkelig meningen, sett TILLAT_SEED_I_PRODUKSJON=\"ja\".",
+    );
+  }
+
+  // En tom variabel i .env teller som «ikke satt» — ellers ville
+  // SEED_PASSWORD="" gitt et tomt passord i stedet for standardverdien.
+  const passord = process.env.SEED_PASSWORD?.trim() || "passord123";
+  if (passord.length < 8) {
+    throw new Error("SEED_PASSWORD må ha minst åtte tegn.");
+  }
+
   console.log("Tømmer eksisterende data …");
-  // Rekkefølgen følger avhengighetene; Organization sist siden alt henger
-  // under den via kaskadesletting.
+
+  // Bestillingslinjer peker på reservedeler med Restrict — med vilje, slik at
+  // ingen kan slette en del som står på en bestilling og dermed rive bort
+  // historikken. Da kan ikke sletting av organisasjonen kaskadere fritt, så
+  // bestillingene må ryddes først.
+  await prisma.purchaseOrder.deleteMany();
+
+  // Resten henger under Organization via kaskadesletting.
   await prisma.organization.deleteMany();
 
-  const passordHash = await bcrypt.hash("passord123", 12);
+  const passordHash = await bcrypt.hash(passord, 12);
 
   // ─────────────────────────────────────────────────────────
   // Organisasjon 1 — hovedkunden i testdataene
@@ -50,6 +77,12 @@ async function main() {
       name: "Nordvik Industri AS",
       orgNumber: "912345678",
       hourlyRate: 950,
+      // Brukes som avsender og leveringsadresse på bestillinger
+      email: "vedlikehold@nordvik.eksempel.no",
+      phone: "69 20 15 00",
+      address: "Verkstedveien 12",
+      postalCode: "1517",
+      city: "Moss",
     },
   });
 
@@ -303,9 +336,11 @@ async function main() {
 
   const [ahlsell, tess, atlas] = await Promise.all(
     [
-      { name: "Ahlsell Norge AS", contactName: "Kundesenter", phone: "51 81 85 00", website: "https://www.ahlsell.no" },
-      { name: "Tess AS", contactName: "Avd. Moss", phone: "69 24 20 00", website: "https://www.tess.no" },
-      { name: "Atlas Copco Norge AS", contactName: "Service", phone: "64 86 03 00", website: "https://www.atlascopco.no" },
+      // E-postadressene er oppdiktede — bestillinger fra testdataene skal
+      // ikke kunne havne hos en ekte leverandør ved et uhell.
+      { name: "Ahlsell Norge AS", contactName: "Kundesenter", email: "ordre@ahlsell.eksempel.no", phone: "51 81 85 00", website: "https://www.ahlsell.no" },
+      { name: "Tess AS", contactName: "Avd. Moss", email: "moss@tess.eksempel.no", phone: "69 24 20 00", website: "https://www.tess.no" },
+      { name: "Atlas Copco Norge AS", contactName: "Service", email: "service@atlascopco.eksempel.no", phone: "64 86 03 00", website: "https://www.atlascopco.no" },
     ].map((l) => prisma.supplier.create({ data: { ...l, organizationId: org.id } })),
   );
 
@@ -875,6 +910,92 @@ async function main() {
     ],
   });
 
+  // ─── Bestillinger ────────────────────────────────────────
+  // Tre bestillinger i hver sin fase, slik at modulen viser noe fra start.
+
+  let bestillingsnummer = 0;
+
+  async function lagBestilling(m: {
+    leverandor: { id: string };
+    linjer: { nummer: string; antall: number; mottatt?: number }[];
+    status: "UTKAST" | "SENDT" | "DELVIS_MOTTATT" | "MOTTATT";
+    dagerSidenOpprettet: number;
+    referanse?: string;
+    notat?: string;
+    sendtTil?: string;
+  }) {
+    bestillingsnummer += 1;
+    const opprettet = dagerSiden(m.dagerSidenOpprettet);
+    const erSendt = m.status !== "UTKAST";
+
+    return prisma.purchaseOrder.create({
+      data: {
+        organizationId: org.id,
+        number: bestillingsnummer,
+        supplierId: m.leverandor.id,
+        createdById: planlegger.id,
+        status: m.status,
+        reference: m.referanse,
+        note: m.notat,
+        createdAt: opprettet,
+        expectedAt: erSendt ? dagerSiden(m.dagerSidenOpprettet - 14) : null,
+        sentAt: erSendt ? new Date(opprettet.getTime() + 3600_000) : null,
+        sentToEmail: erSendt ? (m.sendtTil ?? null) : null,
+        sentMethod: erSendt ? "manuell" : null,
+        receivedAt: m.status === "MOTTATT" ? dagerSiden(m.dagerSidenOpprettet - 12) : null,
+        lines: {
+          create: m.linjer.map((l) => {
+            const d = del(l.nummer);
+            return {
+              partId: d.id,
+              quantity: l.antall,
+              unitCost: d.unitCost,
+              receivedQuantity: l.mottatt ?? 0,
+            };
+          }),
+        },
+      },
+    });
+  }
+
+  await lagBestilling({
+    leverandor: ahlsell,
+    status: "MOTTATT",
+    dagerSidenOpprettet: 60,
+    referanse: "REK-2026-0412",
+    sendtTil: "ordre@ahlsell.eksempel.no",
+    linjer: [
+      { nummer: "LAG-6205", antall: 8, mottatt: 8 },
+      { nummer: "SIK-C16", antall: 10, mottatt: 10 },
+    ],
+  });
+
+  await lagBestilling({
+    leverandor: atlas,
+    status: "DELVIS_MOTTATT",
+    dagerSidenOpprettet: 21,
+    referanse: "REK-2026-0455",
+    notat: "Send gjerne oljen samlet med filtrene.",
+    sendtTil: "service@atlascopco.eksempel.no",
+    linjer: [
+      { nummer: "FIL-LUFT", antall: 4, mottatt: 4 },
+      { nummer: "OLJ-VG46", antall: 2, mottatt: 0 },
+    ],
+  });
+
+  await lagBestilling({
+    leverandor: tess,
+    status: "UTKAST",
+    dagerSidenOpprettet: 2,
+    linjer: [{ nummer: "SLA-HYD25", antall: 4 }],
+  });
+
+  await prisma.counter.create({
+    data: { organizationId: org.id, name: "purchaseOrder", value: bestillingsnummer },
+  });
+
+  console.log(`Opprettet ${bestillingsnummer} bestillinger`);
+
   // ─── Standard dashbord ───────────────────────────────────
 
   await prisma.dashboard.create({
@@ -944,13 +1065,25 @@ async function main() {
 
   console.log(`Opprettet ${org2.name} (for å teste dataadskillelse)`);
 
+  const standardPassord = passord === "passord123";
+
   console.log("\n─────────────────────────────────────────────");
   console.log("Testdata er lagt inn. Logg inn med:");
-  console.log("  admin@nordvik.no       / passord123   (Administrator)");
-  console.log("  leder@nordvik.no       / passord123   (Leder)");
-  console.log("  planlegger@nordvik.no  / passord123   (Planlegger)");
-  console.log("  morten@nordvik.no      / passord123   (Tekniker)");
-  console.log("  post@fjordkraft.no     / passord123   (annet firma)");
+  console.log(`  admin@nordvik.no       (Administrator)`);
+  console.log(`  leder@nordvik.no       (Leder)`);
+  console.log(`  planlegger@nordvik.no  (Planlegger)`);
+  console.log(`  morten@nordvik.no      (Tekniker)`);
+  console.log(`  post@fjordkraft.no     (annet firma)`);
+  console.log(`\n  Passord: ${passord}`);
+
+  if (standardPassord) {
+    console.log(
+      "\n  ⚠  Dette passordet står i koden og er kjent for alle som har lest\n" +
+        "     den. Greit til utprøving på egen maskin — men skal systemet\n" +
+        "     brukes av folk, sett SEED_PASSWORD, eller bytt passordene under\n" +
+        "     Innstillinger etter innlogging.",
+    );
+  }
   console.log("─────────────────────────────────────────────\n");
 
   // Unngå ubrukt-variabel-advarsler for brukere som kun finnes i testdataene
