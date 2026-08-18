@@ -94,15 +94,15 @@ export default async function OrdreSide(props: PageProps<"/arbeidsordre/[id]">) 
     <>
       <Link
         href="/arbeidsordre"
-        className="mb-4 inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm text-tekst-svak hover:text-tekst"
       >
         <ArrowLeft className="size-4" aria-hidden />
         Alle arbeidsordre
       </Link>
 
       <div className="mb-6">
-        <p className="font-mono text-sm text-slate-500">{ordreNummer(ordre.number)}</p>
-        <h1 className="mt-0.5 text-xl font-semibold text-slate-900">{ordre.title}</h1>
+        <p className="font-mono text-sm text-tekst-svak">{ordreNummer(ordre.number)}</p>
+        <h1 className="mt-0.5 text-xl font-semibold text-tekst">{ordre.title}</h1>
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
           <Badge className={ORDRE_STATUS[ordre.status].klasse}>
             {ORDRE_STATUS[ordre.status].tekst}
@@ -113,7 +113,7 @@ export default async function OrdreSide(props: PageProps<"/arbeidsordre/[id]">) 
           <Badge className={ORDRE_TYPE[ordre.type].klasse}>
             {ORDRE_TYPE[ordre.type].tekst}
           </Badge>
-          <span className="text-xs text-slate-400">
+          <span className="text-xs text-tekst-svakest">
             meldt av {ordre.requestedBy.name} {relativTid(ordre.createdAt)}
           </span>
         </div>
@@ -136,7 +136,7 @@ export default async function OrdreSide(props: PageProps<"/arbeidsordre/[id]">) 
           {ordre.description && (
             <Card>
               <CardHeader title="Beskrivelse" />
-              <CardBody className="text-sm whitespace-pre-wrap text-slate-700">
+              <CardBody className="text-sm whitespace-pre-wrap text-tekst">
                 {ordre.description}
               </CardBody>
             </Card>
@@ -182,16 +182,16 @@ export default async function OrdreSide(props: PageProps<"/arbeidsordre/[id]">) 
                 description="Liknende saker fra historikken, med det som løste dem"
                 action={<Lightbulb className="size-5 text-amber-500" aria-hidden />}
               />
-              <ul className="divide-y divide-slate-100">
+              <ul className="divide-y divide-kant">
                 {liknende.map((t) => (
                   <li key={t.id} className="px-5 py-3">
                     <Link
                       href={`/arbeidsordre/${t.id}`}
-                      className="text-sm font-medium text-slate-900 hover:text-merke-600"
+                      className="text-sm font-medium text-tekst hover:text-aksent"
                     >
                       {t.title}
                     </Link>
-                    <p className="mt-0.5 text-xs text-slate-500">
+                    <p className="mt-0.5 text-xs text-tekst-svak">
                       {ordreNummer(t.number)}
                       {t.assetCode && ` · ${t.assetCode}`}
                       {" · "}
@@ -199,7 +199,7 @@ export default async function OrdreSide(props: PageProps<"/arbeidsordre/[id]">) 
                       {t.failureCode && ` · ${t.failureCode}`}
                     </p>
                     {t.resolution && (
-                      <p className="mt-1.5 line-clamp-3 text-sm text-slate-600">
+                      <p className="mt-1.5 line-clamp-3 text-sm text-tekst-svak">
                         {t.resolution}
                       </p>
                     )}
@@ -212,20 +212,20 @@ export default async function OrdreSide(props: PageProps<"/arbeidsordre/[id]">) 
           <Card>
             <CardHeader title="Kommentarer" description={`${ordre.comments.length} innlegg`} />
             {ordre.comments.length > 0 && (
-              <ul className="divide-y divide-slate-100">
+              <ul className="divide-y divide-kant">
                 {ordre.comments.map((k) => (
                   <li key={k.id} className="px-5 py-3">
-                    <p className="text-xs text-slate-500">
-                      <span className="font-medium text-slate-700">{k.user.name}</span>
+                    <p className="text-xs text-tekst-svak">
+                      <span className="font-medium text-tekst">{k.user.name}</span>
                       {" · "}
                       {datoTid(k.createdAt)}
                     </p>
-                    <p className="mt-1 text-sm whitespace-pre-wrap text-slate-700">{k.body}</p>
+                    <p className="mt-1 text-sm whitespace-pre-wrap text-tekst">{k.body}</p>
                   </li>
                 ))}
               </ul>
             )}
-            <CardBody className="border-t border-slate-100">
+            <CardBody className="border-t border-kant">
               <KommentarSkjema leggTil={leggTilKommentar.bind(null, ordre.id)} />
             </CardBody>
           </Card>
@@ -239,15 +239,15 @@ export default async function OrdreSide(props: PageProps<"/arbeidsordre/[id]">) 
               <dl className="space-y-3 text-sm">
                 <Rad navn="Utstyr">
                   {ordre.asset ? (
-                    <Link href={`/anlegg/${ordre.asset.id}`} className="text-merke-600 hover:text-merke-700">
+                    <Link href={`/anlegg/${ordre.asset.id}`} className="text-aksent hover:text-aksent">
                       {ordre.asset.code} — {ordre.asset.name}
                     </Link>
                   ) : (
-                    <span className="text-slate-400">Ikke knyttet til utstyr</span>
+                    <span className="text-tekst-svakest">Ikke knyttet til utstyr</span>
                   )}
                 </Rad>
                 <Rad navn="Tildelt">
-                  {ordre.assignedTo?.name ?? <span className="text-slate-400">Ikke tildelt</span>}
+                  {ordre.assignedTo?.name ?? <span className="text-tekst-svakest">Ikke tildelt</span>}
                 </Rad>
                 <Rad navn="Meldt">{datoTid(ordre.createdAt)}</Rad>
                 <Rad navn="Frist">{ordre.dueDate ? dato(ordre.dueDate) : "–"}</Rad>
@@ -255,7 +255,7 @@ export default async function OrdreSide(props: PageProps<"/arbeidsordre/[id]">) 
                 {ordre.completedAt && <Rad navn="Utført">{datoTid(ordre.completedAt)}</Rad>}
                 {ordre.pmPlan && (
                   <Rad navn="Fra plan">
-                    <Link href="/forebyggende" className="text-merke-600 hover:text-merke-700">
+                    <Link href="/forebyggende" className="text-aksent hover:text-aksent">
                       {ordre.pmPlan.name}
                     </Link>
                   </Rad>
@@ -273,10 +273,10 @@ export default async function OrdreSide(props: PageProps<"/arbeidsordre/[id]">) 
               <dl className="space-y-2 text-sm">
                 <Rad navn="Arbeid">
                   {kroner(arbeidskost)}
-                  <span className="ml-1 text-xs text-slate-400">({tall(sumTimer, 2)} t)</span>
+                  <span className="ml-1 text-xs text-tekst-svakest">({tall(sumTimer, 2)} t)</span>
                 </Rad>
                 <Rad navn="Deler">{kroner(delekost)}</Rad>
-                <div className="flex justify-between border-t border-slate-200 pt-2 font-semibold text-slate-900">
+                <div className="flex justify-between border-t border-kant pt-2 font-semibold text-tekst">
                   <dt>Sum</dt>
                   <dd>{kroner(arbeidskost + delekost)}</dd>
                 </div>
@@ -291,7 +291,7 @@ export default async function OrdreSide(props: PageProps<"/arbeidsordre/[id]">) 
                 <tbody>
                   {ordre.timeEntries.map((t) => (
                     <Tr key={t.id}>
-                      <Td className="text-xs whitespace-nowrap text-slate-500">
+                      <Td className="text-xs whitespace-nowrap text-tekst-svak">
                         {dato(t.workedOn)}
                       </Td>
                       <Td className="text-sm">{t.user.name}</Td>
@@ -303,7 +303,7 @@ export default async function OrdreSide(props: PageProps<"/arbeidsordre/[id]">) 
                 </tbody>
               </Table>
             )}
-            <CardBody className="border-t border-slate-100">
+            <CardBody className="border-t border-kant">
               <TimeSkjema registrer={registrerTimer.bind(null, ordre.id)} iDag={iDag} />
             </CardBody>
           </Card>
@@ -323,7 +323,7 @@ export default async function OrdreSide(props: PageProps<"/arbeidsordre/[id]">) 
                   {ordre.partUsages.map((p) => (
                     <Tr key={p.id}>
                       <Td className="text-sm">
-                        <span className="font-mono text-xs text-slate-500">{p.part.number}</span>
+                        <span className="font-mono text-xs text-tekst-svak">{p.part.number}</span>
                         <br />
                         {p.part.name}
                       </Td>
@@ -338,7 +338,7 @@ export default async function OrdreSide(props: PageProps<"/arbeidsordre/[id]">) 
                 </tbody>
               </Table>
             )}
-            <CardBody className="border-t border-slate-100">
+            <CardBody className="border-t border-kant">
               <DeleSkjema
                 registrer={registrerDeleuttak.bind(null, ordre.id)}
                 deler={deler.map((d) => ({
@@ -356,12 +356,12 @@ export default async function OrdreSide(props: PageProps<"/arbeidsordre/[id]">) 
             <Card>
               <CardHeader
                 title="Historikk på utstyret"
-                action={<History className="size-4 text-slate-400" aria-hidden />}
+                action={<History className="size-4 text-tekst-svakest" aria-hidden />}
               />
               <CardBody>
                 <Link
                   href={`/anlegg/${ordre.asset.id}`}
-                  className="text-sm text-merke-600 hover:text-merke-700"
+                  className="text-sm text-aksent hover:text-aksent"
                 >
                   Se alt som er gjort på {ordre.asset.code} →
                 </Link>
@@ -377,8 +377,8 @@ export default async function OrdreSide(props: PageProps<"/arbeidsordre/[id]">) 
 function Rad({ navn, children }: { navn: string; children: React.ReactNode }) {
   return (
     <div className="flex justify-between gap-4">
-      <dt className="shrink-0 text-slate-500">{navn}</dt>
-      <dd className="text-right text-slate-900">{children}</dd>
+      <dt className="shrink-0 text-tekst-svak">{navn}</dt>
+      <dd className="text-right text-tekst">{children}</dd>
     </div>
   );
 }

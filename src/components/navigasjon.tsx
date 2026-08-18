@@ -14,6 +14,8 @@ import {
   Network,
   Repeat2,
   Settings,
+  ShoppingCart,
+  Truck,
   Wallet,
   Wrench,
   X,
@@ -31,6 +33,8 @@ const LENKER = [
   { href: "/assistent", tekst: "Assistent", ikon: MessageSquareText },
   { href: "/anlegg", tekst: "Anlegg", ikon: Network },
   { href: "/reservedeler", tekst: "Reservedeler", ikon: Boxes },
+  { href: "/bestillinger", tekst: "Bestillinger", ikon: ShoppingCart },
+  { href: "/leverandorer", tekst: "Leverandører", ikon: Truck },
   { href: "/forebyggende", tekst: "Forebyggende", ikon: Repeat2 },
   { href: "/budsjett", tekst: "Budsjett", ikon: Wallet },
   { href: "/rapporter", tekst: "Rapporter", ikon: ChartNoAxesCombined },
@@ -54,8 +58,8 @@ function Lenker({ onNavigate }: { onNavigate?: () => void }) {
             className={cn(
               "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
               aktiv
-                ? "bg-merke-50 text-merke-700"
-                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                ? "bg-merke-50 text-aksent"
+                : "text-tekst-svak hover:bg-flate-dempet hover:text-tekst",
             )}
           >
             <Ikon className="size-4 shrink-0" aria-hidden />
@@ -69,15 +73,15 @@ function Lenker({ onNavigate }: { onNavigate?: () => void }) {
 
 function Merke({ organisasjon }: { organisasjon: string }) {
   return (
-    <div className="flex items-center gap-2.5 border-b border-slate-200 px-5 py-4">
+    <div className="flex items-center gap-2.5 border-b border-kant px-5 py-4">
       <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-merke-600 text-white">
         <Wrench className="size-4" aria-hidden />
       </div>
       <div className="min-w-0">
-        <p className="truncate text-sm font-semibold text-slate-900">
+        <p className="truncate text-sm font-semibold text-tekst">
           {organisasjon}
         </p>
-        <p className="text-xs text-slate-500">Vedlikehold</p>
+        <p className="text-xs text-tekst-svak">Vedlikehold</p>
       </div>
     </div>
   );
@@ -86,7 +90,7 @@ function Merke({ organisasjon }: { organisasjon: string }) {
 /** Fast sidemeny på store skjermer. */
 export function Sidemeny({ organisasjon }: { organisasjon: string }) {
   return (
-    <aside className="hidden w-60 shrink-0 flex-col border-r border-slate-200 bg-white lg:flex">
+    <aside className="hidden w-60 shrink-0 flex-col border-r border-kant bg-flate lg:flex">
       <Merke organisasjon={organisasjon} />
       <Lenker />
     </aside>
@@ -102,7 +106,7 @@ export function MobilMeny({ organisasjon }: { organisasjon: string }) {
       <button
         type="button"
         onClick={() => settÅpen(true)}
-        className="rounded-lg p-2 text-slate-600 hover:bg-slate-100 lg:hidden"
+        className="rounded-lg p-2 text-tekst-svak hover:bg-flate-dempet lg:hidden"
         aria-label="Åpne meny"
       >
         <Menu className="size-5" aria-hidden />
@@ -116,15 +120,15 @@ export function MobilMeny({ organisasjon }: { organisasjon: string }) {
             onClick={() => settÅpen(false)}
             aria-label="Lukk meny"
           />
-          <div className="relative flex h-full w-64 flex-col bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-200">
+          <div className="relative flex h-full w-64 flex-col bg-flate shadow-xl">
+            <div className="flex items-center justify-between border-b border-kant">
               <div className="min-w-0 flex-1">
                 <Merke organisasjon={organisasjon} />
               </div>
               <button
                 type="button"
                 onClick={() => settÅpen(false)}
-                className="mr-3 rounded-lg p-2 text-slate-500 hover:bg-slate-100"
+                className="mr-3 rounded-lg p-2 text-tekst-svak hover:bg-flate-dempet"
                 aria-label="Lukk meny"
               >
                 <X className="size-5" aria-hidden />

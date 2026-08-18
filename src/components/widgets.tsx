@@ -182,7 +182,7 @@ async function MineJobber({ db, session }: Ctx) {
         title="Mine jobber"
         description="Tildelt deg og ikke avsluttet"
         action={
-          <Link href="/arbeidsordre?mine=1" className="text-sm font-medium text-merke-600 hover:text-merke-700">
+          <Link href="/arbeidsordre?mine=1" className="text-sm font-medium text-aksent hover:text-aksent">
             Se alle
           </Link>
         }
@@ -190,13 +190,13 @@ async function MineJobber({ db, session }: Ctx) {
       {ordrer.length === 0 ? (
         <EmptyState title="Ingen åpne jobber" description="Du har ingen arbeidsordre tildelt akkurat nå." />
       ) : (
-        <ul className="divide-y divide-slate-100">
+        <ul className="divide-y divide-kant">
           {ordrer.map((o) => (
             <li key={o.id}>
-              <Link href={`/arbeidsordre/${o.id}`} className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50">
+              <Link href={`/arbeidsordre/${o.id}`} className="flex items-center gap-3 px-5 py-3 hover:bg-flate-hover">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-slate-900">{o.title}</p>
-                  <p className="truncate text-xs text-slate-500">
+                  <p className="truncate text-sm font-medium text-tekst">{o.title}</p>
+                  <p className="truncate text-xs text-tekst-svak">
                     {ordreNummer(o.number)}
                     {o.asset && ` · ${o.asset.code} ${o.asset.name}`}
                     {o.plannedDate && ` · planlagt ${dato(o.plannedDate)}`}
@@ -225,13 +225,13 @@ async function SisteOrdrer({ db }: Ctx) {
   return (
     <Card>
       <CardHeader title="Siste meldinger" description="Nyeste arbeidsordre" />
-      <ul className="divide-y divide-slate-100">
+      <ul className="divide-y divide-kant">
         {ordrer.map((o) => (
           <li key={o.id}>
-            <Link href={`/arbeidsordre/${o.id}`} className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50">
+            <Link href={`/arbeidsordre/${o.id}`} className="flex items-center gap-3 px-5 py-3 hover:bg-flate-hover">
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-slate-900">{o.title}</p>
-                <p className="truncate text-xs text-slate-500">
+                <p className="truncate text-sm font-medium text-tekst">{o.title}</p>
+                <p className="truncate text-xs text-tekst-svak">
                   {o.requestedBy.name} · {relativTid(o.createdAt)}
                   {o.asset && ` · ${o.asset.code}`}
                 </p>

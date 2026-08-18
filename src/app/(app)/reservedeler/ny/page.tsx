@@ -15,7 +15,7 @@ export default async function NyDelSide() {
     <>
       <Link
         href="/reservedeler"
-        className="mb-4 inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm text-tekst-svak hover:text-tekst"
       >
         <ArrowLeft className="size-4" aria-hidden />
         Alle reservedeler

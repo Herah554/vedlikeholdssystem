@@ -1,32 +1,132 @@
 @import "tailwindcss";
 
 /*
-  Systemet brukes mye på nettbrett ute i anlegget, ofte i sterkt lys.
-  Derfor er fargene holdt lyse og kontrastrike, og vi låser til lyst tema
-  slik at teknikeren ser det samme uansett innstilling på enheten.
+  Fargesystem.
+
+  I stedet for å skrive «dark:»-varianter på hver eneste klasse, er fargene
+  gitt navn etter hva de brukes til — flate, kant, tekst — og selve verdiene
+  byttes ut ett sted. Da ser en komponent likedan ut i koden uansett tema.
+
+  Temaet velges på tre måter:
+    .lys på <html>   → alltid lyst
+    .dark på <html>  → alltid mørkt
+    ingen av delene  → følger operativsystemet
 */
 
-@theme {
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --color-merke-50: #eef2ff;
-  --color-merke-100: #e0e7ff;
-  --color-merke-500: #6366f1;
-  --color-merke-600: #4f46e5;
-  --color-merke-700: #4338ca;
-  --color-merke-900: #312e81;
+@custom-variant dark {
+  &:where(.dark, .dark *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not(.lys), :root:not(.lys) *) {
+      @slot;
+    }
+  }
 }
 
-html {
-  color-scheme: light;
+:root {
+  --bakgrunn: #f8fafc; /* slate-50 */
+  --flate: #ffffff;
+  --flate-hover: #f8fafc;
+  --flate-dempet: #f1f5f9; /* slate-100 */
+  --kant: #e2e8f0; /* slate-200 */
+  --kant-sterk: #cbd5e1; /* slate-300 */
+  --tekst: #0f172a; /* slate-900 */
+  --tekst-svak: #64748b; /* slate-500 */
+  --tekst-svakest: #94a3b8; /* slate-400 */
+
+  --merke-50: #eef2ff;
+  --merke-100: #e0e7ff;
+  --merke-500: #6366f1;
+  --merke-600: #4f46e5;
+  --merke-700: #4338ca;
+  /* Aksentfarge for tekst og ikoner — må ha nok kontrast mot flaten */
+  --aksent: #4f46e5;
+
+  /* Diagramfarger, hentet av recharts gjennom getComputedStyle */
+  --diagram-rutenett: #e2e8f0;
+  --diagram-akse: #64748b;
+  --diagram-boks: #ffffff;
+}
+
+/* Mørk palett. Bakgrunnen er ikke helsvart — ren svart gir for hard kontrast
+   mot hvit tekst over lange arbeidsøkter. */
+.dark {
+  --bakgrunn: #0b1120;
+  --flate: #111827;
+  --flate-hover: #1a2334;
+  --flate-dempet: #1e293b;
+  --kant: #253046;
+  --kant-sterk: #334155;
+  --tekst: #e8edf5;
+  --tekst-svak: #94a3b8;
+  --tekst-svakest: #64748b;
+
+  --merke-50: #1e1b4b;
+  --merke-100: #312e81;
+  --merke-500: #818cf8;
+  --merke-600: #6366f1;
+  --merke-700: #818cf8;
+  --aksent: #a5b4fc;
+
+  --diagram-rutenett: #253046;
+  --diagram-akse: #94a3b8;
+  --diagram-boks: #111827;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.lys) {
+    --bakgrunn: #0b1120;
+    --flate: #111827;
+    --flate-hover: #1a2334;
+    --flate-dempet: #1e293b;
+    --kant: #253046;
+    --kant-sterk: #334155;
+    --tekst: #e8edf5;
+    --tekst-svak: #94a3b8;
+    --tekst-svakest: #64748b;
+
+    --merke-50: #1e1b4b;
+    --merke-100: #312e81;
+    --merke-500: #818cf8;
+    --merke-600: #6366f1;
+    --merke-700: #818cf8;
+    --aksent: #a5b4fc;
+
+    --diagram-rutenett: #253046;
+    --diagram-akse: #94a3b8;
+    --diagram-boks: #111827;
+  }
+}
+
+@theme inline {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  --color-bakgrunn: var(--bakgrunn);
+  --color-flate: var(--flate);
+  --color-flate-hover: var(--flate-hover);
+  --color-flate-dempet: var(--flate-dempet);
+  --color-kant: var(--kant);
+  --color-kant-sterk: var(--kant-sterk);
+  --color-tekst: var(--tekst);
+  --color-tekst-svak: var(--tekst-svak);
+  --color-tekst-svakest: var(--tekst-svakest);
+
+  --color-merke-50: var(--merke-50);
+  --color-merke-100: var(--merke-100);
+  --color-merke-500: var(--merke-500);
+  --color-merke-600: var(--merke-600);
+  --color-merke-700: var(--merke-700);
+  --color-aksent: var(--aksent);
 }
 
 body {
-  @apply bg-slate-50 text-slate-900;
+  @apply bg-bakgrunn text-tekst;
 }
 
-/* Tabellrader og lister får jevn, rolig avstand i hele systemet */
+/* Kortflate brukt over hele systemet */
 @utility kort {
-  @apply rounded-xl border border-slate-200 bg-white shadow-sm;
+  @apply rounded-xl border border-kant bg-flate shadow-sm;
 }
 
 /* Skjuler rullefeltet der vi lager egne vannrette lister, f.eks. ukeplanen */

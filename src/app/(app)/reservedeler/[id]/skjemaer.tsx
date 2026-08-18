@@ -9,7 +9,7 @@ import type { Resultat } from "../actions";
 function Feil({ melding }: { melding?: string }) {
   if (!melding) return null;
   return (
-    <p role="alert" className="flex items-start gap-1.5 text-sm text-red-700">
+    <p role="alert" className="flex items-start gap-1.5 text-sm text-red-700 dark:text-red-300">
       <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
       {melding}
     </p>

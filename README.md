@@ -16,9 +16,13 @@ uten å se hverandres data.
 | **Assistent** | Søker i all historikk, finner liknende feil og hva som løste dem. Kan søke på nettet |
 | **Anlegg** | Hierarki: anlegg → system → utstyr → komponent, med full historikk per enhet |
 | **Reservedeler** | Lager med minimumsnivå, kobling mot utstyr, uttak og opptelling |
+| **Bestillinger** | Velg deler under minimum — systemet samler dem i én bestilling per leverandør, sender e-post og fører varene inn på lager ved mottak |
+| **Leverandører** | Kontaktpersoner og e-postadresser bestillingene sendes til |
 | **Forebyggende** | Planer med tids- eller driftstimeintervall som lager arbeidsordre automatisk |
 | **Budsjett** | Kostnad fra timer og deler mot budsjett per kostnadssted |
 | **Rapporter** | Nedetid, kostnad per utstyr, PM-etterlevelse og deleforbruk |
+
+Dashbordet flyttes med dra-og-slipp, og systemet har lyst og mørkt tema som følger operativsystemet hvis du vil.
 
 ### Assistenten
 
@@ -35,6 +39,24 @@ Assistenten fungerer i to nivåer:
 - **Med API-nøkkel:** full assistent som kan slå opp utstyr, sjekke lagerbeholdning,
   søke på nettet etter produsentdokumentasjon og sette sammen et konkret
   feilsøkingsforslag med kildehenvisninger til arbeidsordrene den bygger på.
+
+### Bestillinger til leverandør
+
+Når en del går under minimumsnivået, kan du huke den av på lagersiden og la
+systemet lage bestillingene. Deler fra samme leverandør havner i **én** felles
+bestilling — leverandøren skal ikke få én e-post per skrue. Antallet foreslås
+opp til maksimumsnivået, ikke bare så vidt over grensen.
+
+E-posten fungerer i to nivåer, på samme måte som assistenten:
+
+- **Uten SMTP:** systemet lager e-posten ferdig, og du sender den fra din egen
+  e-postklient med ett klikk. Ingen oppsett kreves.
+- **Med SMTP:** systemet sender e-posten selv og markerer bestillingen som sendt.
+
+Når varene kommer, fører du inn hvor mye som faktisk kom. Delleveranser er
+normalt, så resten blir stående som utestående. Lagerbeholdningen og
+lagerbevegelsen oppdateres i samme transaksjon, slik at lageret aldri kan komme
+ut av synk med bestillingen.
 
 ## Teknologi
 
@@ -69,6 +91,13 @@ Rediger `.env`:
 DATABASE_URL="postgresql://bruker:passord@localhost:5432/vedlikehold?schema=public"
 AUTH_SECRET="minst-32-tegn-langt-tilfeldig-passord"
 ANTHROPIC_API_KEY=""   # valgfri — se «Assistenten» over
+
+# Valgfritt: la systemet sende bestillinger selv
+SMTP_HOST=""
+SMTP_PORT="587"
+SMTP_USER=""
+SMTP_PASSWORD=""
+SMTP_FROM="Vedlikehold <ordre@firma.no>"
 ```
 
 Generer en trygg `AUTH_SECRET`:
@@ -105,6 +134,9 @@ Alle bruker passordet `passord123`.
 
 Logger du inn som Fjordkraft, ser du ingenting fra Nordvik — heller ikke om du
 skriver inn en Nordvik-ID direkte i adressefeltet.
+
+Nye bedrifter kan registrere seg selv på `/registrer`. Da opprettes
+organisasjonen med sin første administrator, og den ser aldri noe fra de andre.
 
 > **Bytt disse passordene før systemet tas i bruk på ordentlig.**
 
@@ -147,6 +179,8 @@ eksplisitt — se kommentarene i [`src/lib/statistikk.ts`](src/lib/statistikk.ts
   fungerer godt, men semantisk vektorsøk ville funnet flere formuleringer av samme feil.
 - Vedleggsmodellen finnes i databasen, men filopplasting er ikke bygget i
   grensesnittet ennå.
+- Registreringssiden er åpen for alle som når serveren. Skal systemet ligge
+  på åpent internett, bør den settes bak en invitasjon eller slås av.
 - Prisma sitt CLI-verktøy har en kjent sårbarhet i `deepmerge-ts`. Den kjører kun
   lokalt ved migrering, ikke i den ferdige appen, og det finnes ingen ikke-brytende
   oppdatering ennå.

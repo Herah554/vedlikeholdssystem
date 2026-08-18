@@ -105,20 +105,20 @@ export default async function UkeplanSide(props: PageProps<"/ukeplan">) {
           <div className="flex items-center gap-1">
             <Link
               href={lenke(forskyvning - 1)}
-              className="rounded-lg p-2 text-slate-600 hover:bg-slate-100"
+              className="rounded-lg p-2 text-tekst-svak hover:bg-flate-dempet"
               aria-label="Forrige uke"
             >
               <ChevronLeft className="size-4" aria-hidden />
             </Link>
             <Link
               href="/ukeplan"
-              className="rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+              className="rounded-lg px-3 py-2 text-sm font-medium text-tekst hover:bg-flate-dempet"
             >
               Denne uka
             </Link>
             <Link
               href={lenke(forskyvning + 1)}
-              className="rounded-lg p-2 text-slate-600 hover:bg-slate-100"
+              className="rounded-lg p-2 text-tekst-svak hover:bg-flate-dempet"
               aria-label="Neste uke"
             >
               <ChevronRight className="size-4" aria-hidden />

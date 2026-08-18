@@ -110,7 +110,7 @@ export default async function UtstyrSide(props: PageProps<"/anlegg/[id]">) {
     <>
       <Link
         href="/anlegg"
-        className="mb-4 inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm text-tekst-svak hover:text-tekst"
       >
         <ArrowLeft className="size-4" aria-hidden />
         Anleggsstruktur
@@ -121,14 +121,14 @@ export default async function UtstyrSide(props: PageProps<"/anlegg/[id]">) {
           {utstyr.parent && (
             <Link
               href={`/anlegg/${utstyr.parent.id}`}
-              className="text-sm text-slate-500 hover:text-merke-600"
+              className="text-sm text-tekst-svak hover:text-aksent"
             >
               {utstyr.parent.code} — {utstyr.parent.name}
             </Link>
           )}
           <div className="mt-0.5 flex items-center gap-2">
-            <span className="font-mono text-sm text-slate-500">{utstyr.code}</span>
-            <h1 className="text-xl font-semibold text-slate-900">{utstyr.name}</h1>
+            <span className="font-mono text-sm text-tekst-svak">{utstyr.code}</span>
+            <h1 className="text-xl font-semibold text-tekst">{utstyr.name}</h1>
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
             <Badge>{ANLEGG_TYPE[utstyr.type]}</Badge>
@@ -175,21 +175,21 @@ export default async function UtstyrSide(props: PageProps<"/anlegg/[id]">) {
                 <tbody>
                   {ordrer.map((o) => (
                     <Tr key={o.id}>
-                      <Td className="font-mono text-xs text-slate-500">
+                      <Td className="font-mono text-xs text-tekst-svak">
                         {ordreNummer(o.number)}
                       </Td>
                       <Td>
                         <Link
                           href={`/arbeidsordre/${o.id}`}
-                          className="text-sm font-medium text-slate-900 hover:text-merke-600"
+                          className="text-sm font-medium text-tekst hover:text-aksent"
                         >
                           {o.title}
                         </Link>
                         {o.failureCode && (
-                          <span className="ml-2 text-xs text-slate-400">{o.failureCode}</span>
+                          <span className="ml-2 text-xs text-tekst-svakest">{o.failureCode}</span>
                         )}
                       </Td>
-                      <Td className="hidden text-sm whitespace-nowrap text-slate-500 sm:table-cell">
+                      <Td className="hidden text-sm whitespace-nowrap text-tekst-svak sm:table-cell">
                         {dato(o.createdAt)}
                       </Td>
                       <Td>
@@ -207,15 +207,15 @@ export default async function UtstyrSide(props: PageProps<"/anlegg/[id]">) {
           {utstyr.children.length > 0 && (
             <Card>
               <CardHeader title="Underliggende enheter" />
-              <ul className="divide-y divide-slate-100">
+              <ul className="divide-y divide-kant">
                 {utstyr.children.map((b) => (
                   <li key={b.id}>
                     <Link
                       href={`/anlegg/${b.id}`}
-                      className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50"
+                      className="flex items-center gap-3 px-5 py-3 hover:bg-flate-hover"
                     >
-                      <span className="font-mono text-xs text-slate-500">{b.code}</span>
-                      <span className="flex-1 text-sm font-medium text-slate-900">{b.name}</span>
+                      <span className="font-mono text-xs text-tekst-svak">{b.code}</span>
+                      <span className="flex-1 text-sm font-medium text-tekst">{b.name}</span>
                       <Badge>{ANLEGG_TYPE[b.type]}</Badge>
                       <Badge className={ANLEGG_STATUS[b.status].klasse}>
                         {ANLEGG_STATUS[b.status].tekst}
@@ -248,7 +248,7 @@ export default async function UtstyrSide(props: PageProps<"/anlegg/[id]">) {
                 </Rad>
               </dl>
               {utstyr.description && (
-                <p className="mt-4 border-t border-slate-100 pt-4 text-sm text-slate-600">
+                <p className="mt-4 border-t border-kant pt-4 text-sm text-tekst-svak">
                   {utstyr.description}
                 </p>
               )}
@@ -263,22 +263,22 @@ export default async function UtstyrSide(props: PageProps<"/anlegg/[id]">) {
             {utstyr.parts.length === 0 ? (
               <EmptyState title="Ingen deler koblet" description="Koble deler til utstyret for å gjøre dem lette å finne ved feil." />
             ) : (
-              <ul className="divide-y divide-slate-100">
+              <ul className="divide-y divide-kant">
                 {utstyr.parts.map((ap) => (
                   <li key={ap.id}>
                     <Link
                       href={`/reservedeler/${ap.part.id}`}
-                      className="flex items-center gap-3 px-5 py-2.5 hover:bg-slate-50"
+                      className="flex items-center gap-3 px-5 py-2.5 hover:bg-flate-hover"
                     >
                       <div className="min-w-0 flex-1">
-                        <p className="font-mono text-xs text-slate-500">{ap.part.number}</p>
-                        <p className="truncate text-sm text-slate-900">{ap.part.name}</p>
+                        <p className="font-mono text-xs text-tekst-svak">{ap.part.number}</p>
+                        <p className="truncate text-sm text-tekst">{ap.part.name}</p>
                       </div>
                       <Badge
                         className={
                           ap.part.quantityOnHand < ap.part.minStock
-                            ? "bg-red-100 text-red-800 ring-red-200"
-                            : "bg-emerald-50 text-emerald-700 ring-emerald-200"
+                            ? "bg-red-100 dark:bg-red-500/15 text-red-800 dark:text-red-300 ring-red-200 dark:ring-red-500/30"
+                            : "bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 ring-emerald-200 dark:ring-emerald-500/30"
                         }
                       >
                         {tall(ap.part.quantityOnHand)} {ap.part.unit}
@@ -295,11 +295,11 @@ export default async function UtstyrSide(props: PageProps<"/anlegg/[id]">) {
             {utstyr.pmPlans.length === 0 ? (
               <EmptyState title="Ingen planer" description="Uten forebyggende plan blir alt vedlikehold på denne enheten brannslukking." />
             ) : (
-              <ul className="divide-y divide-slate-100">
+              <ul className="divide-y divide-kant">
                 {utstyr.pmPlans.map((p) => (
                   <li key={p.id} className="px-5 py-2.5">
-                    <p className="text-sm font-medium text-slate-900">{p.name}</p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-sm font-medium text-tekst">{p.name}</p>
+                    <p className="text-xs text-tekst-svak">
                       {p.intervalDays ? `Hver ${p.intervalDays}. dag` : "Etter driftstimer"}
                       {p.nextDueAt && ` · neste ${dato(p.nextDueAt)}`}
                     </p>
@@ -317,8 +317,8 @@ export default async function UtstyrSide(props: PageProps<"/anlegg/[id]">) {
 function Rad({ navn, children }: { navn: string; children: React.ReactNode }) {
   return (
     <div className="flex justify-between gap-4">
-      <dt className="shrink-0 text-slate-500">{navn}</dt>
-      <dd className="text-right text-slate-900">{children}</dd>
+      <dt className="shrink-0 text-tekst-svak">{navn}</dt>
+      <dd className="text-right text-tekst">{children}</dd>
     </div>
   );
 }

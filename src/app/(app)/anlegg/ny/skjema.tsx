@@ -35,7 +35,7 @@ export function NyttUtstyrSkjema({
       {state.feil && (
         <div
           role="alert"
-          className="flex items-start gap-2 rounded-lg bg-red-50 px-3 py-2.5 text-sm text-red-800 ring-1 ring-red-200 ring-inset"
+          className="flex items-start gap-2 rounded-lg bg-red-50 dark:bg-red-500/15 px-3 py-2.5 text-sm text-red-800 dark:text-red-300 ring-1 ring-red-200 dark:ring-red-500/30 ring-inset"
         >
           <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
           <span>{state.feil}</span>

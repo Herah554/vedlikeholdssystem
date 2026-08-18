@@ -25,11 +25,11 @@ export function CardHeader({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4">
+    <div className="flex items-start justify-between gap-4 border-b border-kant px-5 py-4">
       <div className="min-w-0">
-        <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
+        <h2 className="text-sm font-semibold text-tekst">{title}</h2>
         {description && (
-          <p className="mt-0.5 text-sm text-slate-500">{description}</p>
+          <p className="mt-0.5 text-sm text-tekst-svak">{description}</p>
         )}
       </div>
       {action && <div className="shrink-0">{action}</div>}
@@ -54,7 +54,7 @@ export function Badge({
     <span
       className={cn(
         "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset whitespace-nowrap",
-        className ?? "bg-slate-100 text-slate-700 ring-slate-200",
+        className ?? "bg-flate-dempet text-tekst ring-kant",
       )}
     >
       {children}
@@ -68,10 +68,10 @@ const KNAPP_STIL = {
   primær:
     "bg-merke-600 text-white hover:bg-merke-700 focus-visible:outline-merke-600",
   sekundær:
-    "bg-white text-slate-700 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus-visible:outline-slate-400",
+    "bg-flate text-tekst ring-1 ring-inset ring-kant-sterk hover:bg-flate-hover focus-visible:outline-slate-400",
   fare: "bg-red-600 text-white hover:bg-red-700 focus-visible:outline-red-600",
   stille:
-    "text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-slate-400",
+    "text-tekst-svak hover:bg-flate-dempet hover:text-tekst focus-visible:outline-slate-400",
 } as const;
 
 const KNAPP_BASIS =
@@ -120,21 +120,21 @@ export function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-sm font-medium text-slate-700">
+      <span className="mb-1 block text-sm font-medium text-tekst">
         {label}
-        {required && <span className="ml-0.5 text-red-600">*</span>}
+        {required && <span className="ml-0.5 text-red-600 dark:text-red-400">*</span>}
       </span>
       {children}
-      {hint && !error && <span className="mt-1 block text-xs text-slate-500">{hint}</span>}
-      {error && <span className="mt-1 block text-xs text-red-600">{error}</span>}
+      {hint && !error && <span className="mt-1 block text-xs text-tekst-svak">{hint}</span>}
+      {error && <span className="mt-1 block text-xs text-red-600 dark:text-red-400">{error}</span>}
     </label>
   );
 }
 
 const FELT_STIL =
-  "block w-full rounded-lg border-0 bg-white px-3 py-2 text-sm text-slate-900 " +
-  "ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 " +
-  "focus:ring-2 focus:ring-inset focus:ring-merke-600 disabled:bg-slate-50 disabled:text-slate-500";
+  "block w-full rounded-lg border-0 bg-flate px-3 py-2 text-sm text-tekst " +
+  "ring-1 ring-inset ring-kant-sterk placeholder:text-tekst-svakest " +
+  "focus:ring-2 focus:ring-inset focus:ring-merke-600 disabled:bg-flate-hover disabled:text-tekst-svak";
 
 export function Input({ className, ...props }: ComponentProps<"input">) {
   return <input className={cn(FELT_STIL, className)} {...props} />;
@@ -165,7 +165,7 @@ export function Th({ className, ...props }: ComponentProps<"th">) {
   return (
     <th
       className={cn(
-        "border-b border-slate-200 px-4 py-2.5 text-xs font-semibold tracking-wide text-slate-500 uppercase",
+        "border-b border-kant px-4 py-2.5 text-xs font-semibold tracking-wide text-tekst-svak uppercase",
         className,
       )}
       {...props}
@@ -176,14 +176,14 @@ export function Th({ className, ...props }: ComponentProps<"th">) {
 export function Td({ className, ...props }: ComponentProps<"td">) {
   return (
     <td
-      className={cn("border-b border-slate-100 px-4 py-3 align-middle", className)}
+      className={cn("border-b border-kant px-4 py-3 align-middle", className)}
       {...props}
     />
   );
 }
 
 export function Tr({ className, ...props }: ComponentProps<"tr">) {
-  return <tr className={cn("hover:bg-slate-50", className)} {...props} />;
+  return <tr className={cn("hover:bg-flate-hover", className)} {...props} />;
 }
 
 // ─── Tomtilstand ──────────────────────────────────────────────
@@ -201,10 +201,10 @@ export function EmptyState({
 }) {
   return (
     <div className="flex flex-col items-center justify-center px-6 py-14 text-center">
-      {icon && <div className="mb-3 text-slate-300">{icon}</div>}
-      <p className="text-sm font-medium text-slate-900">{title}</p>
+      {icon && <div className="mb-3 text-tekst-svakest">{icon}</div>}
+      <p className="text-sm font-medium text-tekst">{title}</p>
       {description && (
-        <p className="mt-1 max-w-sm text-sm text-slate-500">{description}</p>
+        <p className="mt-1 max-w-sm text-sm text-tekst-svak">{description}</p>
       )}
       {action && <div className="mt-4">{action}</div>}
     </div>
@@ -227,25 +227,25 @@ export function StatCard({
   href?: string;
 }) {
   const toner = {
-    nøytral: "text-slate-900",
-    god: "text-emerald-600",
-    advarsel: "text-amber-600",
-    kritisk: "text-red-600",
+    nøytral: "text-tekst",
+    god: "text-emerald-600 dark:text-emerald-400",
+    advarsel: "text-amber-600 dark:text-amber-400",
+    kritisk: "text-red-600 dark:text-red-400",
   } as const;
 
   const innhold = (
     <>
-      <p className="text-sm font-medium text-slate-500">{label}</p>
+      <p className="text-sm font-medium text-tekst-svak">{label}</p>
       <p className={cn("mt-1.5 text-2xl font-semibold tabular-nums", toner[tone])}>
         {value}
       </p>
-      {sub && <p className="mt-1 text-xs text-slate-500">{sub}</p>}
+      {sub && <p className="mt-1 text-xs text-tekst-svak">{sub}</p>}
     </>
   );
 
   if (href) {
     return (
-      <Link href={href} className="kort block p-4 transition-colors hover:bg-slate-50">
+      <Link href={href} className="kort block p-4 transition-colors hover:bg-flate-hover">
         {innhold}
       </Link>
     );
@@ -267,8 +267,8 @@ export function PageHeader({
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 className="text-xl font-semibold text-slate-900">{title}</h1>
-        {description && <p className="mt-1 text-sm text-slate-500">{description}</p>}
+        <h1 className="text-xl font-semibold text-tekst">{title}</h1>
+        {description && <p className="mt-1 text-sm text-tekst-svak">{description}</p>}
       </div>
       {action}
     </div>

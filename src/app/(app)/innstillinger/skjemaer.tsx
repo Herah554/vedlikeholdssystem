@@ -12,6 +12,7 @@ import {
   opprettBruker,
   opprettBudsjett,
   opprettKostnadssted,
+  oppdaterOrganisasjon,
   settAktiv,
   type Resultat,
 } from "./actions";
@@ -19,7 +20,7 @@ import {
 function Tilbakemelding({ state }: { state: Resultat }) {
   if (state.feil) {
     return (
-      <p role="alert" className="flex items-start gap-1.5 text-sm text-red-700">
+      <p role="alert" className="flex items-start gap-1.5 text-sm text-red-700 dark:text-red-300">
         <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
         {state.feil}
       </p>
@@ -27,7 +28,7 @@ function Tilbakemelding({ state }: { state: Resultat }) {
   }
   if (state.melding) {
     return (
-      <p aria-live="polite" className="flex items-center gap-1.5 text-sm text-emerald-700">
+      <p aria-live="polite" className="flex items-center gap-1.5 text-sm text-emerald-700 dark:text-emerald-300">
         <Check className="size-4 shrink-0" aria-hidden />
         {state.melding}
       </p>
@@ -59,7 +60,7 @@ export function RolleVelger({
   const router = useRouter();
 
   if (!kanEndre) {
-    return <span className="text-sm text-slate-600">{ROLLE[rolle]}</span>;
+    return <span className="text-sm text-tekst-svak">{ROLLE[rolle]}</span>;
   }
 
   return (
@@ -96,7 +97,7 @@ export function AktivBryter({
   const router = useRouter();
 
   return (
-    <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-600">
+    <label className="flex cursor-pointer items-center gap-2 text-sm text-tekst-svak">
       <input
         type="checkbox"
         checked={aktiv}
@@ -108,7 +109,7 @@ export function AktivBryter({
             router.refresh();
           })
         }
-        className="size-4 rounded border-slate-300 text-merke-600 focus:ring-merke-600 disabled:opacity-40"
+        className="size-4 rounded border-kant-sterk text-aksent focus:ring-merke-600 disabled:opacity-40"
       />
       Aktiv
     </label>
@@ -195,7 +196,7 @@ export function NyBudsjettSkjema({
 
   if (kostnadssteder.length === 0) {
     return (
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-tekst-svak">
         Opprett et kostnadssted først — budsjettet knyttes til det.
       </p>
     );
@@ -232,6 +233,83 @@ export function NyBudsjettSkjema({
       </div>
       <Tilbakemelding state={state} />
       <Lagre tekst="Legg til budsjett" />
+    </form>
+  );
+}
+
+export function OrganisasjonSkjema({
+  organisasjon,
+}: {
+  organisasjon: {
+    name: string;
+    orgNumber: string | null;
+    hourlyRate: string;
+    email: string | null;
+    phone: string | null;
+    address: string | null;
+    postalCode: string | null;
+    city: string | null;
+  };
+}) {
+  const [state, action] = useActionState<Resultat, FormData>(
+    oppdaterOrganisasjon,
+    { ok: true },
+  );
+
+  return (
+    <form action={action} className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Firmanavn" required>
+          <Input name="name" defaultValue={organisasjon.name} required />
+        </Field>
+        <Field label="Organisasjonsnummer">
+          <Input
+            name="orgNumber"
+            defaultValue={organisasjon.orgNumber ?? ""}
+            placeholder="912345678"
+          />
+        </Field>
+      </div>
+
+      <Field
+        label="Standard timepris (kr)"
+        required
+        hint="Brukes for brukere som ikke har egen sats. Endringen gjelder bare nye timeføringer — historiske kostnader står som de er."
+      >
+        <Input
+          name="hourlyRate"
+          type="number"
+          min="0"
+          step="10"
+          defaultValue={organisasjon.hourlyRate}
+          required
+        />
+      </Field>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="E-post" hint="Avsender på bestillinger til leverandør">
+          <Input name="email" type="email" defaultValue={organisasjon.email ?? ""} />
+        </Field>
+        <Field label="Telefon">
+          <Input name="phone" defaultValue={organisasjon.phone ?? ""} />
+        </Field>
+      </div>
+
+      <Field label="Adresse" hint="Leveringsadresse på bestillinger">
+        <Input name="address" defaultValue={organisasjon.address ?? ""} />
+      </Field>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Postnummer">
+          <Input name="postalCode" defaultValue={organisasjon.postalCode ?? ""} />
+        </Field>
+        <Field label="Sted">
+          <Input name="city" defaultValue={organisasjon.city ?? ""} />
+        </Field>
+      </div>
+
+      <Tilbakemelding state={state} />
+      <Lagre tekst="Lagre organisasjon" />
     </form>
   );
 }

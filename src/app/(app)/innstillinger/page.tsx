@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { requireTenant } from "@/lib/auth";
 import { hasRole } from "@/lib/auth";
 import { BUDSJETT_KATEGORI, ROLLE_BESKRIVELSE } from "@/lib/domene";
@@ -19,6 +20,7 @@ import {
   NyBrukerSkjema,
   NyBudsjettSkjema,
   NyttKostnadsstedSkjema,
+  OrganisasjonSkjema,
   RolleVelger,
 } from "./skjemaer";
 
@@ -55,30 +57,52 @@ export default async function InnstillingerSide() {
 
       <div className="space-y-4">
         <Card>
-          <CardHeader title="Organisasjon" />
+          <CardHeader
+            title="Organisasjon"
+            description={
+              erAdmin
+                ? "Opplysningene brukes som avsender på bestillinger til leverandør"
+                : ROLLE_BESKRIVELSE[session.role]
+            }
+          />
           <CardBody>
-            <dl className="grid gap-3 text-sm sm:grid-cols-2">
-              <div>
-                <dt className="text-slate-500">Navn</dt>
-                <dd className="font-medium text-slate-900">{org?.name}</dd>
-              </div>
-              <div>
-                <dt className="text-slate-500">Organisasjonsnummer</dt>
-                <dd className="font-medium text-slate-900">{org?.orgNumber ?? "–"}</dd>
-              </div>
-              <div>
-                <dt className="text-slate-500">Standard timepris</dt>
-                <dd className="font-medium text-slate-900">
-                  {org ? kroner(toNumber(org.hourlyRate)) : "–"}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-slate-500">Din rolle</dt>
-                <dd className="font-medium text-slate-900">
-                  {ROLLE_BESKRIVELSE[session.role]}
-                </dd>
-              </div>
-            </dl>
+            {erAdmin && org ? (
+              <OrganisasjonSkjema
+                organisasjon={{
+                  name: org.name,
+                  orgNumber: org.orgNumber,
+                  hourlyRate: String(toNumber(org.hourlyRate)),
+                  email: org.email,
+                  phone: org.phone,
+                  address: org.address,
+                  postalCode: org.postalCode,
+                  city: org.city,
+                }}
+              />
+            ) : (
+              <dl className="grid gap-3 text-sm sm:grid-cols-2">
+                <div>
+                  <dt className="text-tekst-svak">Navn</dt>
+                  <dd className="font-medium text-tekst">{org?.name}</dd>
+                </div>
+                <div>
+                  <dt className="text-tekst-svak">Organisasjonsnummer</dt>
+                  <dd className="font-medium text-tekst">{org?.orgNumber ?? "–"}</dd>
+                </div>
+                <div>
+                  <dt className="text-tekst-svak">Standard timepris</dt>
+                  <dd className="font-medium text-tekst">
+                    {org ? kroner(toNumber(org.hourlyRate)) : "–"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-tekst-svak">Din rolle</dt>
+                  <dd className="font-medium text-tekst">
+                    {ROLLE_BESKRIVELSE[session.role]}
+                  </dd>
+                </div>
+              </dl>
+            )}
           </CardBody>
         </Card>
 
@@ -101,17 +125,26 @@ export default async function InnstillingerSide() {
               {brukere.map((b) => (
                 <Tr key={b.id} className={b.isActive ? undefined : "opacity-50"}>
                   <Td>
-                    <span className="text-sm font-medium text-slate-900">{b.name}</span>
-                    {b.id === session.userId && (
-                      <span className="ml-1.5 text-xs text-slate-400">(deg)</span>
+                    {erAdmin ? (
+                      <Link
+                        href={`/innstillinger/bruker/${b.id}`}
+                        className="text-sm font-medium text-tekst hover:text-aksent"
+                      >
+                        {b.name}
+                      </Link>
+                    ) : (
+                      <span className="text-sm font-medium text-tekst">{b.name}</span>
                     )}
-                    <div className="text-xs text-slate-500 sm:hidden">{b.email}</div>
+                    {b.id === session.userId && (
+                      <span className="ml-1.5 text-xs text-tekst-svakest">(deg)</span>
+                    )}
+                    <div className="text-xs text-tekst-svak sm:hidden">{b.email}</div>
                   </Td>
-                  <Td className="hidden text-sm text-slate-600 sm:table-cell">{b.email}</Td>
+                  <Td className="hidden text-sm text-tekst-svak sm:table-cell">{b.email}</Td>
                   <Td>
                     <RolleVelger brukerId={b.id} rolle={b.role} kanEndre={erAdmin} />
                   </Td>
-                  <Td className="hidden text-sm whitespace-nowrap text-slate-500 lg:table-cell">
+                  <Td className="hidden text-sm whitespace-nowrap text-tekst-svak lg:table-cell">
                     {b.lastLoginAt ? datoTid(b.lastLoginAt) : "aldri"}
                   </Td>
                   <Td>
@@ -148,15 +181,15 @@ export default async function InnstillingerSide() {
                 <tbody>
                   {kostnadssteder.map((k) => (
                     <Tr key={k.id}>
-                      <Td className="w-20 font-mono text-xs text-slate-500">{k.code}</Td>
-                      <Td className="text-sm text-slate-900">{k.name}</Td>
+                      <Td className="w-20 font-mono text-xs text-tekst-svak">{k.code}</Td>
+                      <Td className="text-sm text-tekst">{k.name}</Td>
                     </Tr>
                   ))}
                 </tbody>
               </Table>
             )}
             {erLeder && (
-              <CardBody className="border-t border-slate-100">
+              <CardBody className="border-t border-kant">
                 <NyttKostnadsstedSkjema />
               </CardBody>
             )}
@@ -179,13 +212,13 @@ export default async function InnstillingerSide() {
                   {budsjetter.map((b) => (
                     <Tr key={b.id}>
                       <Td>
-                        <span className="text-sm text-slate-900">{b.name}</span>
-                        <div className="text-xs text-slate-500">
+                        <span className="text-sm text-tekst">{b.name}</span>
+                        <div className="text-xs text-tekst-svak">
                           {b.costCenter ? `${b.costCenter.code} ` : ""}
                           {BUDSJETT_KATEGORI[b.category]}
                         </div>
                       </Td>
-                      <Td className="hidden text-sm text-slate-600 sm:table-cell">{b.year}</Td>
+                      <Td className="hidden text-sm text-tekst-svak sm:table-cell">{b.year}</Td>
                       <Td className="text-right text-sm tabular-nums">
                         {kroner(toNumber(b.amount))}
                       </Td>
@@ -195,7 +228,7 @@ export default async function InnstillingerSide() {
               </Table>
             )}
             {erLeder && (
-              <CardBody className="border-t border-slate-100">
+              <CardBody className="border-t border-kant">
                 <NyBudsjettSkjema
                   kostnadssteder={kostnadssteder.map((k) => ({
                     id: k.id,

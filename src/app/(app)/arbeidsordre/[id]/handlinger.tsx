@@ -15,7 +15,7 @@ function Feil({ melding }: { melding?: string }) {
   return (
     <p
       role="alert"
-      className="flex items-start gap-1.5 text-sm text-red-700"
+      className="flex items-start gap-1.5 text-sm text-red-700 dark:text-red-300"
     >
       <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
       {melding}
@@ -50,7 +50,7 @@ export function StatusKnapper({
 
   if (muligeSteg.length === 0) {
     return (
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-tekst-svak">
         Ordren er {ORDRE_STATUS[nåværende].tekst.toLowerCase()} og kan ikke
         endres videre.
       </p>
@@ -135,7 +135,7 @@ export function DeleSkjema({
 
   if (deler.length === 0) {
     return (
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-tekst-svak">
         Ingen reservedeler er registrert ennå.
       </p>
     );
@@ -217,7 +217,7 @@ export function LosningSkjema({
       <div className="flex items-center gap-3">
         <Lagre tekst="Lagre løsning" ikon={<Check className="size-4" aria-hidden />} />
         {state.ok && state.feil === undefined && (
-          <span className="text-sm text-emerald-600" aria-live="polite" />
+          <span className="text-sm text-emerald-600 dark:text-emerald-400" aria-live="polite" />
         )}
       </div>
     </form>
@@ -264,7 +264,7 @@ export function Sjekkliste({
     <ul className="space-y-1">
       {punkter.map((p) => (
         <li key={p.id}>
-          <label className="flex cursor-pointer items-start gap-2.5 rounded-lg px-2 py-1.5 hover:bg-slate-50">
+          <label className="flex cursor-pointer items-start gap-2.5 rounded-lg px-2 py-1.5 hover:bg-flate-hover">
             <input
               type="checkbox"
               checked={p.isDone}
@@ -275,11 +275,11 @@ export function Sjekkliste({
                   router.refresh();
                 })
               }
-              className="mt-0.5 size-4 rounded border-slate-300 text-merke-600 focus:ring-merke-600"
+              className="mt-0.5 size-4 rounded border-kant-sterk text-aksent focus:ring-merke-600"
             />
             <span
               className={
-                p.isDone ? "text-sm text-slate-400 line-through" : "text-sm text-slate-700"
+                p.isDone ? "text-sm text-tekst-svakest line-through" : "text-sm text-tekst"
               }
             >
               {p.text}

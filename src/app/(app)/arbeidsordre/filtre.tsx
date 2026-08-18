@@ -60,7 +60,7 @@ export function Filtre({ verdier }: { verdier: Verdier }) {
         className="relative min-w-56 flex-1"
       >
         <Search
-          className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400"
+          className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-tekst-svakest"
           aria-hidden
         />
         <input
@@ -69,7 +69,7 @@ export function Filtre({ verdier }: { verdier: Verdier }) {
           defaultValue={verdier.sok}
           placeholder="Søk i tittel, beskrivelse og løsning …"
           aria-label="Søk i arbeidsordre"
-          className="w-full rounded-lg border-0 bg-white py-2 pr-3 pl-9 text-sm ring-1 ring-slate-300 ring-inset placeholder:text-slate-400 focus:ring-2 focus:ring-merke-600 focus:outline-none"
+          className="w-full rounded-lg border-0 bg-flate py-2 pr-3 pl-9 text-sm ring-1 ring-kant-sterk ring-inset placeholder:text-tekst-svakest focus:ring-2 focus:ring-merke-600 focus:outline-none"
         />
       </form>
 
@@ -109,22 +109,22 @@ export function Filtre({ verdier }: { verdier: Verdier }) {
         ))}
       </Select>
 
-      <label className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-slate-700 hover:bg-slate-50">
+      <label className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-tekst hover:bg-flate-hover">
         <input
           type="checkbox"
           checked={verdier.mine}
           onChange={(e) => oppdater({ mine: e.target.checked ? "1" : null })}
-          className="size-4 rounded border-slate-300 text-merke-600 focus:ring-merke-600"
+          className="size-4 rounded border-kant-sterk text-aksent focus:ring-merke-600"
         />
         Mine
       </label>
 
-      <label className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-slate-700 hover:bg-slate-50">
+      <label className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-tekst hover:bg-flate-hover">
         <input
           type="checkbox"
           checked={verdier.apne}
           onChange={(e) => oppdater({ apne: e.target.checked ? "1" : null })}
-          className="size-4 rounded border-slate-300 text-merke-600 focus:ring-merke-600"
+          className="size-4 rounded border-kant-sterk text-aksent focus:ring-merke-600"
         />
         Kun åpne
       </label>
@@ -133,7 +133,7 @@ export function Filtre({ verdier }: { verdier: Verdier }) {
         <button
           type="button"
           onClick={() => router.push("/arbeidsordre")}
-          className="flex items-center gap-1 rounded-lg px-2 py-2 text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+          className="flex items-center gap-1 rounded-lg px-2 py-2 text-sm text-tekst-svak hover:bg-flate-dempet hover:text-tekst"
         >
           <X className="size-4" aria-hidden />
           Nullstill

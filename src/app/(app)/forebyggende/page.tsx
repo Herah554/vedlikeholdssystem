@@ -75,7 +75,7 @@ export default async function ForebyggendeSide() {
 
       <Card className="mb-4">
         <CardBody>
-          <p className="mb-3 text-sm text-slate-600">
+          <p className="mb-3 text-sm text-tekst-svak">
             Kjør denne når du planlegger uka. Systemet oppretter arbeidsordre for
             alle planer som forfaller innenfor varslingstiden sin, og hopper over
             dem som allerede har en åpen jobb.
@@ -107,36 +107,36 @@ export default async function ForebyggendeSide() {
             return (
               <Card
                 key={p.id}
-                className={erForfalt ? "border-red-200 bg-red-50/40" : undefined}
+                className={erForfalt ? "border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/15/40" : undefined}
               >
                 <CardBody className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-medium text-slate-900">{p.name}</h3>
+                      <h3 className="font-medium text-tekst">{p.name}</h3>
                       <Badge className={PRIORITET[p.priority].klasse}>
                         {PRIORITET[p.priority].tekst}
                       </Badge>
                       {erForfalt && (
-                        <Badge className="bg-red-100 text-red-800 ring-red-200">
+                        <Badge className="bg-red-100 dark:bg-red-500/15 text-red-800 dark:text-red-300 ring-red-200 dark:ring-red-500/30">
                           Forfalt {relativTid(p.nextDueAt)}
                         </Badge>
                       )}
                       {!p.isActive && <Badge>Deaktivert</Badge>}
                     </div>
 
-                    <p className="mt-1 text-sm text-slate-600">
+                    <p className="mt-1 text-sm text-tekst-svak">
                       <Link
                         href={`/anlegg/${p.asset.id}`}
-                        className="text-merke-600 hover:text-merke-700"
+                        className="text-aksent hover:text-aksent"
                       >
                         {p.asset.code} — {p.asset.name}
                       </Link>
                     </p>
 
-                    <dl className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-xs text-slate-500">
+                    <dl className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-xs text-tekst-svak">
                       <div>
                         <dt className="inline">Utløser: </dt>
-                        <dd className="inline text-slate-700">
+                        <dd className="inline text-tekst">
                           {p.trigger === "TID"
                             ? `Hver ${p.intervalDays}. dag`
                             : `Hver ${tall(p.intervalHours ?? 0)}. driftstime`}
@@ -145,34 +145,34 @@ export default async function ForebyggendeSide() {
                       {p.trigger === "TID" ? (
                         <div>
                           <dt className="inline">Neste: </dt>
-                          <dd className="inline text-slate-700">
+                          <dd className="inline text-tekst">
                             {p.nextDueAt ? dato(p.nextDueAt) : "ikke satt"}
                           </dd>
                         </div>
                       ) : (
                         <div>
                           <dt className="inline">Siden sist: </dt>
-                          <dd className="inline text-slate-700">
+                          <dd className="inline text-tekst">
                             {tall(sidenSist)} av {tall(p.intervalHours ?? 0)} timer
                           </dd>
                         </div>
                       )}
                       <div>
                         <dt className="inline">Sist utført: </dt>
-                        <dd className="inline text-slate-700">
+                        <dd className="inline text-tekst">
                           {p.lastDoneAt ? dato(p.lastDoneAt) : "aldri"}
                         </dd>
                       </div>
                       {p.estimatedHours && (
                         <div>
                           <dt className="inline">Anslag: </dt>
-                          <dd className="inline text-slate-700">{timer(p.estimatedHours)}</dd>
+                          <dd className="inline text-tekst">{timer(p.estimatedHours)}</dd>
                         </div>
                       )}
                       {p.assignedTo && (
                         <div>
                           <dt className="inline">Ansvarlig: </dt>
-                          <dd className="inline text-slate-700">{p.assignedTo.name}</dd>
+                          <dd className="inline text-tekst">{p.assignedTo.name}</dd>
                         </div>
                       )}
                     </dl>
@@ -181,7 +181,7 @@ export default async function ForebyggendeSide() {
                       <p className="mt-2 text-xs">
                         <Link
                           href={`/arbeidsordre/${p.workOrders[0].id}`}
-                          className="text-merke-600 hover:text-merke-700"
+                          className="text-aksent hover:text-aksent"
                         >
                           Har allerede en åpen arbeidsordre →
                         </Link>

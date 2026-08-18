@@ -27,6 +27,15 @@ model Organization {
   /// Standard timepris brukt når bruker mangler egen sats
   hourlyRate Decimal @default(950) @db.Decimal(10, 2)
   currency  String   @default("NOK")
+
+  /// Kontaktopplysninger. Brukes som avsender og leveringsadresse i
+  /// bestillinger som sendes til leverandør.
+  email      String?
+  phone      String?
+  address    String?
+  postalCode String?
+  city       String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -45,8 +54,9 @@ model Organization {
   stockMoves    StockMovement[]
   comments      Comment[]
   attachments   Attachment[]
-  auditLogs     AuditLog[]
-  counters      Counter[]
+  auditLogs      AuditLog[]
+  counters       Counter[]
+  purchaseOrders PurchaseOrder[]
 
   @@map("organizations")
 }
@@ -74,9 +84,10 @@ model User {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  organization      Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  requestedOrders   WorkOrder[]    @relation("Melder")
-  assignedOrders    WorkOrder[]    @relation("Tildelt")
+  organization      Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  requestedOrders   WorkOrder[]     @relation("Melder")
+  assignedOrders    WorkOrder[]     @relation("Tildelt")
+  purchaseOrders    PurchaseOrder[]
   pmPlans           PmPlan[]
   timeEntries       TimeEntry[]
   stockMoves        StockMovement[]
@@ -300,8 +311,9 @@ model Supplier {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  parts        Part[]
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  parts          Part[]
+  purchaseOrders PurchaseOrder[]
 
   @@unique([organizationId, name])
   @@index([organizationId])
@@ -334,9 +346,10 @@ model Part {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   supplier     Supplier?    @relation(fields: [supplierId], references: [id], onDelete: SetNull)
 
-  usages    PartUsage[]
-  movements StockMovement[]
-  assets    AssetPart[]
+  usages         PartUsage[]
+  movements      StockMovement[]
+  assets         AssetPart[]
+  purchaseLines  PurchaseOrderLine[]
 
   @@unique([organizationId, number])
   @@index([organizationId])
@@ -399,17 +412,92 @@ model StockMovement {
   quantity       Float
   unitCost       Decimal?          @db.Decimal(12, 2)
   workOrderId    String?
+  /// Satt når bevegelsen kom av at en bestilling ble mottatt
+  purchaseOrderId String?
   userId         String?
   note           String?
   createdAt      DateTime          @default(now())
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  part         Part         @relation(fields: [partId], references: [id], onDelete: Cascade)
-  workOrder    WorkOrder?   @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
-  user         User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  part          Part           @relation(fields: [partId], references: [id], onDelete: Cascade)
+  workOrder     WorkOrder?     @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
+  purchaseOrder PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id], onDelete: SetNull)
+  user          User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([organizationId, partId, createdAt])
   @@map("stock_movements")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Bestillinger til leverandør
+// ─────────────────────────────────────────────────────────────
+
+enum PurchaseOrderStatus {
+  UTKAST // laget, men ikke sendt
+  SENDT
+  DELVIS_MOTTATT
+  MOTTATT
+  KANSELLERT
+}
+
+/// En bestilling går alltid til én leverandør. Skal flere leverandører
+/// leveres deler samtidig, lages det én bestilling per leverandør — det er
+/// slik en innkjøper faktisk jobber, og slik leverandøren vil ha det.
+model PurchaseOrder {
+  id             String              @id @default(cuid())
+  organizationId String
+  /// Løpenummer per organisasjon, vises som BE-0042
+  number         Int
+  supplierId     String
+  status         PurchaseOrderStatus @default(UTKAST)
+  createdById    String
+
+  /// Deres referanse eller rekvisisjonsnummer hos leverandøren
+  reference   String?
+  note        String?
+  expectedAt  DateTime?
+
+  /// Adressen bestillingen faktisk ble sendt til, lagret som dokumentasjon
+  sentToEmail String?
+  /// "smtp" når systemet sendte den selv, "manuell" når brukeren sendte
+  /// den fra sin egen e-postklient
+  sentMethod  String?
+  sentAt      DateTime?
+  receivedAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  supplier     Supplier            @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  createdBy    User                @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  lines        PurchaseOrderLine[]
+  movements    StockMovement[]
+
+  @@unique([organizationId, number])
+  @@index([organizationId, status])
+  @@index([organizationId, supplierId])
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderLine {
+  id              String  @id @default(cuid())
+  purchaseOrderId String
+  partId          String
+  quantity        Float
+  /// Pris kopieres inn ved bestilling, så senere prisendringer ikke
+  /// omskriver hva denne bestillingen kostet
+  unitCost        Decimal @db.Decimal(12, 2)
+  /// Hvor mye som faktisk er mottatt. Delleveranser er normalt.
+  receivedQuantity Float  @default(0)
+  note            String?
+
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  part          Part          @relation(fields: [partId], references: [id], onDelete: Restrict)
+
+  @@unique([purchaseOrderId, partId])
+  @@index([partId])
+  @@map("purchase_order_lines")
 }
 
 // ─────────────────────────────────────────────────────────────

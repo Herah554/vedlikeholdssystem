@@ -100,19 +100,19 @@ export default async function RapporterSide() {
                     <Td>
                       <Link
                         href={`/anlegg/${k.id}`}
-                        className="text-sm font-medium text-slate-900 hover:text-merke-600"
+                        className="text-sm font-medium text-tekst hover:text-aksent"
                       >
-                        <span className="font-mono text-xs text-slate-500">{k.kode}</span>{" "}
+                        <span className="font-mono text-xs text-tekst-svak">{k.kode}</span>{" "}
                         {k.navn}
                       </Link>
                     </Td>
-                    <Td className="text-right text-sm text-slate-600 tabular-nums">
+                    <Td className="text-right text-sm text-tekst-svak tabular-nums">
                       {k.antallOrdrer}
                     </Td>
-                    <Td className="hidden text-right text-sm text-slate-600 tabular-nums sm:table-cell">
+                    <Td className="hidden text-right text-sm text-tekst-svak tabular-nums sm:table-cell">
                       {kroner(k.arbeid)}
                     </Td>
-                    <Td className="hidden text-right text-sm text-slate-600 tabular-nums sm:table-cell">
+                    <Td className="hidden text-right text-sm text-tekst-svak tabular-nums sm:table-cell">
                       {kroner(k.deler)}
                     </Td>
                     <Td className="text-right text-sm font-medium tabular-nums">
@@ -157,14 +157,14 @@ export default async function RapporterSide() {
                       return (
                         <li key={f.type}>
                           <div className="mb-1 flex items-baseline justify-between text-sm">
-                            <span className="font-medium text-slate-700">
+                            <span className="font-medium text-tekst">
                               {ORDRE_TYPE[f.type].tekst}
                             </span>
-                            <span className="text-slate-500 tabular-nums">
+                            <span className="text-tekst-svak tabular-nums">
                               {f.antall} stk · {andel} %
                             </span>
                           </div>
-                          <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                          <div className="h-2 overflow-hidden rounded-full bg-flate-dempet">
                             <div
                               className={`h-full rounded-full ${
                                 f.type === "FOREBYGGENDE"
@@ -181,7 +181,7 @@ export default async function RapporterSide() {
                     })}
                 </ul>
               )}
-              <p className="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500">
+              <p className="mt-4 border-t border-kant pt-3 text-xs text-tekst-svak">
                 Et anlegg med god kontroll ligger typisk over 60 % forebyggende.
                 Er andelen lav, går tiden med til brannslukking.
               </p>
@@ -210,13 +210,13 @@ export default async function RapporterSide() {
                       <Td>
                         <Link
                           href={`/reservedeler/${d.id}`}
-                          className="text-sm text-slate-900 hover:text-merke-600"
+                          className="text-sm text-tekst hover:text-aksent"
                         >
-                          <span className="font-mono text-xs text-slate-500">{d.nummer}</span>{" "}
+                          <span className="font-mono text-xs text-tekst-svak">{d.nummer}</span>{" "}
                           {d.navn}
                         </Link>
                       </Td>
-                      <Td className="text-right text-sm text-slate-600 tabular-nums">
+                      <Td className="text-right text-sm text-tekst-svak tabular-nums">
                         {tall(d.forbruk)} {d.enhet}
                       </Td>
                       <Td className="text-right text-sm font-medium tabular-nums">

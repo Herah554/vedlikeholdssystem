@@ -34,7 +34,7 @@ function Formatert({ tekst }: { tekst: string }) {
     <div className="space-y-2.5">
       {blokker.map((blokk, i) => {
         if (/^-{3,}$/.test(blokk.trim())) {
-          return <hr key={i} className="border-slate-200" />;
+          return <hr key={i} className="border-kant" />;
         }
 
         const linjer = blokk.split("\n");
@@ -46,7 +46,7 @@ function Formatert({ tekst }: { tekst: string }) {
               {linjer
                 .filter((l) => l.trim())
                 .map((l, j) => (
-                  <li key={j} className="text-sm leading-relaxed text-slate-700">
+                  <li key={j} className="text-sm leading-relaxed text-tekst">
                     <Utheving tekst={l.replace(/^\s*[-*•]\s+/, "")} />
                   </li>
                 ))}
@@ -55,7 +55,7 @@ function Formatert({ tekst }: { tekst: string }) {
         }
 
         return (
-          <p key={i} className="text-sm leading-relaxed whitespace-pre-wrap text-slate-700">
+          <p key={i} className="text-sm leading-relaxed whitespace-pre-wrap text-tekst">
             <Utheving tekst={blokk} />
           </p>
         );
@@ -73,7 +73,7 @@ function Utheving({ tekst }: { tekst: string }) {
       {deler.map((del, i) => {
         if (del.startsWith("**") && del.endsWith("**")) {
           return (
-            <strong key={i} className="font-semibold text-slate-900">
+            <strong key={i} className="font-semibold text-tekst">
               {del.slice(2, -2)}
             </strong>
           );
@@ -82,7 +82,7 @@ function Utheving({ tekst }: { tekst: string }) {
           return (
             <code
               key={i}
-              className="rounded bg-slate-100 px-1 py-0.5 font-mono text-xs text-slate-800"
+              className="rounded bg-flate-dempet px-1 py-0.5 font-mono text-xs text-tekst"
             >
               {del.slice(1, -1)}
             </code>
@@ -90,7 +90,7 @@ function Utheving({ tekst }: { tekst: string }) {
         }
         if (del.startsWith("_") && del.endsWith("_") && del.length > 2) {
           return (
-            <em key={i} className="text-slate-500">
+            <em key={i} className="text-tekst-svak">
               {del.slice(1, -1)}
             </em>
           );
@@ -167,14 +167,14 @@ export function Chat({
         {meldinger.length === 0 && (
           <div className="kort p-6">
             <div className="mb-4 flex items-center gap-2.5">
-              <div className="flex size-9 items-center justify-center rounded-lg bg-merke-50 text-merke-600">
+              <div className="flex size-9 items-center justify-center rounded-lg bg-merke-50 text-aksent">
                 <Sparkles className="size-4" aria-hidden />
               </div>
               <div>
-                <p className="text-sm font-semibold text-slate-900">
+                <p className="text-sm font-semibold text-tekst">
                   Spør om hva som helst i anlegget
                 </p>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-tekst-svak">
                   Jeg leter gjennom alle arbeidsordrene deres og finner hva som
                   løste liknende feil sist.
                 </p>
@@ -187,7 +187,7 @@ export function Chat({
                   key={f}
                   type="button"
                   onClick={() => send(f)}
-                  className="rounded-lg border border-slate-200 px-3 py-2.5 text-left text-sm text-slate-700 transition-colors hover:border-merke-300 hover:bg-merke-50"
+                  className="rounded-lg border border-kant px-3 py-2.5 text-left text-sm text-tekst transition-colors hover:border-merke-500 hover:bg-merke-50"
                 >
                   {f}
                 </button>
@@ -203,14 +203,14 @@ export function Chat({
                 <div className="rounded-2xl rounded-tr-sm bg-merke-600 px-4 py-2.5 text-sm text-white">
                   {m.tekst}
                 </div>
-                <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-600">
+                <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-flate-dempet text-tekst-svak">
                   <User className="size-3.5" aria-hidden />
                 </div>
               </div>
             </div>
           ) : (
             <div key={m.id} className="flex items-start gap-2.5">
-              <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-merke-100 text-merke-700">
+              <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-merke-100 text-aksent">
                 <Sparkles className="size-3.5" aria-hidden />
               </div>
               <div className="min-w-0 flex-1">
@@ -224,7 +224,7 @@ export function Chat({
                       <Link
                         key={k.id}
                         href={`/arbeidsordre/${k.id}`}
-                        className="inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-xs text-slate-600 ring-1 ring-slate-200 ring-inset transition-colors hover:bg-slate-50 hover:text-merke-700"
+                        className="inline-flex items-center gap-1.5 rounded-full bg-flate px-2.5 py-1 text-xs text-tekst-svak ring-1 ring-kant ring-inset transition-colors hover:bg-flate-hover hover:text-aksent"
                       >
                         <ClipboardList className="size-3" aria-hidden />
                         <span className="font-mono">{ordreNummer(k.nummer)}</span>
@@ -240,11 +240,11 @@ export function Chat({
 
         {venter && (
           <div className="flex items-start gap-2.5">
-            <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-merke-100 text-merke-700">
+            <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-merke-100 text-aksent">
               <Sparkles className="size-3.5 animate-pulse" aria-hidden />
             </div>
             <div className="kort px-4 py-3">
-              <p className="text-sm text-slate-500" aria-live="polite">
+              <p className="text-sm text-tekst-svak" aria-live="polite">
                 Leter gjennom historikken …
               </p>
             </div>
@@ -254,7 +254,7 @@ export function Chat({
         {feil && (
           <div
             role="alert"
-            className="flex items-start gap-2 rounded-lg bg-red-50 px-3 py-2.5 text-sm text-red-800 ring-1 ring-red-200 ring-inset"
+            className="flex items-start gap-2 rounded-lg bg-red-50 dark:bg-red-500/15 px-3 py-2.5 text-sm text-red-800 dark:text-red-300 ring-1 ring-red-200 dark:ring-red-500/30 ring-inset"
           >
             <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
             <span>{feil}</span>
@@ -284,7 +284,7 @@ export function Chat({
           rows={1}
           placeholder="Beskriv feilen, eller spør om utstyr, deler og historikk …"
           aria-label="Melding til assistenten"
-          className="max-h-40 min-h-10 flex-1 resize-none border-0 bg-transparent px-2 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:ring-0 focus:outline-none"
+          className="max-h-40 min-h-10 flex-1 resize-none border-0 bg-transparent px-2 py-2 text-sm text-tekst placeholder:text-tekst-svakest focus:ring-0 focus:outline-none"
         />
         <button
           type="submit"

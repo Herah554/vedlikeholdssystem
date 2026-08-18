@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { assertRole, hashPassword, requireTenant } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
 export type Resultat = { ok: boolean; feil?: string; melding?: string };
 
@@ -143,4 +144,140 @@ export async function opprettBudsjett(
   revalidatePath("/innstillinger");
   revalidatePath("/budsjett");
   return { ok: true, melding: "Budsjettlinjen er lagt inn." };
+}
+
+// ─── Redigering av eksisterende brukere ──────────────────────
+
+const redigerBrukerSkjema = z.object({
+  name: z.string().trim().min(2, "Navnet må ha minst to tegn."),
+  email: z.email("Skriv inn en gyldig e-postadresse."),
+  role: z.enum(["ADMIN", "LEDER", "PLANLEGGER", "TEKNIKER", "GJEST"]),
+  phone: z.string().trim().optional(),
+  hourlyRate: z.string().trim().optional(),
+});
+
+export async function oppdaterBruker(
+  brukerId: string,
+  _forrige: Resultat,
+  formData: FormData,
+): Promise<Resultat> {
+  const { db, session } = await requireTenant();
+  assertRole(session.role, "ADMIN");
+
+  const parsed = redigerBrukerSkjema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { ok: false, feil: parsed.error.issues[0].message };
+  const d = parsed.data;
+
+  const bruker = await db.user.findFirst({ where: { id: brukerId } });
+  if (!bruker) return { ok: false, feil: "Fant ikke brukeren." };
+
+  const epost = d.email.toLowerCase();
+  if (epost !== bruker.email) {
+    const opptatt = await db.user.findFirst({ where: { email: epost } });
+    if (opptatt) return { ok: false, feil: `${epost} er allerede i bruk.` };
+  }
+
+  // Samme sperre som ved rollebytte: siste administrator må ikke kunne
+  // degradere seg selv og låse organisasjonen ute.
+  if (brukerId === session.userId && d.role !== "ADMIN") {
+    const antallAdmin = await db.user.count({ where: { role: "ADMIN", isActive: true } });
+    if (antallAdmin <= 1) {
+      return {
+        ok: false,
+        feil: "Du er eneste administrator. Gi noen andre admin-rollen først.",
+      };
+    }
+  }
+
+  const sats = d.hourlyRate ? Number(d.hourlyRate) : null;
+
+  await db.user.updateMany({
+    where: { id: brukerId },
+    data: {
+      name: d.name,
+      email: epost,
+      role: d.role,
+      phone: d.phone || null,
+      hourlyRate: sats != null && !Number.isNaN(sats) ? sats : null,
+    },
+  });
+
+  revalidatePath("/innstillinger");
+  revalidatePath(`/innstillinger/bruker/${brukerId}`);
+  return { ok: true, melding: "Brukeren er oppdatert." };
+}
+
+export async function nullstillPassord(
+  brukerId: string,
+  _forrige: Resultat,
+  formData: FormData,
+): Promise<Resultat> {
+  const { db, session } = await requireTenant();
+  assertRole(session.role, "ADMIN");
+
+  const passord = String(formData.get("password") ?? "");
+  if (passord.length < 8) {
+    return { ok: false, feil: "Passordet må ha minst åtte tegn." };
+  }
+
+  const bruker = await db.user.findFirst({ where: { id: brukerId } });
+  if (!bruker) return { ok: false, feil: "Fant ikke brukeren." };
+
+  await db.user.updateMany({
+    where: { id: brukerId },
+    data: { passwordHash: await hashPassword(passord) },
+  });
+
+  return {
+    ok: true,
+    melding: `Passordet er byttet. Gi det til ${bruker.name} på en trygg måte.`,
+  };
+}
+
+// ─── Organisasjonen ──────────────────────────────────────────
+
+const orgSkjema = z.object({
+  name: z.string().trim().min(2, "Navnet må ha minst to tegn."),
+  orgNumber: z.string().trim().optional(),
+  hourlyRate: z.coerce.number().min(0, "Timeprisen kan ikke være negativ."),
+  email: z.string().trim().optional(),
+  phone: z.string().trim().optional(),
+  address: z.string().trim().optional(),
+  postalCode: z.string().trim().optional(),
+  city: z.string().trim().optional(),
+});
+
+/**
+ * Oppdaterer organisasjonen brukeren tilhører.
+ *
+ * Merk at id-en aldri kommer fra skjemaet — den leses fra sesjonen. Ellers
+ * kunne en administrator i ett firma endret navnet på et annet.
+ */
+export async function oppdaterOrganisasjon(
+  _forrige: Resultat,
+  formData: FormData,
+): Promise<Resultat> {
+  const { session } = await requireTenant();
+  assertRole(session.role, "ADMIN");
+
+  const parsed = orgSkjema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { ok: false, feil: parsed.error.issues[0].message };
+  const d = parsed.data;
+
+  await prisma.organization.update({
+    where: { id: session.organizationId },
+    data: {
+      name: d.name,
+      orgNumber: d.orgNumber || null,
+      hourlyRate: d.hourlyRate,
+      email: d.email || null,
+      phone: d.phone || null,
+      address: d.address || null,
+      postalCode: d.postalCode || null,
+      city: d.city || null,
+    },
+  });
+
+  revalidatePath("/innstillinger");
+  return { ok: true, melding: "Organisasjonen er oppdatert." };
 }

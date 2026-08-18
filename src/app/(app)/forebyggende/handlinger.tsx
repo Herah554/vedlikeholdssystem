@@ -31,7 +31,7 @@ export function GenererKnapp() {
       {svar && (
         <span
           aria-live="polite"
-          className={`text-sm ${svar.ok ? "text-emerald-700" : "text-red-700"}`}
+          className={`text-sm ${svar.ok ? "text-emerald-700 dark:text-emerald-300" : "text-red-700 dark:text-red-300"}`}
         >
           {svar.melding ?? svar.feil}
         </span>
@@ -72,7 +72,7 @@ export function AktivBryter({
   const router = useRouter();
 
   return (
-    <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-600">
+    <label className="flex cursor-pointer items-center gap-2 text-sm text-tekst-svak">
       <input
         type="checkbox"
         checked={aktiv}
@@ -83,7 +83,7 @@ export function AktivBryter({
             router.refresh();
           })
         }
-        className="size-4 rounded border-slate-300 text-merke-600 focus:ring-merke-600"
+        className="size-4 rounded border-kant-sterk text-aksent focus:ring-merke-600"
       />
       Aktiv
     </label>

@@ -140,15 +140,15 @@ export default async function ArbeidsordreSide(props: PageProps<"/arbeidsordre">
             <tbody>
               {sortert.map((o) => (
                 <Tr key={o.id}>
-                  <Td className="font-mono text-xs text-slate-500">
-                    <Link href={`/arbeidsordre/${o.id}`} className="hover:text-merke-600">
+                  <Td className="font-mono text-xs text-tekst-svak">
+                    <Link href={`/arbeidsordre/${o.id}`} className="hover:text-aksent">
                       {ordreNummer(o.number)}
                     </Link>
                   </Td>
                   <Td>
                     <Link
                       href={`/arbeidsordre/${o.id}`}
-                      className="font-medium text-slate-900 hover:text-merke-600"
+                      className="font-medium text-tekst hover:text-aksent"
                     >
                       {o.title}
                     </Link>
@@ -156,20 +156,20 @@ export default async function ArbeidsordreSide(props: PageProps<"/arbeidsordre">
                       <Badge className={ORDRE_TYPE[o.type].klasse}>
                         {ORDRE_TYPE[o.type].tekst}
                       </Badge>
-                      <span className="text-xs text-slate-400">
+                      <span className="text-xs text-tekst-svakest">
                         {relativTid(o.createdAt)}
                       </span>
                     </div>
                   </Td>
-                  <Td className="hidden text-sm text-slate-600 md:table-cell">
+                  <Td className="hidden text-sm text-tekst-svak md:table-cell">
                     {o.asset ? (
                       <span className="whitespace-nowrap">
                         <span className="font-mono text-xs">{o.asset.code}</span>
                         <br />
-                        <span className="text-xs text-slate-500">{o.asset.name}</span>
+                        <span className="text-xs text-tekst-svak">{o.asset.name}</span>
                       </span>
                     ) : (
-                      <span className="text-slate-400">–</span>
+                      <span className="text-tekst-svakest">–</span>
                     )}
                   </Td>
                   <Td>
@@ -182,22 +182,22 @@ export default async function ArbeidsordreSide(props: PageProps<"/arbeidsordre">
                       {PRIORITET[o.priority].tekst}
                     </Badge>
                   </Td>
-                  <Td className="hidden text-sm text-slate-600 lg:table-cell">
-                    {o.assignedTo?.name ?? <span className="text-slate-400">Ikke tildelt</span>}
+                  <Td className="hidden text-sm text-tekst-svak lg:table-cell">
+                    {o.assignedTo?.name ?? <span className="text-tekst-svakest">Ikke tildelt</span>}
                   </Td>
                   <Td className="hidden text-sm whitespace-nowrap lg:table-cell">
                     {o.dueDate ? (
                       <span
                         className={
                           o.dueDate < new Date() && APNE_STATUSER.includes(o.status)
-                            ? "font-medium text-red-600"
-                            : "text-slate-600"
+                            ? "font-medium text-red-600 dark:text-red-400"
+                            : "text-tekst-svak"
                         }
                       >
                         {dato(o.dueDate)}
                       </span>
                     ) : (
-                      <span className="text-slate-400">–</span>
+                      <span className="text-tekst-svakest">–</span>
                     )}
                   </Td>
                 </Tr>

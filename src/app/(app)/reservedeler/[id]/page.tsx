@@ -63,17 +63,17 @@ export default async function DelSide(props: PageProps<"/reservedeler/[id]">) {
     <>
       <Link
         href="/reservedeler"
-        className="mb-4 inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm text-tekst-svak hover:text-tekst"
       >
         <ArrowLeft className="size-4" aria-hidden />
         Alle reservedeler
       </Link>
 
       <div className="mb-6">
-        <p className="font-mono text-sm text-slate-500">{del.number}</p>
-        <h1 className="mt-0.5 text-xl font-semibold text-slate-900">{del.name}</h1>
+        <p className="font-mono text-sm text-tekst-svak">{del.number}</p>
+        <h1 className="mt-0.5 text-xl font-semibold text-tekst">{del.name}</h1>
         {del.manufacturer && (
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-tekst-svak">
             {del.manufacturer}
             {del.manufacturerPartNo && ` · ${del.manufacturerPartNo}`}
           </p>
@@ -121,18 +121,18 @@ export default async function DelSide(props: PageProps<"/reservedeler/[id]">) {
                 <tbody>
                   {del.movements.map((m) => (
                     <Tr key={m.id}>
-                      <Td className="text-xs whitespace-nowrap text-slate-500">
+                      <Td className="text-xs whitespace-nowrap text-tekst-svak">
                         {datoTid(m.createdAt)}
-                        {m.user && <div className="text-slate-400">{m.user.name}</div>}
+                        {m.user && <div className="text-tekst-svakest">{m.user.name}</div>}
                       </Td>
                       <Td>
                         <Badge
                           className={
                             m.type === "INN"
-                              ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
+                              ? "bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 ring-emerald-200 dark:ring-emerald-500/30"
                               : m.type === "UT"
-                                ? "bg-sky-50 text-sky-700 ring-sky-200"
-                                : "bg-slate-100 text-slate-700 ring-slate-200"
+                                ? "bg-sky-50 dark:bg-sky-500/15 text-sky-700 dark:text-sky-300 ring-sky-200 dark:ring-sky-500/30"
+                                : "bg-flate-dempet text-tekst ring-kant"
                           }
                         >
                           {LAGER_BEVEGELSE[m.type]}
@@ -140,22 +140,22 @@ export default async function DelSide(props: PageProps<"/reservedeler/[id]">) {
                       </Td>
                       <Td
                         className={`text-right text-sm font-medium tabular-nums ${
-                          m.quantity < 0 ? "text-slate-600" : "text-emerald-700"
+                          m.quantity < 0 ? "text-tekst-svak" : "text-emerald-700 dark:text-emerald-300"
                         }`}
                       >
                         {m.quantity > 0 ? "+" : ""}
                         {tall(m.quantity)}
                       </Td>
-                      <Td className="hidden text-sm text-slate-600 sm:table-cell">
+                      <Td className="hidden text-sm text-tekst-svak sm:table-cell">
                         {m.workOrder ? (
                           <Link
                             href={`/arbeidsordre/${m.workOrder.id}`}
-                            className="text-merke-600 hover:text-merke-700"
+                            className="text-aksent hover:text-aksent"
                           >
                             {ordreNummer(m.workOrder.number)} {m.workOrder.title}
                           </Link>
                         ) : (
-                          (m.note ?? <span className="text-slate-400">–</span>)
+                          (m.note ?? <span className="text-tekst-svakest">–</span>)
                         )}
                       </Td>
                     </Tr>
@@ -176,16 +176,16 @@ export default async function DelSide(props: PageProps<"/reservedeler/[id]">) {
                 description="Kobler du delen til utstyret den sitter i, dukker den opp automatisk når noen jobber på maskinen."
               />
             ) : (
-              <ul className="divide-y divide-slate-100">
+              <ul className="divide-y divide-kant">
                 {del.assets.map((ap) => (
                   <li key={ap.id}>
                     <Link
                       href={`/anlegg/${ap.asset.id}`}
-                      className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50"
+                      className="flex items-center gap-3 px-5 py-3 hover:bg-flate-hover"
                     >
-                      <span className="font-mono text-xs text-slate-500">{ap.asset.code}</span>
-                      <span className="flex-1 text-sm text-slate-900">{ap.asset.name}</span>
-                      <span className="text-xs text-slate-500">
+                      <span className="font-mono text-xs text-tekst-svak">{ap.asset.code}</span>
+                      <span className="flex-1 text-sm text-tekst">{ap.asset.name}</span>
+                      <span className="text-xs text-tekst-svak">
                         {tall(ap.quantity)} {del.unit} i bruk
                       </span>
                     </Link>
@@ -211,7 +211,7 @@ export default async function DelSide(props: PageProps<"/reservedeler/[id]">) {
                 </Rad>
               </dl>
               {del.description && (
-                <p className="mt-4 border-t border-slate-100 pt-4 text-sm text-slate-600">
+                <p className="mt-4 border-t border-kant pt-4 text-sm text-tekst-svak">
                   {del.description}
                 </p>
               )}
@@ -247,8 +247,8 @@ export default async function DelSide(props: PageProps<"/reservedeler/[id]">) {
 function Rad({ navn, children }: { navn: string; children: React.ReactNode }) {
   return (
     <div className="flex justify-between gap-4">
-      <dt className="shrink-0 text-slate-500">{navn}</dt>
-      <dd className="text-right text-slate-900">{children}</dd>
+      <dt className="shrink-0 text-tekst-svak">{navn}</dt>
+      <dd className="text-right text-tekst">{children}</dd>
     </div>
   );
 }

@@ -14,6 +14,7 @@ import {
   YAxis,
 } from "recharts";
 import { kroner, tall } from "@/lib/format";
+import { useErMorkt } from "@/components/tema";
 
 /**
  * Diagrammer må kjøre i nettleseren, så de ligger samlet her som
@@ -21,31 +22,41 @@ import { kroner, tall } from "@/lib/format";
  * ferdig oppsummerte tall.
  */
 
-const AKSE = { fontSize: 12, fill: "#64748b" };
-const RUTENETT = "#e2e8f0";
-
-const boksStil = {
-  borderRadius: 8,
-  border: "1px solid #e2e8f0",
-  fontSize: 13,
-  boxShadow: "0 4px 12px rgb(15 23 42 / 0.08)",
-};
+function farger(morkt: boolean) {
+  return {
+    akse: { fontSize: 12, fill: morkt ? "#94a3b8" : "#64748b" },
+    rutenett: morkt ? "#253046" : "#e2e8f0",
+    boks: {
+      borderRadius: 8,
+      border: morkt ? "1px solid #253046" : "1px solid #e2e8f0",
+      backgroundColor: morkt ? "#111827" : "#ffffff",
+      color: morkt ? "#e8edf5" : "#0f172a",
+      fontSize: 13,
+      boxShadow: morkt
+        ? "0 4px 12px rgb(0 0 0 / 0.4)"
+        : "0 4px 12px rgb(15 23 42 / 0.08)",
+    },
+    markor: { fill: morkt ? "#1a2334" : "#f1f5f9" },
+  };
+}
 
 export function StatusSoyler({
   data,
 }: {
   data: { navn: string; antall: number; farge: string }[];
 }) {
+  const { akse, rutenett, boks, markor } = farger(useErMorkt());
+
   return (
     <ResponsiveContainer width="100%" height={240}>
       <BarChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 8 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke={RUTENETT} vertical={false} />
-        <XAxis dataKey="navn" tick={AKSE} tickLine={false} axisLine={false} interval={0} angle={-20} textAnchor="end" height={60} />
-        <YAxis tick={AKSE} tickLine={false} axisLine={false} allowDecimals={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke={rutenett} vertical={false} />
+        <XAxis dataKey="navn" tick={akse} tickLine={false} axisLine={false} interval={0} angle={-20} textAnchor="end" height={60} />
+        <YAxis tick={akse} tickLine={false} axisLine={false} allowDecimals={false} />
         <Tooltip
-          contentStyle={boksStil}
+          contentStyle={boks}
           formatter={(v) => [`${Number(v)} stk`, "Antall"]}
-          cursor={{ fill: "#f1f5f9" }}
+          cursor={markor}
         />
         <Bar dataKey="antall" radius={[4, 4, 0, 0]}>
           {data.map((d) => (
@@ -62,19 +73,21 @@ export function KostnadLinje({
 }: {
   data: { maned: string; arbeid: number; deler: number }[];
 }) {
+  const { akse, rutenett, boks, markor } = farger(useErMorkt());
+
   return (
     <ResponsiveContainer width="100%" height={260}>
       <LineChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke={RUTENETT} vertical={false} />
-        <XAxis dataKey="maned" tick={AKSE} tickLine={false} axisLine={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke={rutenett} vertical={false} />
+        <XAxis dataKey="maned" tick={akse} tickLine={false} axisLine={false} />
         <YAxis
-          tick={AKSE}
+          tick={akse}
           tickLine={false}
           axisLine={false}
           tickFormatter={(v) => (Number(v) >= 1000 ? `${Math.round(Number(v) / 1000)} k` : String(v))}
         />
         <Tooltip
-          contentStyle={boksStil}
+          contentStyle={boks}
           formatter={(v, navn) => [kroner(Number(v)), navn === "arbeid" ? "Arbeid" : "Deler"]}
         />
         <Legend
@@ -93,6 +106,8 @@ export function NedetidSoyler({
 }: {
   data: { kode: string; navn: string; minutter: number }[];
 }) {
+  const { akse, rutenett, boks, markor } = farger(useErMorkt());
+
   return (
     <ResponsiveContainer width="100%" height={260}>
       <BarChart
@@ -100,10 +115,10 @@ export function NedetidSoyler({
         layout="vertical"
         margin={{ top: 8, right: 16, left: 8, bottom: 8 }}
       >
-        <CartesianGrid strokeDasharray="3 3" stroke={RUTENETT} horizontal={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke={rutenett} horizontal={false} />
         <XAxis
           type="number"
-          tick={AKSE}
+          tick={akse}
           tickLine={false}
           axisLine={false}
           tickFormatter={(v) => `${Math.round(Number(v) / 60)} t`}
@@ -111,18 +126,18 @@ export function NedetidSoyler({
         <YAxis
           type="category"
           dataKey="kode"
-          tick={AKSE}
+          tick={akse}
           tickLine={false}
           axisLine={false}
           width={70}
         />
         <Tooltip
-          contentStyle={boksStil}
+          contentStyle={boks}
           formatter={(v) => [`${tall(Number(v) / 60, 1)} timer`, "Nedetid"]}
           labelFormatter={(kode) =>
             data.find((d) => d.kode === String(kode))?.navn ?? kode
           }
-          cursor={{ fill: "#f1f5f9" }}
+          cursor={markor}
         />
         <Bar dataKey="minutter" fill="#f97316" radius={[0, 4, 4, 0]} />
       </BarChart>
@@ -135,24 +150,26 @@ export function BudsjettSoyler({
 }: {
   data: { navn: string; budsjett: number; forbrukt: number }[];
 }) {
+  const { akse, rutenett, boks, markor } = farger(useErMorkt());
+
   return (
     <ResponsiveContainer width="100%" height={280}>
       <BarChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke={RUTENETT} vertical={false} />
-        <XAxis dataKey="navn" tick={AKSE} tickLine={false} axisLine={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke={rutenett} vertical={false} />
+        <XAxis dataKey="navn" tick={akse} tickLine={false} axisLine={false} />
         <YAxis
-          tick={AKSE}
+          tick={akse}
           tickLine={false}
           axisLine={false}
           tickFormatter={(v) => (Number(v) >= 1000 ? `${Math.round(Number(v) / 1000)} k` : String(v))}
         />
         <Tooltip
-          contentStyle={boksStil}
+          contentStyle={boks}
           formatter={(v, navn) => [
             kroner(Number(v)),
             navn === "budsjett" ? "Budsjett" : "Forbrukt",
           ]}
-          cursor={{ fill: "#f1f5f9" }}
+          cursor={markor}
         />
         <Legend
           formatter={(v) => (v === "budsjett" ? "Budsjett" : "Forbrukt")}

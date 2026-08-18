@@ -28,7 +28,7 @@ export default async function NyPlanSide(props: PageProps<"/forebyggende/ny">) {
     <>
       <Link
         href="/forebyggende"
-        className="mb-4 inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm text-tekst-svak hover:text-tekst"
       >
         <ArrowLeft className="size-4" aria-hidden />
         Forebyggende vedlikehold

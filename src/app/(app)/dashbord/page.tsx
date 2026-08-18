@@ -4,11 +4,9 @@ import { SlidersHorizontal } from "lucide-react";
 import { requireTenant } from "@/lib/auth";
 import { ButtonLink, PageHeader } from "@/components/ui";
 import { Widget } from "@/components/widgets";
-import {
-  STANDARD_OPPSETT,
-  type WidgetOppsett,
-} from "@/components/widget-katalog";
+import { STANDARD_OPPSETT, type WidgetOppsett } from "@/components/widget-katalog";
 import { hentOppsett } from "./oppsett";
+import { Rutenett } from "./rutenett";
 
 export const metadata: Metadata = { title: "Dashbord" };
 
@@ -16,7 +14,7 @@ export const metadata: Metadata = { title: "Dashbord" };
 function Skjelett({ bred }: { bred: boolean }) {
   return (
     <div
-      className={`kort animate-pulse ${bred ? "sm:col-span-2" : ""} ${bred ? "h-72" : "h-24"}`}
+      className={`kort animate-pulse ${bred ? "h-72" : "h-24"}`}
       aria-hidden
     />
   );
@@ -24,10 +22,19 @@ function Skjelett({ bred }: { bred: boolean }) {
 
 export default async function DashbordSide() {
   const { db, session } = await requireTenant();
-  const oppsett: WidgetOppsett[] = (await hentOppsett(db, session.userId)) ?? STANDARD_OPPSETT;
+  const oppsett: WidgetOppsett[] =
+    (await hentOppsett(db, session.userId)) ?? STANDARD_OPPSETT;
 
   const time = new Date().getHours();
   const hilsen = time < 10 ? "God morgen" : time < 17 ? "God dag" : "God kveld";
+
+  // Widgetene tegnes ferdig her på serveren og sendes videre til rutenettet,
+  // som bare styrer plasseringen. Da slipper klientkoden å vite noe om data.
+  const widgets = oppsett.map((w) => (
+    <Suspense key={w.id} fallback={<Skjelett bred={w.w === 2} />}>
+      <Widget type={w.type} db={db} session={session} />
+    </Suspense>
+  ));
 
   return (
     <>
@@ -37,22 +44,12 @@ export default async function DashbordSide() {
         action={
           <ButtonLink href="/dashbord/tilpass" variant="sekundær">
             <SlidersHorizontal className="size-4" aria-hidden />
-            Tilpass dashbord
+            Legg til widgets
           </ButtonLink>
         }
       />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {oppsett.map((w) => (
-          <div key={w.id} className={w.w === 2 ? "sm:col-span-2" : ""}>
-            {/* Hver widget strømmes inn for seg, så trege spørringer ikke
-                holder igjen resten av siden. */}
-            <Suspense fallback={<Skjelett bred={w.w === 2} />}>
-              <Widget type={w.type} db={db} session={session} />
-            </Suspense>
-          </div>
-        ))}
-      </div>
+      <Rutenett oppsett={oppsett} widgets={widgets} />
     </>
   );
 }

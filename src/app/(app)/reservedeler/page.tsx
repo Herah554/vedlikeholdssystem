@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AlertTriangle, Boxes, Plus } from "lucide-react";
+import { AlertTriangle, Boxes, Plus, ShoppingCart } from "lucide-react";
 import { requireTenant } from "@/lib/auth";
 import { kroner, tall, toNumber } from "@/lib/format";
 import {
@@ -15,6 +15,7 @@ import {
   Th,
   Tr,
 } from "@/components/ui";
+import { BestillPanel } from "./bestill";
 
 export const metadata: Metadata = { title: "Reservedeler" };
 
@@ -55,10 +56,16 @@ export default async function ReservedelerSide(props: PageProps<"/reservedeler">
         title="Reservedeler"
         description="Lagerbeholdning, minimumsnivå og forbruk"
         action={
-          <ButtonLink href="/reservedeler/ny">
-            <Plus className="size-4" aria-hidden />
-            Ny reservedel
-          </ButtonLink>
+          <div className="flex flex-wrap gap-2">
+            <ButtonLink href="/bestillinger" variant="sekundær">
+              <ShoppingCart className="size-4" aria-hidden />
+              Bestillinger
+            </ButtonLink>
+            <ButtonLink href="/reservedeler/ny">
+              <Plus className="size-4" aria-hidden />
+              Ny reservedel
+            </ButtonLink>
+          </div>
         }
       />
 
@@ -80,13 +87,27 @@ export default async function ReservedelerSide(props: PageProps<"/reservedeler">
       </div>
 
       {kunLave && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-200 ring-inset">
+        <div className="mb-4 flex items-center gap-2 rounded-lg bg-amber-50 dark:bg-amber-500/15 px-4 py-3 text-sm text-amber-900 dark:text-amber-300 ring-1 ring-amber-200 dark:ring-amber-500/30 ring-inset">
           <AlertTriangle className="size-4 shrink-0" aria-hidden />
           Viser bare deler under minimumsnivå.
           <Link href="/reservedeler" className="font-medium underline">
             Vis alle
           </Link>
         </div>
+      )}
+
+      {kunLave && lave.length > 0 && (
+        <BestillPanel
+          deler={lave.map((d) => ({
+            id: d.id,
+            nummer: d.number,
+            navn: d.name,
+            enhet: d.unit,
+            beholdning: d.quantityOnHand,
+            minimum: d.minStock,
+            leverandor: d.supplier?.name ?? null,
+          }))}
+        />
       )}
 
       <Card>
@@ -119,45 +140,45 @@ export default async function ReservedelerSide(props: PageProps<"/reservedeler">
                 const tom = d.quantityOnHand <= 0;
                 return (
                   <Tr key={d.id}>
-                    <Td className="font-mono text-xs text-slate-500">
-                      <Link href={`/reservedeler/${d.id}`} className="hover:text-merke-600">
+                    <Td className="font-mono text-xs text-tekst-svak">
+                      <Link href={`/reservedeler/${d.id}`} className="hover:text-aksent">
                         {d.number}
                       </Link>
                     </Td>
                     <Td>
                       <Link
                         href={`/reservedeler/${d.id}`}
-                        className="text-sm font-medium text-slate-900 hover:text-merke-600"
+                        className="text-sm font-medium text-tekst hover:text-aksent"
                       >
                         {d.name}
                       </Link>
                       {d.manufacturer && (
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-tekst-svak">
                           {d.manufacturer}
                           {d.manufacturerPartNo && ` · ${d.manufacturerPartNo}`}
                         </p>
                       )}
                     </Td>
-                    <Td className="hidden text-sm text-slate-600 lg:table-cell">
-                      {d.supplier?.name ?? <span className="text-slate-400">–</span>}
+                    <Td className="hidden text-sm text-tekst-svak lg:table-cell">
+                      {d.supplier?.name ?? <span className="text-tekst-svakest">–</span>}
                     </Td>
-                    <Td className="hidden font-mono text-xs text-slate-500 sm:table-cell">
+                    <Td className="hidden font-mono text-xs text-tekst-svak sm:table-cell">
                       {d.binLocation ?? "–"}
                     </Td>
                     <Td className="text-right">
                       <Badge
                         className={
                           tom
-                            ? "bg-red-100 text-red-800 ring-red-200"
+                            ? "bg-red-100 dark:bg-red-500/15 text-red-800 dark:text-red-300 ring-red-200 dark:ring-red-500/30"
                             : lav
-                              ? "bg-amber-100 text-amber-900 ring-amber-200"
-                              : "bg-emerald-50 text-emerald-700 ring-emerald-200"
+                              ? "bg-amber-100 dark:bg-amber-500/15 text-amber-900 dark:text-amber-300 ring-amber-200 dark:ring-amber-500/30"
+                              : "bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 ring-emerald-200 dark:ring-emerald-500/30"
                         }
                       >
                         {tall(d.quantityOnHand)} {d.unit}
                       </Badge>
                     </Td>
-                    <Td className="hidden text-right text-sm text-slate-500 tabular-nums md:table-cell">
+                    <Td className="hidden text-right text-sm text-tekst-svak tabular-nums md:table-cell">
                       {tall(d.minStock)}
                     </Td>
                     <Td className="hidden text-right text-sm tabular-nums md:table-cell">

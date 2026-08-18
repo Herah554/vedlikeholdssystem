@@ -67,15 +67,15 @@ export function Tavle({
         }`}
       >
         <div className="flex items-start gap-1.5">
-          <GripVertical className="mt-0.5 size-3.5 shrink-0 text-slate-300" aria-hidden />
+          <GripVertical className="mt-0.5 size-3.5 shrink-0 text-tekst-svakest" aria-hidden />
           <div className="min-w-0 flex-1">
             <Link
               href={`/arbeidsordre/${jobb.id}`}
-              className="block text-sm leading-snug font-medium text-slate-900 hover:text-merke-600"
+              className="block text-sm leading-snug font-medium text-tekst hover:text-aksent"
             >
               {jobb.title}
             </Link>
-            <p className="mt-0.5 font-mono text-[11px] text-slate-400">
+            <p className="mt-0.5 font-mono text-[11px] text-tekst-svakest">
               {ordreNummer(jobb.number)}
               {jobb.assetCode && ` · ${jobb.assetCode}`}
             </p>
@@ -88,14 +88,14 @@ export function Tavle({
                 {ORDRE_TYPE[jobb.type].tekst}
               </Badge>
               {jobb.estimatedHours != null && (
-                <span className="text-[11px] text-slate-400">
+                <span className="text-[11px] text-tekst-svakest">
                   {timer(jobb.estimatedHours)}
                 </span>
               )}
             </div>
 
             {jobb.assignedTo && (
-              <p className="mt-1 truncate text-[11px] text-slate-500">{jobb.assignedTo}</p>
+              <p className="mt-1 truncate text-[11px] text-tekst-svak">{jobb.assignedTo}</p>
             )}
 
             {/* Alternativ til dra-og-slipp, særlig for nettbrett */}
@@ -105,7 +105,7 @@ export function Tavle({
                 value={dager.find((d) => d.jobber.some((j) => j.id === jobb.id))?.iso ?? ""}
                 disabled={venter}
                 onChange={(e) => flytt(jobb.id, e.target.value || null)}
-                className="w-full rounded border-0 bg-slate-50 px-1.5 py-1 text-[11px] text-slate-600 ring-1 ring-slate-200 ring-inset focus:ring-2 focus:ring-merke-600 focus:outline-none"
+                className="w-full rounded border-0 bg-flate-hover px-1.5 py-1 text-[11px] text-tekst-svak ring-1 ring-kant ring-inset focus:ring-2 focus:ring-merke-600 focus:outline-none"
               >
                 {valg.map((v) => (
                   <option key={v.verdi} value={v.verdi}>{v.tekst}</option>
@@ -152,17 +152,17 @@ export function Tavle({
           over === nokkel
             ? "border-merke-500 bg-merke-50"
             : fremhev
-              ? "border-merke-200 bg-white"
-              : "border-slate-200 bg-slate-100/60"
+              ? "border-merke-200 bg-flate"
+              : "border-kant bg-flate-dempet/60"
         }`}
       >
         <div className="mb-2 px-1">
           <p
-            className={`text-sm font-semibold ${fremhev ? "text-merke-700" : "text-slate-700"}`}
+            className={`text-sm font-semibold ${fremhev ? "text-aksent" : "text-tekst"}`}
           >
             {tittel}
           </p>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-tekst-svak">
             {undertittel}
             {jobber.length > 0 && ` · ${jobber.length} jobb${jobber.length === 1 ? "" : "er"}`}
             {sumTimer > 0 && ` · ${timer(sumTimer)}`}
@@ -170,7 +170,7 @@ export function Tavle({
         </div>
 
         {jobber.length === 0 ? (
-          <p className="px-1 py-6 text-center text-xs text-slate-400">{tom}</p>
+          <p className="px-1 py-6 text-center text-xs text-tekst-svakest">{tom}</p>
         ) : (
           <ul className="space-y-2">
             {jobber.map((j) => (
@@ -199,8 +199,8 @@ export function Tavle({
       </div>
 
       <div>
-        <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
-          <CalendarOff className="size-4 text-slate-400" aria-hidden />
+        <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold text-tekst">
+          <CalendarOff className="size-4 text-tekst-svakest" aria-hidden />
           Ikke planlagt ennå
         </h2>
         <div className="flex gap-3">

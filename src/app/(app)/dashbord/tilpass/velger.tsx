@@ -2,7 +2,15 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowDown, ArrowUp, Check, Plus, RotateCcw, X } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  Check,
+  GripVertical,
+  Plus,
+  RotateCcw,
+  X,
+} from "lucide-react";
 import { Button, Card, CardBody, CardHeader } from "@/components/ui";
 import {
   WIDGET_IKON,
@@ -22,7 +30,24 @@ export function Velger({ start }: { start: WidgetOppsett[] }) {
   const [valgte, settValgte] = useState<WidgetOppsett[]>(start);
   const [venter, startOvergang] = useTransition();
   const [melding, settMelding] = useState<string>();
+  const [drar, settDrar] = useState<string | null>(null);
+  const [over, settOver] = useState<string | null>(null);
   const router = useRouter();
+
+  /** Flytter en widget dit den ble sluppet. */
+  function slippPa(tilId: string) {
+    if (!drar || drar === tilId) return;
+    settValgte((f) => {
+      const fra = f.findIndex((v) => v.id === drar);
+      const til = f.findIndex((v) => v.id === tilId);
+      if (fra < 0 || til < 0) return f;
+      const kopi = [...f];
+      const [flyttet] = kopi.splice(fra, 1);
+      kopi.splice(til, 0, flyttet);
+      return kopi;
+    });
+    settMelding(undefined);
+  }
 
   const brukte = new Set(valgte.map((v) => v.type));
   const ledige = WIDGET_KATALOG.filter((w) => !brukte.has(w.type));
@@ -71,25 +96,48 @@ export function Velger({ start }: { start: WidgetOppsett[] }) {
       <Card>
         <CardHeader
           title="Ditt dashbord"
-          description={`${valgte.length} widget${valgte.length === 1 ? "" : "er"} — rekkefølgen her er rekkefølgen på dashbordet`}
+          description={`${valgte.length} widget${valgte.length === 1 ? "" : "er"} — dra dem i rekkefølgen du vil ha`}
         />
         {valgte.length === 0 ? (
           <CardBody>
-            <p className="py-6 text-center text-sm text-slate-500">
+            <p className="py-6 text-center text-sm text-tekst-svak">
               Ingen widgets valgt. Legg til noen fra lista til høyre.
             </p>
           </CardBody>
         ) : (
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-kant">
             {valgte.map((v, i) => {
               const meta = WIDGET_KATALOG.find((w) => w.type === v.type);
               const Ikon = WIDGET_IKON[v.type];
               return (
-                <li key={v.id} className="flex items-center gap-3 px-5 py-3">
-                  <Ikon className="size-4 shrink-0 text-slate-400" aria-hidden />
+                <li
+                  key={v.id}
+                  draggable
+                  onDragStart={() => settDrar(v.id)}
+                  onDragEnd={() => {
+                    settDrar(null);
+                    settOver(null);
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    settOver(v.id);
+                  }}
+                  onDragLeave={() => settOver((f) => (f === v.id ? null : f))}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    slippPa(v.id);
+                    settDrar(null);
+                    settOver(null);
+                  }}
+                  className={`flex cursor-grab items-center gap-3 px-5 py-3 active:cursor-grabbing ${
+                    drar === v.id ? "opacity-40" : ""
+                  } ${over === v.id && drar !== v.id ? "bg-merke-50" : ""}`}
+                >
+                  <GripVertical className="size-4 shrink-0 text-tekst-svakest" aria-hidden />
+                  <Ikon className="size-4 shrink-0 text-tekst-svakest" aria-hidden />
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-slate-900">{meta?.navn}</p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-sm font-medium text-tekst">{meta?.navn}</p>
+                    <p className="text-xs text-tekst-svak">
                       {v.w === 2 ? "Bred" : "Smal"}
                     </p>
                   </div>
@@ -98,7 +146,7 @@ export function Velger({ start }: { start: WidgetOppsett[] }) {
                       type="button"
                       onClick={() => flytt(i, -1)}
                       disabled={i === 0}
-                      className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 disabled:opacity-30"
+                      className="rounded-lg p-1.5 text-tekst-svak hover:bg-flate-dempet disabled:opacity-30"
                       aria-label={`Flytt ${meta?.navn} opp`}
                     >
                       <ArrowUp className="size-4" aria-hidden />
@@ -107,7 +155,7 @@ export function Velger({ start }: { start: WidgetOppsett[] }) {
                       type="button"
                       onClick={() => flytt(i, 1)}
                       disabled={i === valgte.length - 1}
-                      className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 disabled:opacity-30"
+                      className="rounded-lg p-1.5 text-tekst-svak hover:bg-flate-dempet disabled:opacity-30"
                       aria-label={`Flytt ${meta?.navn} ned`}
                     >
                       <ArrowDown className="size-4" aria-hidden />
@@ -115,7 +163,7 @@ export function Velger({ start }: { start: WidgetOppsett[] }) {
                     <button
                       type="button"
                       onClick={() => fjern(v.id)}
-                      className="rounded-lg p-1.5 text-slate-500 hover:bg-red-50 hover:text-red-600"
+                      className="rounded-lg p-1.5 text-tekst-svak hover:bg-red-50 dark:hover:bg-red-500/15 hover:text-red-600 dark:hover:text-red-400"
                       aria-label={`Fjern ${meta?.navn}`}
                     >
                       <X className="size-4" aria-hidden />
@@ -126,7 +174,7 @@ export function Velger({ start }: { start: WidgetOppsett[] }) {
             })}
           </ul>
         )}
-        <CardBody className="flex flex-wrap items-center gap-3 border-t border-slate-100">
+        <CardBody className="flex flex-wrap items-center gap-3 border-t border-kant">
           <Button onClick={lagre} disabled={venter || valgte.length === 0}>
             <Check className="size-4" aria-hidden />
             {venter ? "Lagrer …" : "Lagre dashbord"}
@@ -136,7 +184,7 @@ export function Velger({ start }: { start: WidgetOppsett[] }) {
             Bruk firmaets standard
           </Button>
           {melding && (
-            <span aria-live="polite" className="text-sm text-slate-600">
+            <span aria-live="polite" className="text-sm text-tekst-svak">
               {melding}
             </span>
           )}
@@ -150,12 +198,12 @@ export function Velger({ start }: { start: WidgetOppsett[] }) {
         />
         {ledige.length === 0 ? (
           <CardBody>
-            <p className="py-6 text-center text-sm text-slate-500">
+            <p className="py-6 text-center text-sm text-tekst-svak">
               Du har lagt til alt som finnes.
             </p>
           </CardBody>
         ) : (
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-kant">
             {ledige.map((w) => {
               const Ikon = WIDGET_IKON[w.type];
               return (
@@ -163,14 +211,14 @@ export function Velger({ start }: { start: WidgetOppsett[] }) {
                   <button
                     type="button"
                     onClick={() => leggTil(w.type, w.bredde)}
-                    className="flex w-full items-center gap-3 px-5 py-3 text-left hover:bg-slate-50"
+                    className="flex w-full items-center gap-3 px-5 py-3 text-left hover:bg-flate-hover"
                   >
-                    <Ikon className="size-4 shrink-0 text-slate-400" aria-hidden />
+                    <Ikon className="size-4 shrink-0 text-tekst-svakest" aria-hidden />
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-slate-900">{w.navn}</p>
-                      <p className="text-xs text-slate-500">{w.beskrivelse}</p>
+                      <p className="text-sm font-medium text-tekst">{w.navn}</p>
+                      <p className="text-xs text-tekst-svak">{w.beskrivelse}</p>
                     </div>
-                    <Plus className="size-4 shrink-0 text-merke-600" aria-hidden />
+                    <Plus className="size-4 shrink-0 text-aksent" aria-hidden />
                   </button>
                 </li>
               );

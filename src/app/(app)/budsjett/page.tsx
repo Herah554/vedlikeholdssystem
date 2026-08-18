@@ -69,8 +69,8 @@ export default async function BudsjettSide(props: PageProps<"/budsjett">) {
                 href={n === iAr ? "/budsjett" : `/budsjett?ar=${n}`}
                 className={`rounded-lg px-3 py-2 text-sm font-medium ${
                   n === ar
-                    ? "bg-merke-50 text-merke-700"
-                    : "text-slate-600 hover:bg-slate-100"
+                    ? "bg-merke-50 text-aksent"
+                    : "text-tekst-svak hover:bg-flate-dempet"
                 }`}
               >
                 {n}
@@ -157,15 +157,15 @@ export default async function BudsjettSide(props: PageProps<"/budsjett">) {
                   return (
                     <Tr key={r.id}>
                       <Td>
-                        <span className="font-mono text-xs text-slate-500">{r.kode}</span>
+                        <span className="font-mono text-xs text-tekst-svak">{r.kode}</span>
                         <br />
-                        <span className="text-sm font-medium text-slate-900">{r.navn}</span>
+                        <span className="text-sm font-medium text-tekst">{r.navn}</span>
                       </Td>
                       <Td className="text-right text-sm tabular-nums">{kroner(r.budsjett)}</Td>
-                      <Td className="hidden text-right text-sm text-slate-600 tabular-nums sm:table-cell">
+                      <Td className="hidden text-right text-sm text-tekst-svak tabular-nums sm:table-cell">
                         {kroner(r.arbeid)}
                       </Td>
-                      <Td className="hidden text-right text-sm text-slate-600 tabular-nums sm:table-cell">
+                      <Td className="hidden text-right text-sm text-tekst-svak tabular-nums sm:table-cell">
                         {kroner(r.deler)}
                       </Td>
                       <Td className="text-right text-sm font-medium tabular-nums">
@@ -173,7 +173,7 @@ export default async function BudsjettSide(props: PageProps<"/budsjett">) {
                       </Td>
                       <Td
                         className={`text-right text-sm font-medium tabular-nums ${
-                          avvik < 0 ? "text-red-600" : "text-emerald-600"
+                          avvik < 0 ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"
                         }`}
                       >
                         {avvik < 0 ? "−" : "+"}
@@ -181,7 +181,7 @@ export default async function BudsjettSide(props: PageProps<"/budsjett">) {
                       </Td>
                       <Td>
                         <div
-                          className="h-2 w-full overflow-hidden rounded-full bg-slate-100"
+                          className="h-2 w-full overflow-hidden rounded-full bg-flate-dempet"
                           role="img"
                           aria-label={`${tall(andel * 100)} prosent av budsjettet brukt`}
                         >
@@ -196,7 +196,7 @@ export default async function BudsjettSide(props: PageProps<"/budsjett">) {
                             style={{ width: `${Math.min(andel * 100, 100)}%` }}
                           />
                         </div>
-                        <span className="mt-1 block text-[11px] text-slate-500 tabular-nums">
+                        <span className="mt-1 block text-[11px] text-tekst-svak tabular-nums">
                           {tall(andel * 100)} %
                         </span>
                       </Td>
@@ -237,8 +237,8 @@ export default async function BudsjettSide(props: PageProps<"/budsjett">) {
                 <tbody>
                   {budsjettlinjer.map((b) => (
                     <Tr key={b.id}>
-                      <Td className="text-sm font-medium text-slate-900">{b.name}</Td>
-                      <Td className="text-sm text-slate-600">
+                      <Td className="text-sm font-medium text-tekst">{b.name}</Td>
+                      <Td className="text-sm text-tekst-svak">
                         {b.costCenter ? `${b.costCenter.code} ${b.costCenter.name}` : "–"}
                       </Td>
                       <Td>
