@@ -13,7 +13,16 @@ import { defineConfig } from "prisma/config";
  * Derfor kjøres migrasjoner mot DIRECT_DATABASE_URL når den er satt. Lokalt,
  * der man kobler rett på Postgres, finnes den ikke, og da brukes DATABASE_URL.
  */
-const url = process.env["DIRECT_DATABASE_URL"] || process.env["DATABASE_URL"];
+/**
+ * Vercel og Neon setter selv en «unpooled» streng ved siden av den vanlige,
+ * og navnet følger prefikset man velger i integrasjonen. Vi leter etter de
+ * vanligste navnene, slik at man slipper å kopiere strengen inn manuelt.
+ */
+const url =
+  process.env["DIRECT_DATABASE_URL"] ||
+  process.env["DATABASE_URL_UNPOOLED"] ||
+  process.env["POSTGRES_URL_NON_POOLING"] ||
+  process.env["DATABASE_URL"];
 
 if (!url) {
   // Prisma sin egen melding her er «The datasource.url property is required

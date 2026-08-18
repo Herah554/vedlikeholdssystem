@@ -54,3 +54,6 @@ next-env.d.ts
 /.windsurf
 /skills-lock.json
 /.claude/skills
+
+# lokal huskelapp med produksjonsnøkkel — skal aldri i repoet
+vercel-variabler.txt
