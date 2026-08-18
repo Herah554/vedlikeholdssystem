@@ -39,3 +39,18 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/src/generated/prisma
+
+# miljøvariabler
+.env
+.env*.local
+
+# generert Prisma-klient
+/src/generated
+
+# agent-verktøy generert av «prisma init» (editorspesifikt)
+/.agents
+/.windsurf
+/skills-lock.json
+/.claude/skills
