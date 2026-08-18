@@ -24,15 +24,26 @@ const url =
   process.env["POSTGRES_URL_NON_POOLING"] ||
   process.env["DATABASE_URL"];
 
-if (!url) {
-  // Prisma sin egen melding her er «The datasource.url property is required
-  // in your Prisma config file», som ikke sier noe om hva man faktisk mangler.
+/**
+ * Bare kommandoer som faktisk snakker med databasen trenger en tilkobling.
+ *
+ * «prisma generate» lager bare TypeScript-koden ut fra schemaet og skal kunne
+ * kjøre uten database — det er nettopp det som skjer under installasjon hos
+ * Vercel, før miljøvariablene er lest. Kastet vi her, ville bygget stoppe før
+ * det kom i gang.
+ */
+const trengerDatabase = process.argv.some(
+  (a) => a === "migrate" || a === "db" || a === "studio",
+);
+
+if (!url && trengerDatabase) {
+  // Prisma sin egen melding — «The datasource.url property is required in your
+  // Prisma config file» — sier ingenting om hva man faktisk mangler.
   throw new Error(
     "Fant ingen database å koble til.\n\n" +
       "Lokalt: kopier .env.example til .env og fyll inn DATABASE_URL.\n" +
       "I sky: legg til en Postgres-database og sett DATABASE_URL som " +
-      "miljøvariabel. Setter du også DIRECT_DATABASE_URL (den «unpooled» " +
-      "strengen), brukes den til migrasjonene.",
+      "miljøvariabel.",
   );
 }
 
