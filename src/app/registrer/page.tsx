@@ -47,7 +47,7 @@ export default async function RegistrerSide() {
             )}
 
             <div className="kort p-6">
-              <RegistrerSkjema krevKode={status.krevKode} />
+              <RegistrerSkjema />
             </div>
           </>
         ) : (
@@ -64,13 +64,8 @@ export default async function RegistrerSide() {
                   Jobber du her, be administratoren i firmaet ditt om en konto.
                 </p>
                 <p className="mt-3">
-                  Er det du som drifter serveren og vil åpne for flere bedrifter,
-                  sett{" "}
-                  <code className="rounded bg-flate-dempet px-1 py-0.5 font-mono text-xs">
-                    TILLAT_REGISTRERING=&quot;ja&quot;
-                  </code>{" "}
-                  i <code className="font-mono text-xs">.env</code> og start
-                  serveren på nytt.
+                  Skal bedriften din begynne å bruke systemet, tar du kontakt
+                  med den som drifter det. Kontoene opprettes derfra.
                 </p>
               </div>
             </div>

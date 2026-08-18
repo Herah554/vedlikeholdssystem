@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { SignJWT, jwtVerify } from "jose";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
@@ -60,11 +60,24 @@ function secretKey(): Uint8Array {
 
 export type Session = {
   userId: string;
+  /** Bedriften økten ser på nå. For alle andre enn deg er dette din egen. */
   organizationId: string;
   organizationName: string;
   name: string;
   email: string;
   role: Role;
+  /**
+   * Plattformeier. Leses alltid fra databasen, aldri fra tokenet — ellers
+   * ville en fjernet rettighet fortsatt gjelde i 30 dager.
+   */
+  superadmin?: boolean;
+  /**
+   * Satt bare når en plattformeier ser på en annen bedrift enn sin egen.
+   * Da vet grensesnittet at det skal vise stripen på toppen, og hvor
+   * veien hjem går.
+   */
+  hjemOrganisasjonId?: string;
+  hjemOrganisasjonNavn?: string;
 };
 
 // ─── Passord ──────────────────────────────────────────────────
@@ -121,6 +134,8 @@ export async function getSession(): Promise<Session | null> {
       name: payload.name as string,
       email: payload.email as string,
       role: payload.role as Role,
+      hjemOrganisasjonId: payload.hjemOrganisasjonId as string | undefined,
+      hjemOrganisasjonNavn: payload.hjemOrganisasjonNavn as string | undefined,
     };
   } catch {
     // Utløpt eller manipulert token — behandles som utlogget.
@@ -144,15 +159,35 @@ export async function gyldigSesjon(): Promise<Session | null> {
   if (!session) return null;
 
   const bruker = await prisma.user.findFirst({
-    where: {
-      id: session.userId,
-      organizationId: session.organizationId,
-      isActive: true,
+    where: { id: session.userId, isActive: true },
+    select: {
+      id: true,
+      organizationId: true,
+      isSuperAdmin: true,
+      organization: { select: { isActive: true } },
     },
-    select: { id: true },
   });
 
-  return bruker ? session : null;
+  if (!bruker) return null;
+
+  // Det vanlige tilfellet: økten peker på brukerens egen bedrift.
+  if (bruker.organizationId === session.organizationId) {
+    if (!bruker.organization.isActive) return null;
+    return { ...session, superadmin: bruker.isSuperAdmin };
+  }
+
+  // Økten peker på en annen bedrift enn brukeren tilhører. Det er bare
+  // lovlig for en plattformeier. Merk at flagget hentes fra databasen —
+  // står det i tokenet, betyr det ingenting her.
+  if (!bruker.isSuperAdmin) return null;
+
+  const besokt = await prisma.organization.findFirst({
+    where: { id: session.organizationId, isActive: true },
+    select: { id: true },
+  });
+  if (!besokt) return null;
+
+  return { ...session, superadmin: true };
 }
 
 /** Sesjon eller omdirigering til innlogging. Brukes i alle beskyttede sider. */
@@ -166,6 +201,18 @@ export async function requireSession(): Promise<Session> {
     redirect("/logg-inn?utlopt=1");
   }
 
+  return session;
+}
+
+/**
+ * Sesjon for en plattformeier — deg som drifter systemet.
+ *
+ * Svarer «finnes ikke» i stedet for «ingen tilgang». En vanlig kunde skal
+ * ikke engang få vite at plattformsiden er der.
+ */
+export async function requireSuperadmin(): Promise<Session> {
+  const session = await requireSession();
+  if (!session.superadmin) notFound();
   return session;
 }
 
@@ -224,7 +271,9 @@ export async function authenticate(
 
   const user = await prisma.user.findFirst({
     where: { email: email.trim().toLowerCase(), isActive: true },
-    include: { organization: { select: { id: true, name: true } } },
+    include: {
+      organization: { select: { id: true, name: true, isActive: true } },
+    },
   });
 
   if (!user) {
@@ -236,6 +285,16 @@ export async function authenticate(
 
   const riktig = await verifyPassword(password, user.passwordHash);
   if (!riktig) return { ok: false, error: feilmelding };
+
+  // Passordet stemte, men bedriften er stengt. Egen melding her, for nå
+  // hjelper det ingen å skjule at kontoen finnes.
+  if (!user.organization.isActive) {
+    return {
+      ok: false,
+      error:
+        "Denne bedriften er deaktivert. Ta kontakt med den som drifter systemet.",
+    };
+  }
 
   await prisma.user.update({
     where: { id: user.id },
@@ -251,6 +310,7 @@ export async function authenticate(
       name: user.name,
       email: user.email,
       role: user.role,
+      superadmin: user.isSuperAdmin,
     },
   };
 }

@@ -16,7 +16,7 @@ function SendKnapp() {
   );
 }
 
-export function RegistrerSkjema({ krevKode }: { krevKode: boolean }) {
+export function RegistrerSkjema() {
   const [state, action] = useActionState<Resultat, FormData>(registrerBedrift, {
     ok: true,
   });
@@ -31,16 +31,6 @@ export function RegistrerSkjema({ krevKode }: { krevKode: boolean }) {
           <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
           <span>{state.feil}</span>
         </div>
-      )}
-
-      {krevKode && (
-        <Field
-          label="Invitasjonskode"
-          required
-          hint="Du får koden av den som drifter serveren"
-        >
-          <Input name="kode" required autoComplete="off" />
-        </Field>
       )}
 
       <Field label="Firmanavn" required>

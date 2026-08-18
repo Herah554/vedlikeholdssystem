@@ -10,6 +10,7 @@ uten å se hverandres data.
 
 | Modul | Hva den gjør |
 |---|---|
+| **Plattform** | Din egen side: alle kundene, opprett nye, hopp inn hos én av dem |
 | **Dashbord** | Konfigurerbare widgets — hver bruker setter sammen sitt eget oppsett |
 | **Ukeplan** | Dra-og-slipp-tavle for ukens jobber, fordelt på dager og teknikere |
 | **Arbeidsordre** | Meld, godkjenn, planlegg og utfør. Timeføring, deleuttak, sjekklister og kommentarer |
@@ -135,8 +136,7 @@ Alle bruker passordet `passord123`.
 Logger du inn som Fjordkraft, ser du ingenting fra Nordvik — heller ikke om du
 skriver inn en Nordvik-ID direkte i adressefeltet.
 
-Nye bedrifter kan registrere seg selv på `/registrer`. Da opprettes
-organisasjonen med sin første administrator, og den ser aldri noe fra de andre.
+Nye bedrifter oppretter du fra `/plattform`. Kunder registrerer seg ikke selv.
 
 > **Bytt disse passordene før systemet tas i bruk på ordentlig.**
 
@@ -202,7 +202,8 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 struktur ved hver utrulling.
 
 **5. Lag den første bedriften.** Databasen er tom, så `/registrer` er åpen.
-Opprett bedriften din der, og steng den etterpå med `TILLAT_REGISTRERING`.
+Kontoen du oppretter der blir plattformeier. Siden stenger seg selv i samme
+øyeblikk, og resten av kundene oppretter du fra `/plattform`.
 
 > Kjør aldri `npm run db:seed` mot produksjonsdatabasen — den sletter alt.
 > Den nekter å kjøre når `NODE_ENV=production`, men vær likevel oppmerksom.
@@ -219,14 +220,10 @@ i produksjon hvis nøkkelen er en av eksempelverdiene eller mangler tilfeldighet
 openssl rand -base64 32
 ```
 
-**2. Registrering av nye bedrifter.** Så lenge databasen er tom er `/registrer`
-åpen, slik at den aller første bedriften kan opprettes. Deretter er den stengt
-til du bevisst åpner den:
-
-```
-TILLAT_REGISTRERING="ja"
-REGISTRERING_KODE="valgfri-invitasjonskode"
-```
+**2. Registrering av nye bedrifter.** `/registrer` er åpen nøyaktig så lenge
+databasen er tom, slik at plattformeieren kan opprette seg selv. Deretter er
+den stengt for godt, og det finnes med vilje ingen miljøvariabel som åpner den
+igjen — en bryter som kan stå feil, kommer før eller siden til å stå feil.
 
 Sperren håndheves i server-handlingen, ikke bare i grensesnittet — en stengt
 side hjelper ikke hvis noen sender skjemaet rett til serveren.
@@ -238,6 +235,28 @@ overstyres med `SEED_PASSWORD`.
 I tillegg kontrolleres en innlogget økt mot databasen ved hver sidevisning.
 Deaktiverer du en bruker, er hen ute umiddelbart — ikke først når tokenet går
 ut om 30 dager.
+
+## Plattformeier
+
+Systemet er bygget for å selges videre, så det finnes ett nivå over kundene.
+
+Den aller første kontoen — den du oppretter under førstegangsoppsettet — er
+plattformeier. Bare den ser `/plattform`, der alle kundene ligger. Derfra
+oppretter du nye bedrifter med hver sin første administrator, og du kan åpne
+en kundes system for å hjelpe dem, eller deaktivere en bedrift uten å slette
+noe som helst.
+
+Alle andre er administratorer i sitt eget firma og ingenting mer. De ser ikke
+at plattformsiden finnes — den svarer «finnes ikke», ikke «ingen tilgang».
+
+Det viktige for sikkerheten: **plattformeieren omgår ikke dataadskillelsen.**
+Når du åpner en kunde, bytter økten din hvilken organisasjon den peker på, og
+all datatilgang går fortsatt gjennom `dbForOrg()` akkurat som for kundens egne
+brukere. Plattformtilgangen er derfor ikke en ny vei rundt filteret. En gul
+stripe på toppen gjør det umulig å glemme hvem sitt system du står i.
+
+Rettigheten leses fra databasen ved hver sidevisning, ikke fra
+innloggingstokenet. Fjernes den, gjelder det umiddelbart.
 
 ## Roller
 

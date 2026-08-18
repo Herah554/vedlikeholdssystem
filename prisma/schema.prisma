@@ -24,6 +24,8 @@ model Organization {
   slug      String   @unique
   name      String
   orgNumber String?
+  /// Deaktivert bedrift beholder alle data, men ingen kommer inn.
+  isActive  Boolean @default(true)
   /// Standard timepris brukt når bruker mangler egen sats
   hourlyRate Decimal @default(950) @db.Decimal(10, 2)
   currency  String   @default("NOK")
@@ -80,6 +82,8 @@ model User {
   hourlyRate     Decimal? @db.Decimal(10, 2)
   phone          String?
   isActive       Boolean  @default(true)
+  /// Plattformeier: kan opprette bedrifter og bytte mellom dem.
+  isSuperAdmin   Boolean  @default(false)
   lastLoginAt    DateTime?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

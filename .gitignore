@@ -32,6 +32,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# ... bortsett fra malen. Den inneholder bare plassholdere, og README-en ber
+# folk kopiere den til .env.
+!.env.example
 
 # vercel
 .vercel
