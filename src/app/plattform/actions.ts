@@ -6,6 +6,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireSuperadmin, startSession } from "@/lib/auth";
 import { opprettBedrift } from "@/lib/bedrift";
+import { opprettDemobedrift } from "@/lib/demo";
 
 /**
  * Handlingene på plattformsiden.
@@ -163,4 +164,22 @@ export async function settAktiv(formData: FormData): Promise<void> {
   });
 
   revalidatePath("/plattform");
+}
+
+/**
+ * Oppretter en ferdig utfylt demobedrift.
+ *
+ * Nyttig når systemet skal vises fram: et tomt dashbord selger ingenting.
+ * Bedriften er en helt vanlig kunde og ser ikke noe fra de andre.
+ */
+export async function lagDemobedrift(): Promise<Resultat> {
+  await requireSuperadmin();
+
+  const demo = await opprettDemobedrift();
+
+  revalidatePath("/plattform");
+  return {
+    ok: true,
+    melding: `${demo.navn} er klar. Logg inn som ${demo.innlogging} med passordet ${demo.passord} — dette vises bare nå.`,
+  };
 }

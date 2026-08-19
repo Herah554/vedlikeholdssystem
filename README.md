@@ -10,7 +10,7 @@ uten å se hverandres data.
 
 | Modul | Hva den gjør |
 |---|---|
-| **Plattform** | Din egen side: alle kundene, opprett nye, hopp inn hos én av dem |
+| **Plattform** | Din egen side: alle kundene, opprett nye, hopp inn hos én av dem, lag en demobedrift |
 | **Oppsett** | Administratorens side: hvem får gjøre hva, og hvilke årsaker teknikerne velger mellom |
 | **Dashbord** | Widgets du drar i posisjon og størrelse. Oppsettet kan deles med kolleger |
 | **Ukeplan** | Dra-og-slipp-tavle for ukens jobber, fordelt på dager og teknikere |
@@ -247,6 +247,11 @@ plattformeier. Bare den ser `/plattform`, der alle kundene ligger. Derfra
 oppretter du nye bedrifter med hver sin første administrator, og du kan åpne
 en kundes system for å hjelpe dem, eller deaktivere en bedrift uten å slette
 noe som helst.
+
+Derfra kan du også opprette en **demobedrift** med ett trykk: et anlegg med
+utstyr, deler under minimum, jobber i alle statuser, forfalt forebyggende
+vedlikehold og brukere i hver rolle. Den er en helt vanlig kunde i systemet, og
+er der for at du skal kunne vise fram hva systemet gjør uten å røre ekte data.
 
 Alle andre er administratorer i sitt eget firma og ingenting mer. De ser ikke
 at plattformsiden finnes — den svarer «finnes ikke», ikke «ingen tilgang».

@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, Building2, LogIn, Power, ShieldCheck } from "lucide-react";
+import {
+  ArrowLeft,
+  Building2,
+  LogIn,
+  Power,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requireSuperadmin } from "@/lib/auth";
 import {
@@ -17,6 +24,7 @@ import {
   Tr,
 } from "@/components/ui";
 import { apneBedrift, settAktiv } from "./actions";
+import { DemoKnapp } from "./demoknapp";
 import { NyKundeSkjema } from "./skjema";
 
 export const metadata: Metadata = { title: "Plattform" };
@@ -174,6 +182,21 @@ export default async function PlattformSide() {
         />
         <CardBody>
           <NyKundeSkjema />
+        </CardBody>
+      </Card>
+
+      <Card className="mt-5">
+        <CardHeader
+          title={
+            <span className="inline-flex items-center gap-2">
+              <Sparkles className="size-4 text-tekst-svak" aria-hidden />
+              Demobedrift
+            </span>
+          }
+          description="En ferdig utfylt bedrift å vise fram systemet med."
+        />
+        <CardBody>
+          <DemoKnapp />
         </CardBody>
       </Card>
     </main>
