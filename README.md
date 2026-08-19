@@ -12,7 +12,7 @@ uten å se hverandres data.
 |---|---|
 | **Plattform** | Din egen side: alle kundene, opprett nye, hopp inn hos én av dem |
 | **Oppsett** | Administratorens side: hvem får gjøre hva, og hvilke årsaker teknikerne velger mellom |
-| **Dashbord** | Konfigurerbare widgets — hver bruker setter sammen sitt eget oppsett |
+| **Dashbord** | Widgets du drar i posisjon og størrelse. Oppsettet kan deles med kolleger |
 | **Ukeplan** | Dra-og-slipp-tavle for ukens jobber, fordelt på dager og teknikere |
 | **Arbeidsordre** | Meld, godkjenn, planlegg og utfør. Timeføring, deleuttak, sjekklister og kommentarer |
 | **Assistent** | Søker i all historikk, finner liknende feil og hva som løste dem. Kan søke på nettet |
@@ -153,6 +153,7 @@ Nye bedrifter oppretter du fra `/plattform`. Kunder registrerer seg ikke selv.
 | `npm run db:studio` | Åpne Prisma Studio for å se i databasen |
 | `npm run db:reset` | Nullstill databasen helt |
 | `npm run sjekk:isolering` | Kontroller at alle tabeller er dekket av flerklient-filteret |
+| `npm run sjekk:deling` | Kontroller at delte dashbord ikke krysser bedriftsgrensen |
 
 ## Hvordan dataadskillelsen virker
 

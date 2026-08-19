@@ -13,7 +13,8 @@
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset --force",
     "sjekk:isolering": "tsx src/verktoy/sjekk-isolering.ts",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "sjekk:deling": "tsx src/verktoy/sjekk-deling.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.117.1",

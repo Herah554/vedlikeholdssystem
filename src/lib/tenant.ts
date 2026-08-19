@@ -45,6 +45,7 @@ const ARVER_TILHORIGHET = new Set([
   "AssetPart",
   "PurchaseOrderLine",
   "ChatMessage",
+  "DashboardShare",
 ]);
 
 const udekket = ALLE_MODELLER.filter(

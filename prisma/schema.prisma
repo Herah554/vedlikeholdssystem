@@ -121,9 +121,9 @@ model User {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  organization    Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  requestedOrders WorkOrder[]     @relation("Melder")
-  assignedOrders  WorkOrder[]     @relation("Tildelt")
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  requestedOrders WorkOrder[]      @relation("Melder")
+  assignedOrders  WorkOrder[]      @relation("Tildelt")
   purchaseOrders  PurchaseOrder[]
   pmPlans         PmPlan[]
   timeEntries     TimeEntry[]
@@ -133,6 +133,7 @@ model User {
   dashboards      Dashboard[]
   conversations   Conversation[]
   auditLogs       AuditLog[]
+  dashboardShares DashboardShare[]
 
   @@unique([organizationId, email])
   @@index([organizationId])
@@ -637,6 +638,27 @@ model Budget {
 // fritt kan legge til, fjerne og flytte widgets.
 // ─────────────────────────────────────────────────────────────
 
+/**
+ * Én person deler dashbordoppsettet sitt med en kollega, eller med alle.
+ * Tabellen har ingen organizationId. Den arver tilhørigheten fra dashbordet,
+ * og alle oppslag går derfor gjennom dashboards — se kommentaren i
+ * src/lib/tenant.ts om tabeller som arver.
+ */
+model DashboardShare {
+  id          String   @id @default(cuid())
+  dashboardId String
+  /// Null betyr delt med hele bedriften
+  userId      String?
+  createdAt   DateTime @default(now())
+
+  dashboard Dashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  user      User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([dashboardId, userId])
+  @@index([userId])
+  @@map("dashboard_shares")
+}
+
 model Dashboard {
   id             String   @id @default(cuid())
   organizationId String
@@ -649,8 +671,9 @@ model Dashboard {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  user         User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shares       DashboardShare[]
 
   @@index([organizationId, userId])
   @@map("dashboards")
