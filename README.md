@@ -11,6 +11,7 @@ uten å se hverandres data.
 | Modul | Hva den gjør |
 |---|---|
 | **Plattform** | Din egen side: alle kundene, opprett nye, hopp inn hos én av dem, lag en demobedrift |
+| **Import** | Få inn utstyrslista og reservedelene fra et regneark, uten å skrive dem inn på nytt |
 | **Oppsett** | Administratorens side: hvem får gjøre hva, og hvilke årsaker teknikerne velger mellom |
 | **Dashbord** | Widgets du drar i posisjon og størrelse. Oppsettet kan deles med kolleger |
 | **Ukeplan** | Dra-og-slipp-tavle for ukens jobber, fordelt på dager og teknikere |
@@ -155,6 +156,7 @@ Nye bedrifter oppretter du fra `/plattform`. Kunder registrerer seg ikke selv.
 | `npm run sjekk:isolering` | Kontroller at alle tabeller er dekket av flerklient-filteret |
 | `npm run sjekk:deling` | Kontroller at delte dashbord ikke krysser bedriftsgrensen |
 | `npm run sjekk:passord` | Kontroller flyten for glemt passord |
+| `npm run sjekk:import` | Kontroller import fra regneark |
 
 ## Hvordan dataadskillelsen virker
 

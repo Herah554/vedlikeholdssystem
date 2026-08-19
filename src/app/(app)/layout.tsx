@@ -28,6 +28,11 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   const synlige = [
     "/dashbord",
     ...MODUL_IDER.filter((m) => kanSession(session, m)).map((m) => `/${m}`),
+    // Import står bare der for den som faktisk kan opprette noe å importere til
+    ...(kanSession(session, "anlegg", "administrere") ||
+    kanSession(session, "reservedeler", "administrere")
+      ? ["/import"]
+      : []),
     ...(session.role === "ADMIN" ? ["/oppsett"] : []),
     "/innstillinger",
   ];

@@ -7,6 +7,7 @@ import {
   Boxes,
   CalendarDays,
   ChartNoAxesCombined,
+  FileSpreadsheet,
   ClipboardList,
   LayoutDashboard,
   Menu,
@@ -39,6 +40,7 @@ const LENKER = [
   { href: "/forebyggende", tekst: "Forebyggende", ikon: Repeat2 },
   { href: "/budsjett", tekst: "Budsjett", ikon: Wallet },
   { href: "/rapporter", tekst: "Rapporter", ikon: ChartNoAxesCombined },
+  { href: "/import", tekst: "Import", ikon: FileSpreadsheet },
   { href: "/oppsett", tekst: "Oppsett", ikon: SlidersHorizontal },
   { href: "/innstillinger", tekst: "Innstillinger", ikon: Settings },
 ] as const;
