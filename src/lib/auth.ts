@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { SignJWT, jwtVerify } from "jose";
@@ -153,8 +154,12 @@ export async function getSession(): Promise<Session | null> {
  *
  * Både beskyttede sider og innloggingssiden må bruke denne. Bruker den ene
  * bare tokenet, ender de opp med å sende brukeren fram og tilbake mellom seg.
+ *
+ * cache() gjør at oppslaget skjer én gang per forespørsel, ikke én gang per
+ * sted som spør. Både layouten og siden inni den kaller denne, og uten
+ * cache() ble det to like spørringer for hver eneste sidevisning.
  */
-export async function gyldigSesjon(): Promise<Session | null> {
+export const gyldigSesjon = cache(async function gyldigSesjon(): Promise<Session | null> {
   const session = await getSession();
   if (!session) return null;
 
@@ -188,7 +193,7 @@ export async function gyldigSesjon(): Promise<Session | null> {
   if (!besokt) return null;
 
   return { ...session, superadmin: true };
-}
+});
 
 /** Sesjon eller omdirigering til innlogging. Brukes i alle beskyttede sider. */
 export async function requireSession(): Promise<Session> {
