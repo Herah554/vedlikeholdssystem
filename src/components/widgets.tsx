@@ -122,10 +122,10 @@ async function OrdrerPerStatus({ db }: Ctx) {
   }));
 
   return (
-    <Card>
+    <Card className="flex h-full flex-col">
       <CardHeader title="Arbeidsordre per status" description="Alle ordre i systemet" />
-      <CardBody className="pt-2">
-        {data.length ? <StatusSoyler data={data} /> : <EmptyState title="Ingen arbeidsordre ennå" />}
+      <CardBody className="min-h-0 flex-1 overflow-auto pt-2">
+        {data.length ? <StatusSoyler data={data} hoyde="100%" /> : <EmptyState title="Ingen arbeidsordre ennå" />}
       </CardBody>
     </Card>
   );
@@ -136,13 +136,13 @@ async function KostnadPerManed({ session }: Ctx) {
   const sum = data.reduce((s, d) => s + d.arbeid + d.deler, 0);
 
   return (
-    <Card>
+    <Card className="flex h-full flex-col">
       <CardHeader
         title="Kostnad per måned"
         description={`Siste tolv måneder — totalt ${kroner(sum)}`}
       />
-      <CardBody className="pt-2">
-        <KostnadLinje data={data} />
+      <CardBody className="min-h-0 flex-1 overflow-auto pt-2">
+        <KostnadLinje data={data} hoyde="100%" />
       </CardBody>
     </Card>
   );
@@ -152,11 +152,11 @@ async function NedetidPerUtstyr({ session }: Ctx) {
   const data = await nedetidPerUtstyr(session.organizationId);
 
   return (
-    <Card>
+    <Card className="flex h-full flex-col">
       <CardHeader title="Nedetid per utstyr" description="Siste tolv måneder" />
-      <CardBody className="pt-2">
+      <CardBody className="min-h-0 flex-1 overflow-auto pt-2">
         {data.length ? (
-          <NedetidSoyler data={data} />
+          <NedetidSoyler data={data} hoyde="100%" />
         ) : (
           <EmptyState title="Ingen nedetid registrert" description="Nedetid føres på arbeidsordren når jobben lukkes." />
         )}
@@ -177,7 +177,7 @@ async function MineJobber({ db, session }: Ctx) {
   });
 
   return (
-    <Card>
+    <Card className="flex h-full flex-col">
       <CardHeader
         title="Mine jobber"
         description="Tildelt deg og ikke avsluttet"
@@ -190,7 +190,7 @@ async function MineJobber({ db, session }: Ctx) {
       {ordrer.length === 0 ? (
         <EmptyState title="Ingen åpne jobber" description="Du har ingen arbeidsordre tildelt akkurat nå." />
       ) : (
-        <ul className="divide-y divide-kant">
+        <ul className="min-h-0 flex-1 divide-y divide-kant overflow-auto">
           {ordrer.map((o) => (
             <li key={o.id}>
               <Link href={`/arbeidsordre/${o.id}`} className="flex items-center gap-3 px-5 py-3 hover:bg-flate-hover">
@@ -223,9 +223,9 @@ async function SisteOrdrer({ db }: Ctx) {
   });
 
   return (
-    <Card>
+    <Card className="flex h-full flex-col">
       <CardHeader title="Siste meldinger" description="Nyeste arbeidsordre" />
-      <ul className="divide-y divide-kant">
+      <ul className="min-h-0 flex-1 divide-y divide-kant overflow-auto">
         {ordrer.map((o) => (
           <li key={o.id}>
             <Link href={`/arbeidsordre/${o.id}`} className="flex items-center gap-3 px-5 py-3 hover:bg-flate-hover">

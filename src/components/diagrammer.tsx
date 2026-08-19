@@ -40,15 +40,25 @@ function farger(morkt: boolean) {
   };
 }
 
+/**
+ * Høyden er et tall på vanlige sider og «100%» på dashbordet.
+ *
+ * Dashbordet lar brukeren dra widgeten i høyden, og da må diagrammet følge
+ * med. Andre steder står diagrammet i en boks uten fast høyde, og der ville
+ * «100%» blitt null piksler.
+ */
+type MedHoyde = { hoyde?: number | `${number}%` };
+
 export function StatusSoyler({
   data,
+  hoyde = 240,
 }: {
   data: { navn: string; antall: number; farge: string }[];
-}) {
+} & MedHoyde) {
   const { akse, rutenett, boks, markor } = farger(useErMorkt());
 
   return (
-    <ResponsiveContainer width="100%" height={240}>
+    <ResponsiveContainer width="100%" height={hoyde}>
       <BarChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 8 }}>
         <CartesianGrid strokeDasharray="3 3" stroke={rutenett} vertical={false} />
         <XAxis dataKey="navn" tick={akse} tickLine={false} axisLine={false} interval={0} angle={-20} textAnchor="end" height={60} />
@@ -70,13 +80,14 @@ export function StatusSoyler({
 
 export function KostnadLinje({
   data,
+  hoyde = 260,
 }: {
   data: { maned: string; arbeid: number; deler: number }[];
-}) {
+} & MedHoyde) {
   const { akse, rutenett, boks, markor } = farger(useErMorkt());
 
   return (
-    <ResponsiveContainer width="100%" height={260}>
+    <ResponsiveContainer width="100%" height={hoyde}>
       <LineChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
         <CartesianGrid strokeDasharray="3 3" stroke={rutenett} vertical={false} />
         <XAxis dataKey="maned" tick={akse} tickLine={false} axisLine={false} />
@@ -103,13 +114,14 @@ export function KostnadLinje({
 
 export function NedetidSoyler({
   data,
+  hoyde = 260,
 }: {
   data: { kode: string; navn: string; minutter: number }[];
-}) {
+} & MedHoyde) {
   const { akse, rutenett, boks, markor } = farger(useErMorkt());
 
   return (
-    <ResponsiveContainer width="100%" height={260}>
+    <ResponsiveContainer width="100%" height={hoyde}>
       <BarChart
         data={data}
         layout="vertical"

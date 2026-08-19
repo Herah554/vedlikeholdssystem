@@ -7,6 +7,7 @@ import { STANDARD_OPPSETT } from "@/components/widget-katalog";
 import { hentOppsett } from "../oppsett";
 import { deltMedMeg, delingsStatus } from "./deling";
 import { DelKort, MottattKort } from "./delingskort";
+import { Maler } from "./maler";
 import { Velger } from "./velger";
 
 export const metadata: Metadata = { title: "Tilpass dashbord" };
@@ -33,6 +34,10 @@ export default async function TilpassSide() {
         title="Tilpass dashbord"
         description="Velg hvilke tall du vil se, og i hvilken rekkefølge. Oppsettet gjelder bare deg."
       />
+
+      <div className="mb-5">
+        <Maler />
+      </div>
 
       <Velger start={oppsett} />
 

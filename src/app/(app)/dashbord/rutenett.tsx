@@ -46,6 +46,19 @@ const SPENN: Record<Bredde, string> = {
   4: "sm:col-span-2 xl:col-span-4",
 };
 
+/**
+ * Høyden er rader i rutenettet, ikke piksler på den enkelte widgeten.
+ *
+ * Med min-høyde ble hver widget så høy som den ville, og naboene strakk seg
+ * etter den høyeste i raden. Resultatet var kort fulle av luft. Nå er raden
+ * 7rem, og en widget dekker et helt antall av dem — da står alt på linje.
+ */
+const RADER: Record<Hoyde, string> = {
+  1: "row-span-1",
+  2: "row-span-2",
+  3: "row-span-3",
+};
+
 function klem(verdi: number, maks: number): number {
   return Math.min(maks, Math.max(1, verdi));
 }
@@ -271,7 +284,7 @@ export function Rutenett({
       <div
         ref={rutenett}
         className={cn(
-          "grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4",
+          "grid grid-cols-1 gap-4 auto-rows-[7rem] sm:grid-cols-2 xl:grid-cols-4",
           // Mens man drar i et hjørne skal ikke teksten i andre widgets
           // bli markert av musebevegelsen.
           endrer && "select-none",
@@ -304,15 +317,18 @@ export function Rutenett({
                 settDrar(null);
                 settOver(null);
               }}
-              style={{ minHeight: w.h * RAD_PIKSLER }}
               className={cn(
-                "relative [&>*]:h-full",
+                "relative min-h-0 [&>*]:h-full",
                 SPENN[w.w],
+                RADER[w.h],
                 !endrer && "transition-all",
                 redigerer && !endrer && "cursor-grab active:cursor-grabbing",
                 drar === w.id && "opacity-40",
                 erOver && "scale-[1.02] rounded-xl ring-2 ring-merke-500",
-                endres && "rounded-xl ring-2 ring-merke-500",
+                // Mens man drar vises tydelig hvor widgeten vil lande når
+                // man slipper. Uten det er det ikke til å se at den knepper
+                // på plass i rutenettet.
+                endres && "rounded-xl outline-2 outline-dashed outline-merke-500 outline-offset-2",
               )}
             >
               {redigerer && (
@@ -323,7 +339,12 @@ export function Rutenett({
                       aria-hidden
                     />
                     {meta?.navn}
-                    <span className="text-tekst-svakest tabular-nums">
+                    <span
+                      className={cn(
+                        "tabular-nums",
+                        endres ? "font-semibold text-aksent" : "text-tekst-svakest",
+                      )}
+                    >
                       {w.w}×{w.h}
                     </span>
                   </span>

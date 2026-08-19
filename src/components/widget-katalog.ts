@@ -97,3 +97,78 @@ export const WIDGET_IKON: Record<WidgetType, typeof ClipboardList> = {
   "mine-jobber": ClipboardList,
   "siste-ordrer": ClipboardList,
 };
+
+/**
+ * Ferdige oppsett å starte fra.
+ *
+ * Et tomt rutenett er vanskelig å begynne på, og et dashbord er ikke det
+ * samme for en tekniker som for en leder. Malene er ment som utgangspunkt —
+ * du drar om på dem etterpå.
+ */
+export type Mal = {
+  id: string;
+  navn: string;
+  beskrivelse: string;
+  oppsett: WidgetOppsett[];
+};
+
+export const MALER: Mal[] = [
+  {
+    id: "standard",
+    navn: "Driftsoversikt",
+    beskrivelse: "Nøkkeltallene øverst, diagrammene under. Passer de fleste.",
+    oppsett: STANDARD_OPPSETT,
+  },
+  {
+    id: "tekniker",
+    navn: "Tekniker",
+    beskrivelse: "Dine egne jobber først, og det som haster.",
+    oppsett: [
+      { id: "t1", type: "mine-jobber", w: 2, h: 3 },
+      { id: "t2", type: "kritiske-ordrer", w: 1, h: 1 },
+      { id: "t3", type: "forfalt-pm", w: 1, h: 1 },
+      { id: "t4", type: "lav-beholdning", w: 2, h: 1 },
+      { id: "t5", type: "siste-ordrer", w: 2, h: 2 },
+    ],
+  },
+  {
+    id: "leder",
+    navn: "Leder",
+    beskrivelse: "Kostnad, nedetid og etterlevelse — det du rapporterer på.",
+    oppsett: [
+      { id: "l1", type: "kostnad-hittil", w: 1, h: 1 },
+      { id: "l2", type: "nedetid-30", w: 1, h: 1 },
+      { id: "l3", type: "pm-etterlevelse", w: 1, h: 1 },
+      { id: "l4", type: "apne-ordrer", w: 1, h: 1 },
+      { id: "l5", type: "kostnad-per-maaned", w: 4, h: 3 },
+      { id: "l6", type: "nedetid-per-utstyr", w: 2, h: 2 },
+      { id: "l7", type: "ordrer-per-status", w: 2, h: 2 },
+    ],
+  },
+  {
+    id: "delelager",
+    navn: "Delelager",
+    beskrivelse: "Beholdning og det som må bestilles.",
+    oppsett: [
+      { id: "d1", type: "lav-beholdning", w: 2, h: 2 },
+      { id: "d2", type: "kostnad-hittil", w: 2, h: 1 },
+      { id: "d3", type: "siste-ordrer", w: 2, h: 3 },
+      { id: "d4", type: "ordrer-per-status", w: 2, h: 2 },
+    ],
+  },
+  {
+    id: "kompakt",
+    navn: "Kompakt",
+    beskrivelse: "Bare tallene, ingen diagrammer. Passer på en skjerm i verkstedet.",
+    oppsett: [
+      { id: "k1", type: "apne-ordrer", w: 1, h: 1 },
+      { id: "k2", type: "kritiske-ordrer", w: 1, h: 1 },
+      { id: "k3", type: "forfalt-pm", w: 1, h: 1 },
+      { id: "k4", type: "lav-beholdning", w: 1, h: 1 },
+      { id: "k5", type: "nedetid-30", w: 1, h: 1 },
+      { id: "k6", type: "kostnad-hittil", w: 1, h: 1 },
+      { id: "k7", type: "pm-etterlevelse", w: 1, h: 1 },
+      { id: "k8", type: "mine-jobber", w: 1, h: 1 },
+    ],
+  },
+];

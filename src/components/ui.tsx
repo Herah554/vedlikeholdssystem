@@ -245,12 +245,17 @@ export function StatCard({
 
   if (href) {
     return (
-      <Link href={href} className="kort block p-4 transition-colors hover:bg-flate-hover">
+      <Link
+        href={href}
+        className="kort flex h-full flex-col justify-center p-4 transition-colors hover:bg-flate-hover"
+      >
         {innhold}
       </Link>
     );
   }
-  return <div className="kort p-4">{innhold}</div>;
+  return (
+    <div className="kort flex h-full flex-col justify-center p-4">{innhold}</div>
+  );
 }
 
 // ─── Sidetopp ─────────────────────────────────────────────────
