@@ -15,6 +15,8 @@ import { Button, Card, CardBody, CardHeader } from "@/components/ui";
 import {
   WIDGET_IKON,
   WIDGET_KATALOG,
+  type Bredde,
+  type Hoyde,
   type WidgetOppsett,
   type WidgetType,
 } from "@/components/widget-katalog";
@@ -52,10 +54,10 @@ export function Velger({ start }: { start: WidgetOppsett[] }) {
   const brukte = new Set(valgte.map((v) => v.type));
   const ledige = WIDGET_KATALOG.filter((w) => !brukte.has(w.type));
 
-  function leggTil(type: WidgetType, bredde: 1 | 2) {
+  function leggTil(type: WidgetType, bredde: Bredde, hoyde: Hoyde) {
     settValgte((f) => [
       ...f,
-      { id: `w${Date.now().toString(36)}`, type, w: bredde },
+      { id: `w${Date.now().toString(36)}`, type, w: bredde, h: hoyde },
     ]);
     settMelding(undefined);
   }
@@ -210,7 +212,7 @@ export function Velger({ start }: { start: WidgetOppsett[] }) {
                 <li key={w.type}>
                   <button
                     type="button"
-                    onClick={() => leggTil(w.type, w.bredde)}
+                    onClick={() => leggTil(w.type, w.bredde, w.hoyde)}
                     className="flex w-full items-center gap-3 px-5 py-3 text-left hover:bg-flate-hover"
                   >
                     <Ikon className="size-4 shrink-0 text-tekst-svakest" aria-hidden />
