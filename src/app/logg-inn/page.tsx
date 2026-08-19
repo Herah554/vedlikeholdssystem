@@ -40,14 +40,17 @@ export default async function LoggInnSide(props: PageProps<"/logg-inn">) {
           <LoginSkjema />
         </div>
 
-        <p className="mt-6 text-center text-sm text-tekst-svak">
-          Har du ikke konto? Be administratoren i firmaet ditt om tilgang,
-          <br />
-          eller{" "}
-          <Link href="/registrer" className="font-medium text-aksent hover:underline">
-            registrer en ny bedrift
+        <p className="mt-4 text-center text-sm">
+          <Link
+            href="/glemt-passord"
+            className="font-medium text-aksent hover:underline"
+          >
+            Glemt passordet?
           </Link>
-          .
+        </p>
+
+        <p className="mt-6 text-center text-sm text-tekst-svak">
+          Har du ikke konto? Be administratoren i firmaet ditt om tilgang.
         </p>
       </div>
     </main>

@@ -93,6 +93,11 @@ export type Session = {
    * administratoren oppsettet, skal det gjelde ved neste sidevisning.
    */
   rettigheter?: Matrise;
+  /**
+   * Når tokenet ble utstedt, i sekunder. Leses fra tokenet selv og brukes til
+   * å kaste ut økter som er eldre enn siste passordbytte.
+   */
+  utstedt?: number;
 };
 
 // ─── Passord ──────────────────────────────────────────────────
@@ -110,7 +115,7 @@ export function verifyPassword(plain: string, hash: string): Promise<boolean> {
 async function signSession(session: Session): Promise<string> {
   // Rettighetene hører hjemme i databasen, ikke i kapselen. Lagt inn her
   // ville de både blåst opp tokenet og blitt stående uendret i 30 dager.
-  const { rettigheter: _, ...iToken } = session;
+  const { rettigheter: _, utstedt: __, ...iToken } = session;
 
   return new SignJWT({ ...iToken })
     .setProtectedHeader({ alg: "HS256" })
@@ -155,6 +160,7 @@ export async function getSession(): Promise<Session | null> {
       role: payload.role as Role,
       hjemOrganisasjonId: payload.hjemOrganisasjonId as string | undefined,
       hjemOrganisasjonNavn: payload.hjemOrganisasjonNavn as string | undefined,
+      utstedt: payload.iat,
     };
   } catch {
     // Utløpt eller manipulert token — behandles som utlogget.
@@ -188,11 +194,26 @@ export const gyldigSesjon = cache(async function gyldigSesjon(): Promise<Session
       organizationId: true,
       role: true,
       isSuperAdmin: true,
+      sessionsValidFrom: true,
       organization: { select: { isActive: true, permissions: true } },
     },
   });
 
   if (!bruker) return null;
+
+  // Passordet er byttet etter at denne innloggingen ble utstedt. Da skal den
+  // ikke gjelde lenger — det er nettopp derfor man bytter passord.
+  //
+  // Sekundet rundes ned i tokenet, så vi gir ett sekund slingringsmonn.
+  // Uten det ville den som nettopp satte nytt passord blitt kastet ut med
+  // det samme, av sitt eget bytte.
+  if (
+    bruker.sessionsValidFrom &&
+    session.utstedt !== undefined &&
+    session.utstedt + 1 < Math.floor(bruker.sessionsValidFrom.getTime() / 1000)
+  ) {
+    return null;
+  }
 
   // Det vanlige tilfellet: økten peker på brukerens egen bedrift.
   if (bruker.organizationId === session.organizationId) {

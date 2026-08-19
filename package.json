@@ -14,7 +14,8 @@
     "db:reset": "prisma migrate reset --force",
     "sjekk:isolering": "tsx src/verktoy/sjekk-isolering.ts",
     "postinstall": "prisma generate",
-    "sjekk:deling": "tsx src/verktoy/sjekk-deling.ts"
+    "sjekk:deling": "tsx src/verktoy/sjekk-deling.ts",
+    "sjekk:passord": "tsx src/verktoy/sjekk-passord.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.117.1",

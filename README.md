@@ -154,6 +154,7 @@ Nye bedrifter oppretter du fra `/plattform`. Kunder registrerer seg ikke selv.
 | `npm run db:reset` | Nullstill databasen helt |
 | `npm run sjekk:isolering` | Kontroller at alle tabeller er dekket av flerklient-filteret |
 | `npm run sjekk:deling` | Kontroller at delte dashbord ikke krysser bedriftsgrensen |
+| `npm run sjekk:passord` | Kontroller flyten for glemt passord |
 
 ## Hvordan dataadskillelsen virker
 
@@ -233,6 +234,19 @@ side hjelper ikke hvis noen sender skjemaet rett til serveren.
 **3. Testdata.** `npm run db:seed` sletter alt og oppretter kontoer med et
 passord som står i koden. Den nekter å kjøre i produksjon, og passordet kan
 overstyres med `SEED_PASSWORD`.
+
+**4. Glemt passord.** Brukeren ber om en engangslenke på `/glemt-passord`.
+Lenka virker i én time og bare én gang, og selve tokenet lagres bare som hash —
+kommer noen seg til databasen, får de en liste de ikke kan gjøre noe med.
+
+Siden svarer likt enten adressen finnes eller ikke. Ellers kunne hvem som helst
+brukt den til å kartlegge hvem som jobber hvor.
+
+Dette krever at `SMTP_*` er satt opp. Er den ikke det, sier siden fra om det,
+og administratoren i firmaet setter passordet manuelt under Innstillinger.
+
+Et passordbytte avslutter alle andre innlogginger på kontoen. Har noen kommet
+seg inn, er det hele poenget med å bytte passord at de mister tilgangen.
 
 I tillegg kontrolleres en innlogget økt mot databasen ved hver sidevisning.
 Deaktiverer du en bruker, er hen ute umiddelbart — ikke først når tokenet går

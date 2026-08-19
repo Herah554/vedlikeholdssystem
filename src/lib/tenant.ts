@@ -46,6 +46,7 @@ const ARVER_TILHORIGHET = new Set([
   "PurchaseOrderLine",
   "ChatMessage",
   "DashboardShare",
+  "PasswordReset",
 ]);
 
 const udekket = ALLE_MODELLER.filter(

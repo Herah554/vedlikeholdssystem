@@ -105,21 +105,24 @@ enum Role {
 }
 
 model User {
-  id             String    @id @default(cuid())
-  organizationId String
-  email          String
-  name           String
-  passwordHash   String
-  role           Role      @default(TEKNIKER)
+  id                String    @id @default(cuid())
+  organizationId    String
+  email             String
+  name              String
+  passwordHash      String
+  role              Role      @default(TEKNIKER)
   /// Timepris for kostnadsberegning. Null = bruk organisasjonens sats.
-  hourlyRate     Decimal?  @db.Decimal(10, 2)
-  phone          String?
-  isActive       Boolean   @default(true)
+  hourlyRate        Decimal?  @db.Decimal(10, 2)
+  phone             String?
+  isActive          Boolean   @default(true)
   /// Plattformeier: kan opprette bedrifter og bytte mellom dem.
-  isSuperAdmin   Boolean   @default(false)
-  lastLoginAt    DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  isSuperAdmin      Boolean   @default(false)
+  /// Innlogginger utstedt før dette tidspunktet er ugyldige. Settes ved
+  /// passordbytte, slik at gamle økter kastes ut med det samme.
+  sessionsValidFrom DateTime?
+  lastLoginAt       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   requestedOrders WorkOrder[]      @relation("Melder")
@@ -134,6 +137,7 @@ model User {
   conversations   Conversation[]
   auditLogs       AuditLog[]
   dashboardShares DashboardShare[]
+  passwordResets  PasswordReset[]
 
   @@unique([organizationId, email])
   @@index([organizationId])
@@ -657,6 +661,29 @@ model DashboardShare {
   @@unique([dashboardId, userId])
   @@index([userId])
   @@map("dashboard_shares")
+}
+
+/**
+ * Engangslenke for å sette nytt passord.
+ * Selve tokenet lagres aldri — bare en hash av det. Kommer noen seg til
+ * databasen, får de en liste med hasher de ikke kan gjøre noe med, i stedet
+ * for nøkler til hver eneste konto.
+ * Tabellen arver tilhørighet fra brukeren. Oppslagene skjer med vilje uten
+ * flerklient-filteret: den som har glemt passordet er ikke logget inn, og vi
+ * vet ikke hvilken bedrift hen tilhører før tokenet er slått opp.
+ */
+model PasswordReset {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_resets")
 }
 
 model Dashboard {
