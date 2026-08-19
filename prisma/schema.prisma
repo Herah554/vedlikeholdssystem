@@ -6,7 +6,7 @@
 generator client {
   provider        = "prisma-client"
   previewFeatures = ["postgresqlExtensions"]
-  output   = "../src/generated/prisma"
+  output          = "../src/generated/prisma"
 }
 
 datasource db {
@@ -19,16 +19,19 @@ datasource db {
 // ─────────────────────────────────────────────────────────────
 
 model Organization {
-  id        String   @id @default(cuid())
+  id          String  @id @default(cuid())
   /// Brukes i URL og som kundeidentifikator
-  slug      String   @unique
-  name      String
-  orgNumber String?
+  slug        String  @unique
+  name        String
+  orgNumber   String?
   /// Deaktivert bedrift beholder alle data, men ingen kommer inn.
-  isActive  Boolean @default(true)
+  isActive    Boolean @default(true)
+  /// Hva hver rolle får se, endre og administrere. Null = standardoppsettet
+  /// i src/lib/rettigheter.ts. Se der for formatet.
+  permissions Json?
   /// Standard timepris brukt når bruker mangler egen sats
-  hourlyRate Decimal @default(950) @db.Decimal(10, 2)
-  currency  String   @default("NOK")
+  hourlyRate  Decimal @default(950) @db.Decimal(10, 2)
+  currency    String  @default("NOK")
 
   /// Kontaktopplysninger. Brukes som avsender og leveringsadresse i
   /// bestillinger som sendes til leverandør.
@@ -41,65 +44,95 @@ model Organization {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users         User[]
-  assets        Asset[]
-  workOrders    WorkOrder[]
-  parts         Part[]
-  suppliers     Supplier[]
-  pmPlans       PmPlan[]
-  costCenters   CostCenter[]
-  budgets       Budget[]
-  dashboards    Dashboard[]
-  conversations Conversation[]
-  timeEntries   TimeEntry[]
-  partUsages    PartUsage[]
-  stockMoves    StockMovement[]
-  comments      Comment[]
-  attachments   Attachment[]
+  users          User[]
+  assets         Asset[]
+  workOrders     WorkOrder[]
+  parts          Part[]
+  suppliers      Supplier[]
+  pmPlans        PmPlan[]
+  costCenters    CostCenter[]
+  budgets        Budget[]
+  dashboards     Dashboard[]
+  conversations  Conversation[]
+  timeEntries    TimeEntry[]
+  partUsages     PartUsage[]
+  stockMoves     StockMovement[]
+  comments       Comment[]
+  attachments    Attachment[]
   auditLogs      AuditLog[]
   counters       Counter[]
   purchaseOrders PurchaseOrder[]
+  failureCauses  FailureCause[]
 
   @@map("organizations")
+}
+
+/**
+ * Årsakene et firma kan velge mellom når en feil skal forklares.
+ * Lista styres av administrator under Oppsett, fordi hva som er en nyttig
+ * årsak varierer helt med hva slags anlegg man drifter.
+ * Arbeidsordren lagrer koden, ikke en peker hit. Det er med vilje: fjerner
+ * noen en årsak fra lista, skal historikken fortsatt vise hva feilen ble
+ * kalt den gangen.
+ */
+model FailureCause {
+  id             String  @id @default(cuid())
+  organizationId String
+  /// Kort kode som lagres på arbeidsordren, f.eks. LAGERSKADE
+  code           String
+  name           String
+  description    String?
+  sortOrder      Int     @default(0)
+  isActive       Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
+  @@map("failure_causes")
 }
 
 enum Role {
   ADMIN // full tilgang, kan administrere brukere
   LEDER // ser alt, godkjenner, eier budsjett
   PLANLEGGER // planlegger arbeid og forebyggende vedlikehold
+  DELELAGER // styrer reservedeler, bestillinger og leverandører
   TEKNIKER // utfører arbeid, fører timer og deleuttak
   GJEST // kun lesetilgang
 }
 
 model User {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   organizationId String
   email          String
   name           String
   passwordHash   String
-  role           Role     @default(TEKNIKER)
+  role           Role      @default(TEKNIKER)
   /// Timepris for kostnadsberegning. Null = bruk organisasjonens sats.
-  hourlyRate     Decimal? @db.Decimal(10, 2)
+  hourlyRate     Decimal?  @db.Decimal(10, 2)
   phone          String?
-  isActive       Boolean  @default(true)
+  isActive       Boolean   @default(true)
   /// Plattformeier: kan opprette bedrifter og bytte mellom dem.
-  isSuperAdmin   Boolean  @default(false)
+  isSuperAdmin   Boolean   @default(false)
   lastLoginAt    DateTime?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
-  organization      Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  requestedOrders   WorkOrder[]     @relation("Melder")
-  assignedOrders    WorkOrder[]     @relation("Tildelt")
-  purchaseOrders    PurchaseOrder[]
-  pmPlans           PmPlan[]
-  timeEntries       TimeEntry[]
-  stockMoves        StockMovement[]
-  comments          Comment[]
-  attachments       Attachment[]
-  dashboards        Dashboard[]
-  conversations     Conversation[]
-  auditLogs         AuditLog[]
+  organization    Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  requestedOrders WorkOrder[]     @relation("Melder")
+  assignedOrders  WorkOrder[]     @relation("Tildelt")
+  purchaseOrders  PurchaseOrder[]
+  pmPlans         PmPlan[]
+  timeEntries     TimeEntry[]
+  stockMoves      StockMovement[]
+  comments        Comment[]
+  attachments     Attachment[]
+  dashboards      Dashboard[]
+  conversations   Conversation[]
+  auditLogs       AuditLog[]
 
   @@unique([organizationId, email])
   @@index([organizationId])
@@ -142,19 +175,19 @@ model Asset {
   /// 1 = ubetydelig, 5 = kritisk for produksjon. Styrer prioritering.
   criticality    Int         @default(3)
 
-  manufacturer   String?
-  modelNumber    String?
-  serialNumber   String?
-  location       String?
-  installedAt    DateTime?
-  warrantyUntil  DateTime?
-  purchaseCost   Decimal?    @db.Decimal(12, 2)
+  manufacturer  String?
+  modelNumber   String?
+  serialNumber  String?
+  location      String?
+  installedAt   DateTime?
+  warrantyUntil DateTime?
+  purchaseCost  Decimal?  @db.Decimal(12, 2)
   /// Driftstimer, brukes av forebyggende planer med timeintervall
-  runningHours   Float       @default(0)
+  runningHours  Float     @default(0)
 
-  costCenterId   String?
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
+  costCenterId String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   parent       Asset?       @relation("AssetTre", fields: [parentId], references: [id], onDelete: Restrict)
@@ -215,15 +248,15 @@ model WorkOrder {
   status         WorkOrderStatus @default(MELDT)
   priority       Priority        @default(NORMAL)
 
-  assetId        String?
-  requestedById  String
-  assignedToId   String?
-  pmPlanId       String?
+  assetId       String?
+  requestedById String
+  assignedToId  String?
+  pmPlanId      String?
 
   /// Fritekst: hva som faktisk løste problemet. Viktigste feltet for AI-søket.
-  resolution     String?
+  resolution      String?
   /// Kort kode for feiltype, brukes i statistikk (f.eks. "LAGERSKADE")
-  failureCode    String?
+  failureCode     String?
   /// Minutter produksjonen sto stille som følge av feilen
   downtimeMinutes Int?
 
@@ -325,35 +358,35 @@ model Supplier {
 }
 
 model Part {
-  id                String   @id @default(cuid())
-  organizationId    String
+  id                 String   @id @default(cuid())
+  organizationId     String
   /// Internt delenummer, unikt per organisasjon
-  number            String
-  name              String
-  description       String?
-  manufacturer      String?
+  number             String
+  name               String
+  description        String?
+  manufacturer       String?
   manufacturerPartNo String?
-  unit              String   @default("stk")
-  unitCost          Decimal  @default(0) @db.Decimal(12, 2)
+  unit               String   @default("stk")
+  unitCost           Decimal  @default(0) @db.Decimal(12, 2)
   /// Beholdning holdes oppdatert i samme transaksjon som lagerbevegelsene
-  quantityOnHand    Float    @default(0)
-  minStock          Float    @default(0)
-  maxStock          Float?
+  quantityOnHand     Float    @default(0)
+  minStock           Float    @default(0)
+  maxStock           Float?
   /// Fysisk lagerplass, f.eks. "Hylle B3"
-  binLocation       String?
-  supplierId        String?
-  leadTimeDays      Int?
-  isActive          Boolean  @default(true)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  binLocation        String?
+  supplierId         String?
+  leadTimeDays       Int?
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   supplier     Supplier?    @relation(fields: [supplierId], references: [id], onDelete: SetNull)
 
-  usages         PartUsage[]
-  movements      StockMovement[]
-  assets         AssetPart[]
-  purchaseLines  PurchaseOrderLine[]
+  usages        PartUsage[]
+  movements     StockMovement[]
+  assets        AssetPart[]
+  purchaseLines PurchaseOrderLine[]
 
   @@unique([organizationId, number])
   @@index([organizationId])
@@ -365,11 +398,11 @@ model Part {
 /// Kobling mellom utstyr og delene det bruker — gjør at teknikeren
 /// ser "hvilke deler passer denne maskinen" rett fra utstyrskortet.
 model AssetPart {
-  id       String @id @default(cuid())
+  id       String  @id @default(cuid())
   assetId  String
   partId   String
   /// Hvor mange av delen som sitter i utstyret
-  quantity Float  @default(1)
+  quantity Float   @default(1)
   note     String?
 
   asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
@@ -408,19 +441,19 @@ enum StockMovementType {
 /// Reskontro over alle lagerendringer. Beholdningen på Part skal alltid
 /// være lik summen av quantity her.
 model StockMovement {
-  id             String            @id @default(cuid())
-  organizationId String
-  partId         String
-  type           StockMovementType
+  id              String            @id @default(cuid())
+  organizationId  String
+  partId          String
+  type            StockMovementType
   /// Positiv ved innkjøp, negativ ved uttak
-  quantity       Float
-  unitCost       Decimal?          @db.Decimal(12, 2)
-  workOrderId    String?
+  quantity        Float
+  unitCost        Decimal?          @db.Decimal(12, 2)
+  workOrderId     String?
   /// Satt når bevegelsen kom av at en bestilling ble mottatt
   purchaseOrderId String?
-  userId         String?
-  note           String?
-  createdAt      DateTime          @default(now())
+  userId          String?
+  note            String?
+  createdAt       DateTime          @default(now())
 
   organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   part          Part           @relation(fields: [partId], references: [id], onDelete: Cascade)
@@ -457,9 +490,9 @@ model PurchaseOrder {
   createdById    String
 
   /// Deres referanse eller rekvisisjonsnummer hos leverandøren
-  reference   String?
-  note        String?
-  expectedAt  DateTime?
+  reference  String?
+  note       String?
+  expectedAt DateTime?
 
   /// Adressen bestillingen faktisk ble sendt til, lagret som dokumentasjon
   sentToEmail String?
@@ -485,16 +518,16 @@ model PurchaseOrder {
 }
 
 model PurchaseOrderLine {
-  id              String  @id @default(cuid())
-  purchaseOrderId String
-  partId          String
-  quantity        Float
+  id               String  @id @default(cuid())
+  purchaseOrderId  String
+  partId           String
+  quantity         Float
   /// Pris kopieres inn ved bestilling, så senere prisendringer ikke
   /// omskriver hva denne bestillingen kostet
-  unitCost        Decimal @db.Decimal(12, 2)
+  unitCost         Decimal @db.Decimal(12, 2)
   /// Hvor mye som faktisk er mottatt. Delleveranser er normalt.
-  receivedQuantity Float  @default(0)
-  note            String?
+  receivedQuantity Float   @default(0)
+  note             String?
 
   purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
   part          Part          @relation(fields: [partId], references: [id], onDelete: Restrict)

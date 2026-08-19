@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { assertRole, requireTenant } from "@/lib/auth";
+import { krev, requireTenant } from "@/lib/auth";
 import { nextCounterValue } from "@/lib/tenant";
 import {
   bestillingsNummer,
@@ -31,7 +31,7 @@ export async function lagBestillingerFraDeler(
   partIder: string[],
 ): Promise<Resultat & { antall?: number }> {
   const { db, session } = await requireTenant();
-  assertRole(session.role, "PLANLEGGER");
+  krev(session, "bestillinger", "administrere");
 
   if (partIder.length === 0) {
     return { ok: false, feil: "Velg minst én del." };
@@ -109,7 +109,7 @@ export async function lagBestillingerFraDeler(
 /** Oppretter en tom bestilling til én leverandør. */
 export async function lagTomBestilling(supplierId: string): Promise<Resultat> {
   const { db, session } = await requireTenant();
-  assertRole(session.role, "PLANLEGGER");
+  krev(session, "bestillinger", "administrere");
 
   const leverandor = await db.supplier.findFirst({ where: { id: supplierId } });
   if (!leverandor) return { ok: false, feil: "Ukjent leverandør." };
@@ -146,7 +146,7 @@ export async function leggTilLinje(
   formData: FormData,
 ): Promise<Resultat> {
   const { db, session } = await requireTenant();
-  assertRole(session.role, "PLANLEGGER");
+  krev(session, "bestillinger", "administrere");
 
   const partId = String(formData.get("partId") ?? "");
   const antall = Number(formData.get("quantity"));
@@ -200,7 +200,7 @@ export async function endreLinje(
   antall: number,
 ): Promise<Resultat> {
   const { db, session } = await requireTenant();
-  assertRole(session.role, "PLANLEGGER");
+  krev(session, "bestillinger", "administrere");
 
   const sjekk = await hentRedigerbar(db, bestillingId);
   if ("feil" in sjekk) return { ok: false, feil: sjekk.feil };
@@ -223,7 +223,7 @@ export async function fjernLinje(
   linjeId: string,
 ): Promise<Resultat> {
   const { db, session } = await requireTenant();
-  assertRole(session.role, "PLANLEGGER");
+  krev(session, "bestillinger", "administrere");
 
   const sjekk = await hentRedigerbar(db, bestillingId);
   if ("feil" in sjekk) return { ok: false, feil: sjekk.feil };
@@ -251,7 +251,7 @@ export async function oppdaterBestilling(
   formData: FormData,
 ): Promise<Resultat> {
   const { db, session } = await requireTenant();
-  assertRole(session.role, "PLANLEGGER");
+  krev(session, "bestillinger", "administrere");
 
   const parsed = detaljerSkjema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, feil: parsed.error.issues[0].message };
@@ -276,7 +276,7 @@ export async function oppdaterBestilling(
 
 export async function kansellerBestilling(bestillingId: string): Promise<Resultat> {
   const { db, session } = await requireTenant();
-  assertRole(session.role, "PLANLEGGER");
+  krev(session, "bestillinger", "administrere");
 
   const b = await db.purchaseOrder.findFirst({
     where: { id: bestillingId },
@@ -317,7 +317,7 @@ export type SendResultat =
  */
 export async function sendBestilling(bestillingId: string): Promise<SendResultat> {
   const { db, session } = await requireTenant();
-  assertRole(session.role, "PLANLEGGER");
+  krev(session, "bestillinger", "administrere");
 
   const bestilling = await db.purchaseOrder.findFirst({
     where: { id: bestillingId },
@@ -389,7 +389,7 @@ export async function sendBestilling(bestillingId: string): Promise<SendResultat
 /** Brukeren har sendt e-posten fra sin egen klient. */
 export async function markerSomSendt(bestillingId: string): Promise<Resultat> {
   const { db, session } = await requireTenant();
-  assertRole(session.role, "PLANLEGGER");
+  krev(session, "bestillinger", "administrere");
 
   const b = await db.purchaseOrder.findFirst({
     where: { id: bestillingId },
@@ -427,7 +427,7 @@ export async function mottaVarer(
   mottak: { linjeId: string; antall: number }[],
 ): Promise<Resultat> {
   const { db, session } = await requireTenant();
-  assertRole(session.role, "TEKNIKER");
+  krev(session, "bestillinger", "endre");
 
   const relevante = mottak.filter((m) => m.antall > 0);
   if (relevante.length === 0) {

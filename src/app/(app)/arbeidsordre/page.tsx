@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ClipboardList, Plus } from "lucide-react";
-import { requireTenant } from "@/lib/auth";
+import { requireModul } from "@/lib/auth";
 import { sokArbeidsordre } from "@/lib/sok";
 import {
   APNE_STATUSER,
@@ -37,7 +37,7 @@ function somEnum<T extends string>(verdi: unknown, gyldige: readonly T[]): T | u
 }
 
 export default async function ArbeidsordreSide(props: PageProps<"/arbeidsordre">) {
-  const { db, session } = await requireTenant();
+  const { db, session } = await requireModul("arbeidsordre");
   const sp = await props.searchParams;
 
   const sok = typeof sp.sok === "string" ? sp.sok.trim() : "";

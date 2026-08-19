@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Mail, Phone } from "lucide-react";
-import { hasRole, requireTenant } from "@/lib/auth";
+import { kanSession, requireModul, requireTenant } from "@/lib/auth";
 import { bestillingsNummer, harSmtp } from "@/lib/epost";
 import { BESTILLING_STATUS } from "@/lib/domene";
 import { dato, datoTid, kroner, tall, toNumber } from "@/lib/format";
@@ -43,7 +43,7 @@ export async function generateMetadata(
 
 export default async function BestillingSide(props: PageProps<"/bestillinger/[id]">) {
   const { id } = await props.params;
-  const { db, session } = await requireTenant();
+  const { db, session } = await requireModul("bestillinger");
 
   const bestilling = await db.purchaseOrder.findFirst({
     where: { id },
@@ -69,7 +69,7 @@ export default async function BestillingSide(props: PageProps<"/bestillinger/[id
 
   if (!bestilling) notFound();
 
-  const kanPlanlegge = hasRole(session.role, "PLANLEGGER");
+  const kanPlanlegge = kanSession(session, "bestillinger", "administrere");
   const laast =
     bestilling.status === "MOTTATT" || bestilling.status === "KANSELLERT";
 

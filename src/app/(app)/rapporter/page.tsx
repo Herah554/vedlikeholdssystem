@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { requireTenant } from "@/lib/auth";
+import { requireModul } from "@/lib/auth";
 import {
   arbeidsfordeling,
   delerMestBrukt,
@@ -27,7 +27,7 @@ import { NedetidSoyler } from "@/components/diagrammer";
 export const metadata: Metadata = { title: "Rapporter" };
 
 export default async function RapporterSide() {
-  const { db, session } = await requireTenant();
+  const { db, session } = await requireModul("rapporter");
 
   const [kostnad, nedetid, etterlevelse, fordeling, deler] = await Promise.all([
     kostnadPerUtstyr(session.organizationId),

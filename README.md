@@ -11,6 +11,7 @@ uten å se hverandres data.
 | Modul | Hva den gjør |
 |---|---|
 | **Plattform** | Din egen side: alle kundene, opprett nye, hopp inn hos én av dem |
+| **Oppsett** | Administratorens side: hvem får gjøre hva, og hvilke årsaker teknikerne velger mellom |
 | **Dashbord** | Konfigurerbare widgets — hver bruker setter sammen sitt eget oppsett |
 | **Ukeplan** | Dra-og-slipp-tavle for ukens jobber, fordelt på dager og teknikere |
 | **Arbeidsordre** | Meld, godkjenn, planlegg og utfør. Timeføring, deleuttak, sjekklister og kommentarer |
@@ -260,13 +261,41 @@ innloggingstokenet. Fjernes den, gjelder det umiddelbart.
 
 ## Roller
 
-| Rolle | Kan |
+Rollene er et utgangspunkt, ikke en tvangstrøye. Hva hver av dem faktisk får
+gjøre, bestemmer administratoren under **Oppsett**.
+
+| Rolle | Tenkt for |
 |---|---|
-| **Administrator** | Alt, inkludert å administrere brukere |
+| **Administrator** | Alt, inkludert å administrere brukere og rettigheter |
 | **Leder** | Ser alt, godkjenner arbeid, eier budsjettet |
 | **Planlegger** | Planlegger arbeid og forebyggende vedlikehold |
+| **Delelageransvarlig** | Styrer reservedeler, bestillinger og leverandører |
 | **Tekniker** | Utfører arbeid, fører timer, tar ut deler |
 | **Gjest** | Kun lesetilgang |
+
+### Hvem får gjøre hva
+
+Hver modul har tre nivåer, og de bygger på hverandre:
+
+| Nivå | Betyr |
+|---|---|
+| **Se** | Lese, men ikke røre |
+| **Endre** | Det daglige arbeidet: føre timer, ta ut deler, motta varer |
+| **Administrere** | Sette opp: opprette utstyr og deler, sende bestillinger |
+
+Administrator har alltid alt og kan ikke krysses bort — uten en rolle som
+garantert kommer inn, kunne en bedrift låse seg selv ute av sitt eget oppsett.
+
+Sperren håndheves tre steder, og alle tre trengs:
+
+1. **Menyen** viser bare det rollen kan åpne. Det er bekvemmelighet, ikke sikkerhet.
+2. **Hver side** avviser med «finnes ikke» om rollen mangler tilgang. Å skrive
+   adressen selv hjelper ikke.
+3. **Hver server-handling** sjekker på nytt før den rører databasen. En skjult
+   knapp hindrer ingen i å sende forespørselen direkte.
+
+Rollen og rettighetene leses fra databasen ved hver sidevisning, ikke fra
+innloggingstokenet. Degraderer du noen, gjelder det med det samme.
 
 ## Kjente begrensninger
 

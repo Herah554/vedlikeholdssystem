@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { assertRole, requireTenant } from "@/lib/auth";
+import { krev, requireTenant } from "@/lib/auth";
 import { nextCounterValue } from "@/lib/tenant";
 import { NESTE_STATUS } from "@/lib/domene";
 import type { WorkOrderStatus } from "@/generated/prisma/client";
@@ -124,7 +124,7 @@ export async function tildelOrdre(
   brukerId: string | null,
 ): Promise<Resultat> {
   const { db, session } = await requireTenant();
-  assertRole(session.role, "TEKNIKER");
+  krev(session, "arbeidsordre", "endre");
 
   if (brukerId) {
     const finnes = await db.user.findFirst({ where: { id: brukerId } });

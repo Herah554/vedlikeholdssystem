@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { assertRole, requireTenant } from "@/lib/auth";
+import { krev, requireTenant } from "@/lib/auth";
 import { nextCounterValue } from "@/lib/tenant";
 import { APNE_STATUSER } from "@/lib/domene";
 
@@ -29,7 +29,7 @@ export async function opprettPlan(
   formData: FormData,
 ): Promise<Resultat> {
   const { db, session } = await requireTenant();
-  assertRole(session.role, "PLANLEGGER");
+  krev(session, "forebyggende", "administrere");
 
   const parsed = planSkjema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, feil: parsed.error.issues[0].message };
@@ -92,7 +92,7 @@ export async function opprettPlan(
  */
 export async function genererForfalteOrdrer(): Promise<Resultat> {
   const { db, session } = await requireTenant();
-  assertRole(session.role, "PLANLEGGER");
+  krev(session, "forebyggende", "administrere");
 
   const nå = new Date();
 
@@ -167,7 +167,7 @@ export async function genererForfalteOrdrer(): Promise<Resultat> {
 /** Markerer en plan som utført og beregner neste forfall. */
 export async function markerPlanUtfort(planId: string): Promise<Resultat> {
   const { db, session } = await requireTenant();
-  assertRole(session.role, "TEKNIKER");
+  krev(session, "forebyggende", "endre");
 
   const plan = await db.pmPlan.findFirst({
     where: { id: planId },
@@ -202,7 +202,7 @@ export async function settPlanAktiv(
   aktiv: boolean,
 ): Promise<Resultat> {
   const { db, session } = await requireTenant();
-  assertRole(session.role, "PLANLEGGER");
+  krev(session, "forebyggende", "administrere");
 
   await db.pmPlan.updateMany({ where: { id: planId }, data: { isActive: aktiv } });
   revalidatePath("/forebyggende");

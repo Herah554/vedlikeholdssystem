@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Boxes, ShoppingCart, Truck } from "lucide-react";
-import { requireTenant } from "@/lib/auth";
+import { requireModul } from "@/lib/auth";
 import { bestillingsNummer } from "@/lib/epost";
 import { APNE_BESTILLINGER, BESTILLING_STATUS } from "@/lib/domene";
 import { dato, kroner, toNumber } from "@/lib/format";
@@ -21,7 +21,7 @@ import {
 export const metadata: Metadata = { title: "Bestillinger" };
 
 export default async function BestillingerSide(props: PageProps<"/bestillinger">) {
-  const { db } = await requireTenant();
+  const { db } = await requireModul("bestillinger");
   const sp = await props.searchParams;
   const kunApne = sp.apne === "1";
 

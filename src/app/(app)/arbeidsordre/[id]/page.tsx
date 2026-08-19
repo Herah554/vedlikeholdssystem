@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, History, Lightbulb } from "lucide-react";
-import { requireTenant } from "@/lib/auth";
+import { requireModul, requireTenant } from "@/lib/auth";
 import { liknendeSaker } from "@/lib/sok";
 import { NESTE_STATUS, ORDRE_STATUS, ORDRE_TYPE, PRIORITET } from "@/lib/domene";
 import { dato, datoTid, kroner, ordreNummer, relativTid, tall, timer, toNumber } from "@/lib/format";
@@ -38,7 +38,7 @@ export async function generateMetadata(
 
 export default async function OrdreSide(props: PageProps<"/arbeidsordre/[id]">) {
   const { id } = await props.params;
-  const { db, session } = await requireTenant();
+  const { db, session } = await requireModul("arbeidsordre");
 
   const ordre = await db.workOrder.findFirst({
     where: { id },
@@ -65,7 +65,7 @@ export default async function OrdreSide(props: PageProps<"/arbeidsordre/[id]">) 
 
   if (!ordre) notFound();
 
-  const [deler, liknende] = await Promise.all([
+  const [deler, liknende, aarsaker] = await Promise.all([
     db.part.findMany({
       where: { isActive: true },
       select: { id: true, number: true, name: true, unit: true, quantityOnHand: true },
@@ -76,6 +76,11 @@ export default async function OrdreSide(props: PageProps<"/arbeidsordre/[id]">) 
       title: ordre.title,
       description: ordre.description,
       assetId: ordre.assetId,
+    }),
+    db.failureCause.findMany({
+      where: { isActive: true },
+      select: { code: true, name: true },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     }),
   ]);
 
@@ -164,6 +169,7 @@ export default async function OrdreSide(props: PageProps<"/arbeidsordre/[id]">) 
             />
             <CardBody>
               <LosningSkjema
+                aarsaker={aarsaker}
                 lagre={lagreLosning.bind(null, ordre.id)}
                 standard={{
                   resolution: ordre.resolution,

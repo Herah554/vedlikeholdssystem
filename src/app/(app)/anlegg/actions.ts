@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { assertRole, requireTenant } from "@/lib/auth";
+import { krev, requireTenant } from "@/lib/auth";
 
 export type Resultat = { ok: boolean; feil?: string };
 
@@ -39,7 +39,7 @@ export async function opprettUtstyr(
   formData: FormData,
 ): Promise<Resultat> {
   const { db, session } = await requireTenant();
-  assertRole(session.role, "PLANLEGGER");
+  krev(session, "anlegg", "administrere");
 
   const parsed = skjema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, feil: parsed.error.issues[0].message };
@@ -96,7 +96,7 @@ export async function oppdaterDriftstimer(
   timer: number,
 ): Promise<Resultat> {
   const { db, session } = await requireTenant();
-  assertRole(session.role, "TEKNIKER");
+  krev(session, "anlegg", "endre");
 
   if (!Number.isFinite(timer) || timer < 0) {
     return { ok: false, feil: "Driftstimer må være et positivt tall." };
@@ -117,7 +117,7 @@ export async function endreStatusPaUtstyr(
   status: "I_DRIFT" | "STANSET" | "UNDER_VEDLIKEHOLD" | "UTRANGERT",
 ): Promise<Resultat> {
   const { db, session } = await requireTenant();
-  assertRole(session.role, "TEKNIKER");
+  krev(session, "anlegg", "endre");
 
   await db.asset.updateMany({ where: { id: assetId }, data: { status } });
 

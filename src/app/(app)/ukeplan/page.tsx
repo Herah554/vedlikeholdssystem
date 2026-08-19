@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { requireTenant } from "@/lib/auth";
+import { requireModul } from "@/lib/auth";
 import { APNE_STATUSER } from "@/lib/domene";
 import { ukeNummer } from "@/lib/format";
 import { PageHeader } from "@/components/ui";
@@ -20,7 +20,7 @@ function mandagIUke(forskyvning: number): Date {
 }
 
 export default async function UkeplanSide(props: PageProps<"/ukeplan">) {
-  const { db } = await requireTenant();
+  const { db } = await requireModul("ukeplan");
   const sp = await props.searchParams;
 
   const forskyvning = Number(sp.uke ?? 0);

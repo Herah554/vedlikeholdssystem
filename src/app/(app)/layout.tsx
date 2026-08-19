@@ -1,7 +1,8 @@
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { LogOut, ShieldCheck } from "lucide-react";
-import { requireSession } from "@/lib/auth";
+import { kanSession, requireSession } from "@/lib/auth";
+import { MODUL_IDER } from "@/lib/rettigheter";
 import { tilbakeTilEgen } from "@/app/plattform/actions";
 import { ROLLE } from "@/lib/domene";
 import { MobilMeny, Sidemeny } from "@/components/navigasjon";
@@ -20,6 +21,16 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   const lagretTema = (await cookies()).get("tema")?.value;
   const tema: Tema =
     lagretTema === "lys" || lagretTema === "mork" ? lagretTema : "system";
+
+  // Menyen bygges av det rollen faktisk har lov til å åpne. Dashbordet og
+  // innstillingene står alltid der — det første er inngangen, det andre er
+  // stedet man endrer sitt eget passord.
+  const synlige = [
+    "/dashbord",
+    ...MODUL_IDER.filter((m) => kanSession(session, m)).map((m) => `/${m}`),
+    ...(session.role === "ADMIN" ? ["/oppsett"] : []),
+    "/innstillinger",
+  ];
 
   // Satt bare når du som plattformeier ser på en annen bedrift enn din egen.
   // Da skal det være umulig å glemme hvem sitt system man står i.
@@ -46,11 +57,14 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       )}
 
       <div className="flex min-h-0 flex-1">
-        <Sidemeny organisasjon={session.organizationName} />
+        <Sidemeny organisasjon={session.organizationName} synlige={synlige} />
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-40 flex items-center gap-3 border-b border-kant bg-flate/95 px-4 py-2.5 backdrop-blur">
-          <MobilMeny organisasjon={session.organizationName} />
+          <MobilMeny
+            organisasjon={session.organizationName}
+            synlige={synlige}
+          />
 
           <Sok />
 

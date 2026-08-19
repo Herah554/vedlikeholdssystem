@@ -91,6 +91,7 @@ export const ROLLE: Record<Role, string> = {
   ADMIN: "Administrator",
   LEDER: "Leder",
   PLANLEGGER: "Planlegger",
+  DELELAGER: "Delelageransvarlig",
   TEKNIKER: "Tekniker",
   GJEST: "Gjest",
 };
@@ -99,6 +100,7 @@ export const ROLLE_BESKRIVELSE: Record<Role, string> = {
   ADMIN: "Full tilgang, kan administrere brukere og innstillinger",
   LEDER: "Ser alt, godkjenner arbeid og eier budsjettet",
   PLANLEGGER: "Planlegger arbeid og forebyggende vedlikehold",
+  DELELAGER: "Styrer reservedeler, bestillinger og leverandører",
   TEKNIKER: "Utfører arbeid, fører timer og tar ut deler",
   GJEST: "Kun lesetilgang",
 };

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { hasRole, requireTenant } from "@/lib/auth";
+import { kanSession, requireModul, requireTenant } from "@/lib/auth";
 import { bestillingsNummer } from "@/lib/epost";
 import { BESTILLING_STATUS } from "@/lib/domene";
 import { dato, kroner, tall, toNumber } from "@/lib/format";
@@ -34,9 +34,9 @@ export default async function LeverandorSide(
   props: PageProps<"/leverandorer/[id]">,
 ) {
   const { id } = await props.params;
-  const { db, session } = await requireTenant();
+  const { db, session } = await requireModul("leverandorer");
 
-  if (!hasRole(session.role, "PLANLEGGER")) redirect("/leverandorer");
+  if (!kanSession(session, "leverandorer", "administrere")) redirect("/leverandorer");
 
   const leverandor = await db.supplier.findFirst({
     where: { id },

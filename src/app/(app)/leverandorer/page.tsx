@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AlertTriangle, Mail, Truck } from "lucide-react";
-import { hasRole, requireTenant } from "@/lib/auth";
+import { kanSession, requireModul } from "@/lib/auth";
 import {
   Badge,
   Card,
@@ -19,8 +19,8 @@ import { NyLeverandorSkjema } from "./skjema";
 export const metadata: Metadata = { title: "Leverandører" };
 
 export default async function LeverandorerSide() {
-  const { db, session } = await requireTenant();
-  const kanEndre = hasRole(session.role, "PLANLEGGER");
+  const { db, session } = await requireModul("leverandorer");
+  const kanEndre = kanSession(session, "leverandorer", "administrere");
 
   const leverandorer = await db.supplier.findMany({
     include: {

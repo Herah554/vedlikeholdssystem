@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Plus } from "lucide-react";
-import { requireTenant } from "@/lib/auth";
+import { requireModul, requireTenant } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import {
   ANLEGG_STATUS,
@@ -38,7 +38,7 @@ export async function generateMetadata(
 
 export default async function UtstyrSide(props: PageProps<"/anlegg/[id]">) {
   const { id } = await props.params;
-  const { db, session } = await requireTenant();
+  const { db, session } = await requireModul("anlegg");
 
   const utstyr = await db.asset.findFirst({
     where: { id },

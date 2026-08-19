@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AlertTriangle, Boxes, Plus, ShoppingCart } from "lucide-react";
-import { requireTenant } from "@/lib/auth";
+import { requireModul } from "@/lib/auth";
 import { kroner, tall, toNumber } from "@/lib/format";
 import {
   Badge,
@@ -20,7 +20,7 @@ import { BestillPanel } from "./bestill";
 export const metadata: Metadata = { title: "Reservedeler" };
 
 export default async function ReservedelerSide(props: PageProps<"/reservedeler">) {
-  const { db } = await requireTenant();
+  const { db } = await requireModul("reservedeler");
   const sp = await props.searchParams;
   const kunLave = sp.filter === "lav";
   const sok = typeof sp.sok === "string" ? sp.sok.trim() : "";

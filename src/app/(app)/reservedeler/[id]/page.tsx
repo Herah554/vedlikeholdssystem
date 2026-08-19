@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { requireTenant } from "@/lib/auth";
+import { requireModul, requireTenant } from "@/lib/auth";
 import { LAGER_BEVEGELSE } from "@/lib/domene";
 import { datoTid, kroner, ordreNummer, tall, toNumber } from "@/lib/format";
 import {
@@ -31,7 +31,7 @@ export async function generateMetadata(
 
 export default async function DelSide(props: PageProps<"/reservedeler/[id]">) {
   const { id } = await props.params;
-  const { db } = await requireTenant();
+  const { db } = await requireModul("reservedeler");
 
   const del = await db.part.findFirst({
     where: { id },

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { assertRole, hashPassword, requireTenant } from "@/lib/auth";
+import type { Role } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 
 export type Resultat = { ok: boolean; feil?: string; melding?: string };
@@ -51,7 +52,7 @@ export async function opprettBruker(
 
 export async function endreRolle(
   brukerId: string,
-  rolle: "ADMIN" | "LEDER" | "PLANLEGGER" | "TEKNIKER" | "GJEST",
+  rolle: Role,
 ): Promise<Resultat> {
   const { db, session } = await requireTenant();
   assertRole(session.role, "ADMIN");

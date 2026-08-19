@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Plus, Repeat2 } from "lucide-react";
-import { requireTenant } from "@/lib/auth";
+import { requireModul } from "@/lib/auth";
 import { PM_UTLOSER, PRIORITET } from "@/lib/domene";
 import { dato, relativTid, tall, timer } from "@/lib/format";
 import {
@@ -18,7 +18,7 @@ import { AktivBryter, GenererKnapp, UtfortKnapp } from "./handlinger";
 export const metadata: Metadata = { title: "Forebyggende vedlikehold" };
 
 export default async function ForebyggendeSide() {
-  const { db } = await requireTenant();
+  const { db } = await requireModul("forebyggende");
 
   const planer = await db.pmPlan.findMany({
     include: {

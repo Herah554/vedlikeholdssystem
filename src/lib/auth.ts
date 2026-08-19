@@ -5,6 +5,14 @@ import { SignJWT, jwtVerify } from "jose";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { dbForOrg, type TenantDb } from "@/lib/tenant";
+import {
+  kan,
+  lesMatrise,
+  STANDARD_MATRISE,
+  type Matrise,
+  type Modul,
+  type Nivaa,
+} from "@/lib/rettigheter";
 import type { Role } from "@/generated/prisma/client";
 
 const COOKIE_NAME = "vedlikehold_sesjon";
@@ -79,6 +87,12 @@ export type Session = {
    */
   hjemOrganisasjonId?: string;
   hjemOrganisasjonNavn?: string;
+  /**
+   * Hva rollen får se og gjøre i denne bedriften. Settes av gyldigSesjon()
+   * ut fra organisasjonen, og legges med vilje ikke i tokenet: endrer
+   * administratoren oppsettet, skal det gjelde ved neste sidevisning.
+   */
+  rettigheter?: Matrise;
 };
 
 // ─── Passord ──────────────────────────────────────────────────
@@ -94,7 +108,11 @@ export function verifyPassword(plain: string, hash: string): Promise<boolean> {
 // ─── Sesjonstoken ─────────────────────────────────────────────
 
 async function signSession(session: Session): Promise<string> {
-  return new SignJWT({ ...session })
+  // Rettighetene hører hjemme i databasen, ikke i kapselen. Lagt inn her
+  // ville de både blåst opp tokenet og blitt stående uendret i 30 dager.
+  const { rettigheter: _, ...iToken } = session;
+
+  return new SignJWT({ ...iToken })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(session.userId)
     .setIssuedAt()
@@ -168,8 +186,9 @@ export const gyldigSesjon = cache(async function gyldigSesjon(): Promise<Session
     select: {
       id: true,
       organizationId: true,
+      role: true,
       isSuperAdmin: true,
-      organization: { select: { isActive: true } },
+      organization: { select: { isActive: true, permissions: true } },
     },
   });
 
@@ -178,7 +197,15 @@ export const gyldigSesjon = cache(async function gyldigSesjon(): Promise<Session
   // Det vanlige tilfellet: økten peker på brukerens egen bedrift.
   if (bruker.organizationId === session.organizationId) {
     if (!bruker.organization.isActive) return null;
-    return { ...session, superadmin: bruker.isSuperAdmin };
+    return {
+      ...session,
+      // Rollen hentes fra databasen, ikke fra tokenet. Degraderer en
+      // administrator noen, skal det gjelde ved neste sidevisning — ikke
+      // først når tokenet går ut om 30 dager.
+      role: bruker.role,
+      superadmin: bruker.isSuperAdmin,
+      rettigheter: lesMatrise(bruker.organization.permissions),
+    };
   }
 
   // Økten peker på en annen bedrift enn brukeren tilhører. Det er bare
@@ -188,11 +215,17 @@ export const gyldigSesjon = cache(async function gyldigSesjon(): Promise<Session
 
   const besokt = await prisma.organization.findFirst({
     where: { id: session.organizationId, isActive: true },
-    select: { id: true },
+    select: { id: true, permissions: true },
   });
   if (!besokt) return null;
 
-  return { ...session, superadmin: true };
+  // Rollen står som den er her. Plattformeieren fikk ADMIN da han åpnet
+  // bedriften, og han har ingen rad i kundens brukertabell å lese den fra.
+  return {
+    ...session,
+    superadmin: true,
+    rettigheter: lesMatrise(besokt.permissions),
+  };
 });
 
 /** Sesjon eller omdirigering til innlogging. Brukes i alle beskyttede sider. */
@@ -233,9 +266,41 @@ export async function requireTenant(): Promise<{
   return { session, db: dbForOrg(session.organizationId) };
 }
 
+// ─── Rettigheter ──────────────────────────────────────────────
+
+/** Sant hvis den innloggede når opp til nivået i modulen. */
+export function kanSession(
+  session: Session,
+  modul: Modul,
+  nivaa: Nivaa = "se",
+): boolean {
+  return kan(session.role, session.rettigheter ?? STANDARD_MATRISE, modul, nivaa);
+}
+
+/**
+ * Kaster hvis den innloggede mangler rettigheten. Brukes i server-handlinger.
+ *
+ * Sperren må stå her og ikke bare i grensesnittet. En skjult knapp hindrer
+ * ingen i å sende forespørselen rett til serveren.
+ */
+export function krev(session: Session, modul: Modul, nivaa: Nivaa): void {
+  if (!kanSession(session, modul, nivaa)) {
+    const hva =
+      nivaa === "se"
+        ? "se"
+        : nivaa === "endre"
+          ? "endre noe i"
+          : "administrere";
+    throw new Error(
+      `Du har ikke tilgang til å ${hva} denne delen av systemet. Spør en administrator i firmaet ditt.`,
+    );
+  }
+}
+
 const ROLE_RANK: Record<Role, number> = {
   GJEST: 0,
   TEKNIKER: 1,
+  DELELAGER: 1,
   PLANLEGGER: 2,
   LEDER: 3,
   ADMIN: 4,
@@ -318,4 +383,23 @@ export async function authenticate(
       superadmin: user.isSuperAdmin,
     },
   };
+}
+
+/**
+ * Sesjon og databaseklient, men bare hvis rollen har lov til å åpne modulen.
+ *
+ * Denne må stå på hver eneste side i en modul. Å utelate lenken fra menyen
+ * hindrer ingen i å skrive adressen selv, og en side som laster likevel er
+ * en lekkasje uansett hvor godt den er gjemt.
+ *
+ * Svarer «finnes ikke» framfor «ingen tilgang». Ellers kan hvem som helst
+ * kartlegge hvilke deler firmaet bruker ved å prøve seg fram på adresser.
+ */
+export async function requireModul(
+  modul: Modul,
+  nivaa: Nivaa = "se",
+): Promise<{ session: Session; db: TenantDb }> {
+  const { session, db } = await requireTenant();
+  if (!kanSession(session, modul, nivaa)) notFound();
+  return { session, db };
 }

@@ -166,11 +166,16 @@ export function DeleSkjema({
 
 // ─── Løsning ──────────────────────────────────────────────────
 
+/** Årsakene firmaet har satt opp under Oppsett. */
+export type Aarsak = { code: string; name: string };
+
 export function LosningSkjema({
   lagre,
+  aarsaker,
   standard,
 }: {
   lagre: (forrige: Resultat, data: FormData) => Promise<Resultat>;
+  aarsaker: Aarsak[];
   standard: {
     resolution: string | null;
     failureCode: string | null;
@@ -195,14 +200,38 @@ export function LosningSkjema({
         />
       </Field>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Feilkode" hint="F.eks. LAGERSKADE">
-          <Input
-            name="failureCode"
-            defaultValue={standard.failureCode ?? ""}
-            placeholder="LAGERSKADE"
-            className="uppercase"
-          />
-        </Field>
+        {/* Har firmaet satt opp årsaker, skal teknikeren velge blant dem —
+            fritekst gir statistikk full av skrivefeil og synonymer. Har de
+            ikke gjort det ennå, er et åpent felt bedre enn ingenting. */}
+        {aarsaker.length > 0 ? (
+          <Field label="Årsak" hint="Settes opp under Oppsett">
+            <Select name="failureCode" defaultValue={standard.failureCode ?? ""}>
+              <option value="">Ikke angitt</option>
+              {aarsaker.map((a) => (
+                <option key={a.code} value={a.code}>
+                  {a.name}
+                </option>
+              ))}
+              {/* Er ordren merket med en årsak som siden er tatt ut av lista,
+                  skal valget stå igjen i stedet for å bli borte ved lagring. */}
+              {standard.failureCode &&
+                !aarsaker.some((a) => a.code === standard.failureCode) && (
+                  <option value={standard.failureCode}>
+                    {standard.failureCode} (utgått)
+                  </option>
+                )}
+            </Select>
+          </Field>
+        ) : (
+          <Field label="Feilkode" hint="F.eks. LAGERSKADE">
+            <Input
+              name="failureCode"
+              defaultValue={standard.failureCode ?? ""}
+              placeholder="LAGERSKADE"
+              className="uppercase"
+            />
+          </Field>
+        )}
         <Field label="Nedetid (minutter)" hint="Hvor lenge sto produksjonen">
           <Input
             name="downtimeMinutes"

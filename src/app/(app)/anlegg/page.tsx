@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Network, Plus } from "lucide-react";
-import { requireTenant } from "@/lib/auth";
+import { requireModul } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ANLEGG_STATUS, ANLEGG_TYPE, KRITIKALITET } from "@/lib/domene";
 import { Badge, ButtonLink, Card, EmptyState, PageHeader } from "@/components/ui";
@@ -9,7 +9,7 @@ import { Badge, ButtonLink, Card, EmptyState, PageHeader } from "@/components/ui
 export const metadata: Metadata = { title: "Anlegg" };
 
 export default async function AnleggSide() {
-  const { db, session } = await requireTenant();
+  const { db, session } = await requireModul("anlegg");
 
   const utstyr = await db.asset.findMany({
     orderBy: { path: "asc" },

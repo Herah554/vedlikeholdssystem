@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { assertRole, requireTenant } from "@/lib/auth";
+import { krev, requireTenant } from "@/lib/auth";
 
 export type Resultat = { ok: boolean; feil?: string };
 
@@ -28,7 +28,7 @@ export async function opprettDel(
   formData: FormData,
 ): Promise<Resultat> {
   const { db, session } = await requireTenant();
-  assertRole(session.role, "PLANLEGGER");
+  krev(session, "reservedeler", "administrere");
 
   const parsed = nyDelSkjema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, feil: parsed.error.issues[0].message };
@@ -95,7 +95,7 @@ export async function registrerInnkjop(
   formData: FormData,
 ): Promise<Resultat> {
   const { db, session } = await requireTenant();
-  assertRole(session.role, "TEKNIKER");
+  krev(session, "reservedeler", "endre");
 
   const parsed = bevegelseSkjema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, feil: parsed.error.issues[0].message };
@@ -144,7 +144,7 @@ export async function justerBeholdning(
   formData: FormData,
 ): Promise<Resultat> {
   const { db, session } = await requireTenant();
-  assertRole(session.role, "TEKNIKER");
+  krev(session, "reservedeler", "endre");
 
   const talt = Number(formData.get("talt"));
   if (!Number.isFinite(talt) || talt < 0) {

@@ -14,6 +14,7 @@ import {
   Network,
   Repeat2,
   Settings,
+  SlidersHorizontal,
   ShoppingCart,
   Truck,
   Wallet,
@@ -38,15 +39,29 @@ const LENKER = [
   { href: "/forebyggende", tekst: "Forebyggende", ikon: Repeat2 },
   { href: "/budsjett", tekst: "Budsjett", ikon: Wallet },
   { href: "/rapporter", tekst: "Rapporter", ikon: ChartNoAxesCombined },
+  { href: "/oppsett", tekst: "Oppsett", ikon: SlidersHorizontal },
   { href: "/innstillinger", tekst: "Innstillinger", ikon: Settings },
 ] as const;
 
-function Lenker({ onNavigate }: { onNavigate?: () => void }) {
+/**
+ * Menyen viser bare det rollen har lov til å åpne.
+ *
+ * Dette er ikke sikkerheten — den ligger i server-handlingene og på hver side.
+ * Men en meny full av lenker som gir avvisning er et dårlig arbeidsverktøy.
+ */
+function Lenker({
+  synlige,
+  onNavigate,
+}: {
+  synlige: readonly string[];
+  onNavigate?: () => void;
+}) {
   const pathname = usePathname();
+  const tillatt = new Set(synlige);
 
   return (
     <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-4">
-      {LENKER.map(({ href, tekst, ikon: Ikon }) => {
+      {LENKER.filter((l) => tillatt.has(l.href)).map(({ href, tekst, ikon: Ikon }) => {
         // "/arbeidsordre/42" skal også markere "Arbeidsordre" som aktiv
         const aktiv = pathname === href || pathname.startsWith(`${href}/`);
         return (
@@ -88,17 +103,29 @@ function Merke({ organisasjon }: { organisasjon: string }) {
 }
 
 /** Fast sidemeny på store skjermer. */
-export function Sidemeny({ organisasjon }: { organisasjon: string }) {
+export function Sidemeny({
+  organisasjon,
+  synlige,
+}: {
+  organisasjon: string;
+  synlige: readonly string[];
+}) {
   return (
     <aside className="hidden w-60 shrink-0 flex-col border-r border-kant bg-flate lg:flex">
       <Merke organisasjon={organisasjon} />
-      <Lenker />
+      <Lenker synlige={synlige} />
     </aside>
   );
 }
 
 /** Uttrekkbar meny på nettbrett og mobil. */
-export function MobilMeny({ organisasjon }: { organisasjon: string }) {
+export function MobilMeny({
+  organisasjon,
+  synlige,
+}: {
+  organisasjon: string;
+  synlige: readonly string[];
+}) {
   const [åpen, settÅpen] = useState(false);
 
   return (
@@ -134,7 +161,7 @@ export function MobilMeny({ organisasjon }: { organisasjon: string }) {
                 <X className="size-5" aria-hidden />
               </button>
             </div>
-            <Lenker onNavigate={() => settÅpen(false)} />
+            <Lenker synlige={synlige} onNavigate={() => settÅpen(false)} />
           </div>
         </div>
       )}

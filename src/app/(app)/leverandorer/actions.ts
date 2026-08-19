@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { assertRole, requireTenant } from "@/lib/auth";
+import { krev, requireTenant } from "@/lib/auth";
 
 export type Resultat = { ok: boolean; feil?: string; melding?: string };
 
@@ -28,7 +28,7 @@ export async function opprettLeverandor(
   formData: FormData,
 ): Promise<Resultat> {
   const { db, session } = await requireTenant();
-  assertRole(session.role, "PLANLEGGER");
+  krev(session, "leverandorer", "administrere");
 
   const parsed = skjema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, feil: parsed.error.issues[0].message };
@@ -61,7 +61,7 @@ export async function oppdaterLeverandor(
   formData: FormData,
 ): Promise<Resultat> {
   const { db, session } = await requireTenant();
-  assertRole(session.role, "PLANLEGGER");
+  krev(session, "leverandorer", "administrere");
 
   const parsed = skjema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, feil: parsed.error.issues[0].message };

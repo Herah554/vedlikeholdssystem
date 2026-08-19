@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { requireTenant } from "@/lib/auth";
+import { requireModul } from "@/lib/auth";
 import { Card, CardBody, PageHeader } from "@/components/ui";
 import { NyDelSkjema } from "./skjema";
 
 export const metadata: Metadata = { title: "Ny reservedel" };
 
 export default async function NyDelSide() {
-  const { db } = await requireTenant();
+  const { db } = await requireModul("reservedeler");
   const leverandorer = await db.supplier.findMany({ orderBy: { name: "asc" } });
 
   return (

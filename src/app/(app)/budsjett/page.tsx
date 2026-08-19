@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Wallet } from "lucide-react";
-import { requireTenant } from "@/lib/auth";
+import { requireModul } from "@/lib/auth";
 import { budsjettMotForbruk, kostnadPerManed } from "@/lib/statistikk";
 import { BUDSJETT_KATEGORI } from "@/lib/domene";
 import { kroner, tall, toNumber } from "@/lib/format";
@@ -23,7 +23,7 @@ import { BudsjettSoyler, KostnadLinje } from "@/components/diagrammer";
 export const metadata: Metadata = { title: "Budsjett" };
 
 export default async function BudsjettSide(props: PageProps<"/budsjett">) {
-  const { db, session } = await requireTenant();
+  const { db, session } = await requireModul("budsjett");
   const sp = await props.searchParams;
 
   const iAr = new Date().getFullYear();

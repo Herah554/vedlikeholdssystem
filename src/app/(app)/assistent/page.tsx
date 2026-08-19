@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Info } from "lucide-react";
-import { requireTenant } from "@/lib/auth";
+import { requireModul } from "@/lib/auth";
 import { PageHeader } from "@/components/ui";
 import { Chat } from "./chat";
 import type { Kilde } from "@/app/api/assistent/route";
@@ -8,7 +8,7 @@ import type { Kilde } from "@/app/api/assistent/route";
 export const metadata: Metadata = { title: "Assistent" };
 
 export default async function AssistentSide() {
-  const { db, session } = await requireTenant();
+  const { db, session } = await requireModul("assistent");
 
   // Fortsett siste samtale, slik at teknikeren kan gå ut i anlegget,
   // komme tilbake og finne igjen tråden.

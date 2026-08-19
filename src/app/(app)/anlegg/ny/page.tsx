@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { requireTenant } from "@/lib/auth";
+import { requireModul } from "@/lib/auth";
 import { ANLEGG_TYPE } from "@/lib/domene";
 import { Card, CardBody, PageHeader } from "@/components/ui";
 import { NyttUtstyrSkjema } from "./skjema";
@@ -9,7 +9,7 @@ import { NyttUtstyrSkjema } from "./skjema";
 export const metadata: Metadata = { title: "Nytt utstyr" };
 
 export default async function NyttUtstyrSide(props: PageProps<"/anlegg/ny">) {
-  const { db } = await requireTenant();
+  const { db } = await requireModul("anlegg");
   const sp = await props.searchParams;
 
   const [foreldre, kostnadssteder] = await Promise.all([

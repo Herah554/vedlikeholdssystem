@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { requireTenant } from "@/lib/auth";
+import { requireModul } from "@/lib/auth";
 import { Card, CardBody, PageHeader } from "@/components/ui";
 import { NyPlanSkjema } from "./skjema";
 
 export const metadata: Metadata = { title: "Ny forebyggende plan" };
 
 export default async function NyPlanSide(props: PageProps<"/forebyggende/ny">) {
-  const { db } = await requireTenant();
+  const { db } = await requireModul("forebyggende");
   const sp = await props.searchParams;
 
   const [utstyr, brukere] = await Promise.all([
