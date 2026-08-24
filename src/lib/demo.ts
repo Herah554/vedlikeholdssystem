@@ -94,6 +94,91 @@ const FEIL = [
   { tittel: "Kompressor går varm", løsning: "Kjøleribbene var tette av støv. Blåste rene og la inn kvartalsvis rengjøring i planen." },
 ];
 
+/**
+ * Avvik som ligner på det et virkelig anlegg melder.
+ *
+ * Blandingen er med vilje: noen nestenulykker, noe kvalitet, ett miljøavvik.
+ * Et demosystem der alle avvik er lukket og pene sier ingenting om hva
+ * systemet er til for.
+ */
+const AVVIK = [
+  {
+    title: "Nesten truffet av last fra truck ved port 2",
+    description:
+      "Sto ved pakkelinja da trucken rygget ut fra port 2 uten å tute. Lasten svingte ut og passerte omtrent en halv meter fra meg. Ingen kom til skade.",
+    type: "NAERULYKKE" as const,
+    severity: "HOY" as const,
+    location: "Port 2, lager",
+    immediateAction: "Stoppet trucken og snakket med sjåføren. Sperret av området.",
+    rootCause:
+      "Trucken har ingen sikt mot porten, og det finnes verken speil eller lyssignal. Dette har vært meldt muntlig før uten at noe ble gjort.",
+    correctiveAction:
+      "Montert speil ved port 2 og malt opp gangfelt. Tatt opp på HMS-møtet.",
+    status: "LUKKET" as const,
+  },
+  {
+    title: "Oljesøl fra kompressor rant mot sluk",
+    description:
+      "Oppdaget en pøl olje under kompressoren ved morgenrunden. Sporet gikk mot sluket i gulvet.",
+    type: "MILJO" as const,
+    severity: "MIDDELS" as const,
+    location: "Kompressorrom",
+    immediateAction: "La ut absorbent og tettet sluket med matte.",
+    rootCause: "Pakning på oljefilterhuset var sprukket.",
+    correctiveAction:
+      "Byttet pakning. Lagt inn kvartalsvis kontroll av pakninger i vedlikeholdsplanen.",
+    status: "LUKKET" as const,
+  },
+  {
+    title: "Manglende vern på transportbånd",
+    description:
+      "Vernet over drivvalsen på TR-310 sto åpent. Ingen visste hvor lenge det hadde vært slik.",
+    type: "HMS" as const,
+    severity: "KRITISK" as const,
+    location: "Pakkelinje",
+    immediateAction: "Stanset båndet og hengte opp lapp om at det ikke skal startes.",
+    rootCause: null,
+    correctiveAction: null,
+    status: "UNDER_BEHANDLING" as const,
+  },
+  {
+    title: "Feil merking på ferdigvarepall",
+    description:
+      "Pall merket med feil batchnummer. Oppdaget før utsending, men etter at pallen var registrert ut av lageret.",
+    type: "KVALITET" as const,
+    severity: "MIDDELS" as const,
+    location: "Ferdigvarelager",
+    immediateAction: "Trakk pallen tilbake og merket den på nytt.",
+    rootCause: null,
+    correctiveAction: null,
+    status: "MELDT" as const,
+  },
+  {
+    title: "Snublet i løs gulvrist",
+    description:
+      "Gulvristen ved trappa ligger løst og vipper når man tråkker på hjørnet. Snublet, men tok meg for.",
+    type: "HMS" as const,
+    severity: "LAV" as const,
+    location: "Trapp mot kontrollrom",
+    immediateAction: null,
+    rootCause: "Festebolt mangler i ett hjørne.",
+    correctiveAction: "Bestilt ny bolt. Rist sikret midlertidig med strips.",
+    status: "TILTAK_IVERKSATT" as const,
+  },
+  {
+    title: "Støvutvikling ved sliping uten avsug",
+    description:
+      "Sliping av sveis på tanken uten at avsuget var koblet til. Rommet ble fullt av støv.",
+    type: "HMS" as const,
+    severity: "MIDDELS" as const,
+    location: "Verksted",
+    immediateAction: "Stoppet arbeidet og luftet ut.",
+    rootCause: null,
+    correctiveAction: null,
+    status: "MELDT" as const,
+  },
+];
+
 type NyBruker = {
   navn: string;
   epost: string;
@@ -377,6 +462,42 @@ export async function opprettDemobedrift(): Promise<Demobedrift> {
       },
     });
   }
+
+  // ── Avvik ───────────────────────────────────────────────────
+  for (const [i, a] of AVVIK.entries()) {
+    const lukket = a.status === "LUKKET";
+    const skjedde = dagerSiden(heltall(3, 180));
+
+    await prisma.deviation.create({
+      data: {
+        organizationId: orgId,
+        number: i + 1,
+        title: a.title,
+        description: a.description,
+        type: a.type,
+        severity: a.severity,
+        status: a.status,
+        location: a.location,
+        assetId: i % 2 === 0 ? velg(utstyr).id : null,
+        occurredAt: skjedde,
+        createdAt: skjedde,
+        reportedById: velg(brukere).id,
+        assignedToId: a.status === "MELDT" ? null : planlegger.id,
+        immediateAction: a.immediateAction,
+        rootCause: a.rootCause,
+        correctiveAction: a.correctiveAction,
+        // Ett avvik står med vilje over frist, slik at lista viser hvordan
+        // det ser ut når noe har blitt liggende.
+        deadline:
+          a.status === "MELDT" ? null : dagerSiden(i === 2 ? 10 : -heltall(5, 30)),
+        closedAt: lukket ? dagerSiden(heltall(1, 60)) : null,
+      },
+    });
+  }
+
+  await prisma.counter.create({
+    data: { organizationId: orgId, name: "deviation", value: AVVIK.length },
+  });
 
   // ── Dashbord delt med hele firmaet ──────────────────────────
   await prisma.dashboard.create({

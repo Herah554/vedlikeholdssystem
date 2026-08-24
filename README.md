@@ -15,6 +15,7 @@ uten å se hverandres data.
 | **Oppsett** | Administratorens side: hvem får gjøre hva, og hvilke årsaker teknikerne velger mellom |
 | **Dashbord** | Widgets du drar i posisjon og størrelse. Oppsettet kan deles med kolleger |
 | **Ukeplan** | Dra-og-slipp-tavle for ukens jobber, fordelt på dager og teknikere |
+| **Avvik** | HMS, nestenulykker, kvalitet og miljø. Årsak og tiltak må fylles ut før et avvik kan lukkes |
 | **Arbeidsordre** | Meld, godkjenn, planlegg og utfør. Timeføring, deleuttak, sjekklister og kommentarer |
 | **Assistent** | Søker i all historikk, finner liknende feil og hva som løste dem. Kan søke på nettet |
 | **Anlegg** | Hierarki: anlegg → system → utstyr → komponent, med full historikk per enhet |
@@ -60,6 +61,40 @@ Når varene kommer, fører du inn hvor mye som faktisk kom. Delleveranser er
 normalt, så resten blir stående som utestående. Lagerbeholdningen og
 lagerbevegelsen oppdateres i samme transaksjon, slik at lageret aldri kan komme
 ut av synk med bestillingen.
+
+### Avvik
+
+Et avvik er ikke det samme som en arbeidsordre. Arbeidsordren er en jobb som
+skal gjøres; avviket er en hendelse som skal forklares og forebygges.
+
+Skjemaet følger den rekkefølgen en avviksbehandling faktisk går i: hva skjedde,
+hva gjorde vi der og da, hvorfor skjedde det, og hva gjør vi for at det ikke
+skal skje igjen.
+
+**Et avvik kan ikke lukkes uten at årsaken er skrevet ned.** Uten den sperren
+blir avviksregistrering en logg over ting som gikk galt, i stedet for et
+verktøy for å hindre at de skjer om igjen.
+
+Alle roller kan melde avvik, også gjester. Et system der teknikeren må be om
+lov til å rapportere en nestenulykke, blir ikke brukt — og da er det verdiløst.
+Hvem som kan *behandle* avvik styres under Oppsett som alt annet.
+
+Fra et avvik kan du opprette en arbeidsordre med ett trykk. Lenka går begge
+veier, slik at den som leser jobben senere skjønner hvorfor den ble opprettet.
+
+### Bilder og dokumenter
+
+Arbeidsordre, avvik og utstyr kan ha bilder og PDF-er. Bilder krympes i
+nettleseren før de sendes: et mobilbilde er fort seks megabyte, og teknikeren
+står gjerne ute på anlegget med dårlig dekning.
+
+Filene kan ikke ligge på serverens egen disk — Vercel kaster beholderen etter
+hver forespørsel. De går til Vercel Blob, og alt som har med lagringstjenesten
+å gjøre ligger i [`src/lib/lagring.ts`](src/lib/lagring.ts), slik at bytte til
+S3 senere er én fil å skrive om.
+
+Dette krever `BLOB_READ_WRITE_TOKEN`. Uten den sier opplastingen fra i stedet
+for å feile stille.
 
 ## Teknologi
 
@@ -157,6 +192,7 @@ Nye bedrifter oppretter du fra `/plattform`. Kunder registrerer seg ikke selv.
 | `npm run sjekk:deling` | Kontroller at delte dashbord ikke krysser bedriftsgrensen |
 | `npm run sjekk:passord` | Kontroller flyten for glemt passord |
 | `npm run sjekk:import` | Kontroller import fra regneark |
+| `npm run sjekk:avvik` | Kontroller avviksflyten og filkontrollen |
 
 ## Hvordan dataadskillelsen virker
 

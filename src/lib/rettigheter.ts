@@ -36,6 +36,12 @@ export const MODULER = [
     administrere: "Godkjenne, tildele og lukke",
   },
   {
+    id: "avvik",
+    navn: "Avvik",
+    endre: "Melde avvik og skrive i dem",
+    administrere: "Tildele, sette tiltak og lukke",
+  },
+  {
     id: "anlegg",
     navn: "Anlegg",
     endre: "Føre driftstimer og endre status",
@@ -99,6 +105,7 @@ export const STANDARD_MATRISE: Matrise = {
   LEDER: {
     ukeplan: "administrere",
     arbeidsordre: "administrere",
+    avvik: "administrere",
     anlegg: "administrere",
     reservedeler: "administrere",
     bestillinger: "administrere",
@@ -111,6 +118,7 @@ export const STANDARD_MATRISE: Matrise = {
   PLANLEGGER: {
     ukeplan: "administrere",
     arbeidsordre: "administrere",
+    avvik: "administrere",
     anlegg: "administrere",
     reservedeler: "administrere",
     bestillinger: "administrere",
@@ -124,6 +132,7 @@ export const STANDARD_MATRISE: Matrise = {
   DELELAGER: {
     ukeplan: "se",
     arbeidsordre: "se",
+    avvik: "endre",
     anlegg: "se",
     reservedeler: "administrere",
     bestillinger: "administrere",
@@ -135,6 +144,7 @@ export const STANDARD_MATRISE: Matrise = {
   TEKNIKER: {
     ukeplan: "endre",
     arbeidsordre: "endre",
+    avvik: "endre",
     anlegg: "endre",
     reservedeler: "endre",
     bestillinger: "endre",
@@ -146,6 +156,8 @@ export const STANDARD_MATRISE: Matrise = {
   GJEST: {
     ukeplan: "se",
     arbeidsordre: "se",
+    // Selv en gjest skal kunne melde fra om noe farlig.
+    avvik: "endre",
     anlegg: "se",
     reservedeler: "se",
     bestillinger: "se",

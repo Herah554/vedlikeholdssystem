@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, History, Lightbulb } from "lucide-react";
-import { requireModul, requireTenant } from "@/lib/auth";
+import { ArrowLeft, History, Image as ImageIcon, Lightbulb } from "lucide-react";
+import { kanSession, requireModul, requireTenant } from "@/lib/auth";
 import { liknendeSaker } from "@/lib/sok";
 import { NESTE_STATUS, ORDRE_STATUS, ORDRE_TYPE, PRIORITET } from "@/lib/domene";
 import { dato, datoTid, kroner, ordreNummer, relativTid, tall, timer, toNumber } from "@/lib/format";
 import { Badge, Card, CardBody, CardHeader, Table, Td, Th, Tr } from "@/components/ui";
+import { Vedleggsliste } from "@/components/vedlegg";
 import {
   DeleSkjema,
   KommentarSkjema,
@@ -65,7 +66,7 @@ export default async function OrdreSide(props: PageProps<"/arbeidsordre/[id]">) 
 
   if (!ordre) notFound();
 
-  const [deler, liknende, aarsaker] = await Promise.all([
+  const [deler, liknende, aarsaker, vedlegg] = await Promise.all([
     db.part.findMany({
       where: { isActive: true },
       select: { id: true, number: true, name: true, unit: true, quantityOnHand: true },
@@ -81,6 +82,11 @@ export default async function OrdreSide(props: PageProps<"/arbeidsordre/[id]">) 
       where: { isActive: true },
       select: { code: true, name: true },
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+    }),
+    db.attachment.findMany({
+      where: { workOrderId: id },
+      include: { uploadedBy: { select: { name: true } } },
+      orderBy: { createdAt: "asc" },
     }),
   ]);
 
@@ -161,6 +167,32 @@ export default async function OrdreSide(props: PageProps<"/arbeidsordre/[id]">) 
               </CardBody>
             </Card>
           )}
+
+
+          <Card>
+            <CardHeader
+              title={
+                <span className="inline-flex items-center gap-2">
+                  <ImageIcon className="size-4 text-tekst-svak" aria-hidden />
+                  Bilder og dokumenter
+                </span>
+              }
+            />
+            <CardBody>
+              <Vedleggsliste
+                feste={{ type: "arbeidsordre", id: ordre.id }}
+                kanEndre={kanSession(session, "arbeidsordre", "endre")}
+                vedlegg={vedlegg.map((v) => ({
+                  id: v.id,
+                  fileName: v.fileName,
+                  url: v.url,
+                  mimeType: v.mimeType,
+                  sizeBytes: v.sizeBytes,
+                  lastetOppAv: v.uploadedBy?.name ?? null,
+                }))}
+              />
+            </CardBody>
+          </Card>
 
           <Card>
             <CardHeader

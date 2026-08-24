@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Plus } from "lucide-react";
-import { requireModul, requireTenant } from "@/lib/auth";
+import { ArrowLeft, Image as ImageIcon, Plus } from "lucide-react";
+import { kanSession, requireModul, requireTenant } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import {
   ANLEGG_STATUS,
@@ -13,6 +13,7 @@ import {
   PRIORITET,
 } from "@/lib/domene";
 import { dato, kroner, ordreNummer, tall, toNumber } from "@/lib/format";
+import { Vedleggsliste } from "@/components/vedlegg";
 import {
   Badge,
   ButtonLink,
@@ -70,7 +71,7 @@ export default async function UtstyrSide(props: PageProps<"/anlegg/[id]">) {
   // også viser det som er gjort på utstyret under.
   const deltre = `${utstyr.path}%`;
 
-  const [ordrer, kostnad] = await Promise.all([
+  const [ordrer, kostnad, vedlegg] = await Promise.all([
     prisma.workOrder.findMany({
       where: {
         organizationId: session.organizationId,
@@ -101,6 +102,11 @@ export default async function UtstyrSide(props: PageProps<"/anlegg/[id]">) {
                   WHERE w."organizationId" = ${session.organizationId}
                     AND a.path LIKE ${deltre}), 0)::int AS antall
     `,
+    db.attachment.findMany({
+      where: { assetId: id },
+      include: { uploadedBy: { select: { name: true } } },
+      orderBy: { createdAt: "asc" },
+    }),
   ]);
 
   const k = kostnad[0] ?? { arbeid: 0, deler: 0, nedetid: 0, antall: 0 };
@@ -155,6 +161,32 @@ export default async function UtstyrSide(props: PageProps<"/anlegg/[id]">) {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
+          <Card>
+            <CardHeader
+              title={
+                <span className="inline-flex items-center gap-2">
+                  <ImageIcon className="size-4 text-tekst-svak" aria-hidden />
+                  Bilder og dokumenter
+                </span>
+              }
+              description="Typeskilt, koblingsskjema, bilder av montasjen"
+            />
+            <CardBody>
+              <Vedleggsliste
+                feste={{ type: "anlegg", id: utstyr.id }}
+                kanEndre={kanSession(session, "anlegg", "endre")}
+                vedlegg={vedlegg.map((v) => ({
+                  id: v.id,
+                  fileName: v.fileName,
+                  url: v.url,
+                  mimeType: v.mimeType,
+                  sizeBytes: v.sizeBytes,
+                  lastetOppAv: v.uploadedBy?.name ?? null,
+                }))}
+              />
+            </CardBody>
+          </Card>
+
           <Card>
             <CardHeader
               title="Historikk"

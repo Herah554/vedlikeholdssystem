@@ -63,6 +63,7 @@ model Organization {
   counters       Counter[]
   purchaseOrders PurchaseOrder[]
   failureCauses  FailureCause[]
+  deviations     Deviation[]
 
   @@map("organizations")
 }
@@ -124,20 +125,22 @@ model User {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  requestedOrders WorkOrder[]      @relation("Melder")
-  assignedOrders  WorkOrder[]      @relation("Tildelt")
-  purchaseOrders  PurchaseOrder[]
-  pmPlans         PmPlan[]
-  timeEntries     TimeEntry[]
-  stockMoves      StockMovement[]
-  comments        Comment[]
-  attachments     Attachment[]
-  dashboards      Dashboard[]
-  conversations   Conversation[]
-  auditLogs       AuditLog[]
-  dashboardShares DashboardShare[]
-  passwordResets  PasswordReset[]
+  organization       Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  requestedOrders    WorkOrder[]      @relation("Melder")
+  assignedOrders     WorkOrder[]      @relation("Tildelt")
+  purchaseOrders     PurchaseOrder[]
+  pmPlans            PmPlan[]
+  timeEntries        TimeEntry[]
+  stockMoves         StockMovement[]
+  comments           Comment[]
+  attachments        Attachment[]
+  dashboards         Dashboard[]
+  conversations      Conversation[]
+  auditLogs          AuditLog[]
+  dashboardShares    DashboardShare[]
+  passwordResets     PasswordReset[]
+  reportedDeviations Deviation[]      @relation("AvvikMelder")
+  assignedDeviations Deviation[]      @relation("AvvikAnsvarlig")
 
   @@unique([organizationId, email])
   @@index([organizationId])
@@ -201,6 +204,7 @@ model Asset {
 
   workOrders  WorkOrder[]
   pmPlans     PmPlan[]
+  deviations  Deviation[]
   parts       AssetPart[]
   attachments Attachment[]
   budgets     Budget[]
@@ -292,6 +296,7 @@ model WorkOrder {
   attachments Attachment[]
   stockMoves  StockMovement[]
   checklist   ChecklistItem[]
+  deviations  Deviation[]
 
   @@unique([organizationId, number])
   @@index([organizationId, status])
@@ -686,6 +691,92 @@ model PasswordReset {
   @@map("password_resets")
 }
 
+// ─────────────────────────────────────────────────────────────
+// Avvik — HMS, nestenulykker, kvalitet og miljø
+// ─────────────────────────────────────────────────────────────
+
+enum DeviationType {
+  HMS // helse, miljø og sikkerhet
+  NAERULYKKE // gikk bra denne gangen
+  KVALITET
+  MILJO
+  ANNET
+}
+
+enum DeviationSeverity {
+  LAV
+  MIDDELS
+  HOY
+  KRITISK
+}
+
+enum DeviationStatus {
+  MELDT
+  UNDER_BEHANDLING
+  TILTAK_IVERKSATT
+  LUKKET
+  AVVIST
+}
+
+/**
+ * Et avvik: noe som gikk galt, eller nesten gikk galt.
+ * Dette er ikke det samme som en arbeidsordre. En arbeidsordre er en jobb som
+ * skal gjøres; et avvik er en hendelse som skal forklares og forebygges. De
+ * henger ofte sammen — en lekkasje meldes som avvik og fører til en jobb — og
+ * derfor kan avviket peke på arbeidsordren som ble opprettet for å rette det.
+ * Feltene følger den rekkefølgen en avviksbehandling faktisk går i:
+ * hva skjedde, hva gjorde vi der og da, hvorfor skjedde det, og hva gjør vi
+ * for at det ikke skal skje igjen. Uten det siste er avviksregistrering bare
+ * en logg over ting som gikk galt.
+ */
+model Deviation {
+  id             String            @id @default(cuid())
+  organizationId String
+  /// Løpenummer per organisasjon, vises som AV-0042
+  number         Int
+  title          String
+  description    String
+  type           DeviationType     @default(HMS)
+  severity       DeviationSeverity @default(MIDDELS)
+  status         DeviationStatus   @default(MELDT)
+
+  assetId    String?
+  location   String?
+  occurredAt DateTime
+
+  reportedById String
+  assignedToId String?
+
+  /// Hva ble gjort der og da for å stoppe skaden
+  immediateAction  String?
+  /// Hvorfor skjedde det — den egentlige årsaken, ikke den nærmeste
+  rootCause        String?
+  /// Hva gjør vi for at det ikke skal skje igjen
+  correctiveAction String?
+  deadline         DateTime?
+  closedAt         DateTime?
+
+  /// Arbeidsordren som ble opprettet for å rette avviket
+  workOrderId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  asset        Asset?       @relation(fields: [assetId], references: [id], onDelete: SetNull)
+  reportedBy   User         @relation("AvvikMelder", fields: [reportedById], references: [id], onDelete: Restrict)
+  assignedTo   User?        @relation("AvvikAnsvarlig", fields: [assignedToId], references: [id], onDelete: SetNull)
+  workOrder    WorkOrder?   @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
+
+  attachments Attachment[]
+
+  @@unique([organizationId, number])
+  @@index([organizationId, status])
+  @@index([organizationId, assetId])
+  @@index([organizationId, occurredAt])
+  @@map("deviations")
+}
+
 model Dashboard {
   id             String   @id @default(cuid())
   organizationId String
@@ -771,10 +862,13 @@ model Attachment {
   organizationId String
   workOrderId    String?
   assetId        String?
+  deviationId    String?
   uploadedById   String?
   fileName       String
-  /// Sti under /uploads
+  /// Nøkkelen hos lagringstjenesten. Se src/lib/lagring.ts.
   storagePath    String
+  /// Adressen filen kan hentes fra
+  url            String
   mimeType       String
   sizeBytes      Int
   createdAt      DateTime @default(now())
@@ -782,10 +876,12 @@ model Attachment {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   workOrder    WorkOrder?   @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
   asset        Asset?       @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  deviation    Deviation?   @relation(fields: [deviationId], references: [id], onDelete: Cascade)
   uploadedBy   User?        @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
 
   @@index([organizationId, workOrderId])
   @@index([organizationId, assetId])
+  @@index([organizationId, deviationId])
   @@map("attachments")
 }
 

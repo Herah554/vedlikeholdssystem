@@ -1,5 +1,8 @@
 import type {
   AssetStatus,
+  DeviationSeverity,
+  DeviationStatus,
+  DeviationType,
   AssetType,
   BudgetCategory,
   PmTrigger,
@@ -165,3 +168,61 @@ export const APNE_BESTILLINGER: PurchaseOrderStatus[] = [
   "SENDT",
   "DELVIS_MOTTATT",
 ];
+
+// ─── Avvik ────────────────────────────────────────────────────
+
+export const AVVIK_TYPE: Record<DeviationType, Etikett> = {
+  HMS: { tekst: "HMS", klasse: "bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-300 ring-red-200 dark:ring-red-500/30" },
+  NAERULYKKE: { tekst: "Nestenulykke", klasse: "bg-orange-50 dark:bg-orange-500/15 text-orange-800 dark:text-orange-300 ring-orange-200 dark:ring-orange-500/30" },
+  KVALITET: { tekst: "Kvalitet", klasse: "bg-sky-50 dark:bg-sky-500/15 text-sky-700 dark:text-sky-300 ring-sky-200 dark:ring-sky-500/30" },
+  MILJO: { tekst: "Miljø", klasse: "bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 ring-emerald-200 dark:ring-emerald-500/30" },
+  ANNET: { tekst: "Annet", klasse: "bg-flate-dempet text-tekst ring-kant" },
+};
+
+export const AVVIK_TYPE_FORKLARING: Record<DeviationType, string> = {
+  HMS: "Noe som gikk ut over helse, miljø eller sikkerhet",
+  NAERULYKKE: "Det gikk bra denne gangen, men kunne gått galt",
+  KVALITET: "Feil på produkt eller arbeid som er utført",
+  MILJO: "Utslipp, søl eller annet som påvirker omgivelsene",
+  ANNET: "Passer ikke inn i de andre",
+};
+
+export const AVVIK_ALVOR: Record<DeviationSeverity, Etikett> = {
+  KRITISK: { tekst: "Kritisk", klasse: "bg-red-600 text-white ring-red-700" },
+  HOY: { tekst: "Høy", klasse: "bg-orange-100 dark:bg-orange-500/15 text-orange-900 dark:text-orange-300 ring-orange-300 dark:ring-orange-500/30" },
+  MIDDELS: { tekst: "Middels", klasse: "bg-amber-50 dark:bg-amber-500/15 text-amber-900 dark:text-amber-300 ring-amber-200 dark:ring-amber-500/30" },
+  LAV: { tekst: "Lav", klasse: "bg-flate-dempet text-tekst ring-kant" },
+};
+
+export const AVVIK_ALVOR_REKKEFOLGE: DeviationSeverity[] = ["KRITISK", "HOY", "MIDDELS", "LAV"];
+
+export const AVVIK_STATUS: Record<DeviationStatus, Etikett> = {
+  MELDT: { tekst: "Meldt", klasse: "bg-flate-dempet text-tekst ring-kant" },
+  UNDER_BEHANDLING: { tekst: "Under behandling", klasse: "bg-amber-100 dark:bg-amber-500/15 text-amber-900 dark:text-amber-300 ring-amber-200 dark:ring-amber-500/30" },
+  TILTAK_IVERKSATT: { tekst: "Tiltak iverksatt", klasse: "bg-sky-100 dark:bg-sky-500/15 text-sky-800 dark:text-sky-300 ring-sky-200 dark:ring-sky-500/30" },
+  LUKKET: { tekst: "Lukket", klasse: "bg-emerald-100 dark:bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 ring-emerald-200 dark:ring-emerald-500/30" },
+  AVVIST: { tekst: "Avvist", klasse: "bg-flate-dempet text-tekst-svak ring-kant-sterk" },
+};
+
+/** Avvik som fortsatt krever oppfølging. */
+export const APNE_AVVIK: DeviationStatus[] = ["MELDT", "UNDER_BEHANDLING", "TILTAK_IVERKSATT"];
+
+/**
+ * Lovlige neste steg.
+ *
+ * Et avvik skal ikke kunne lukkes rett fra «meldt» — da er det ingen som har
+ * skrevet ned hvorfor det skjedde, og hele poenget med registreringen faller
+ * bort.
+ */
+export const NESTE_AVVIK_STATUS: Record<DeviationStatus, DeviationStatus[]> = {
+  MELDT: ["UNDER_BEHANDLING", "AVVIST"],
+  UNDER_BEHANDLING: ["TILTAK_IVERKSATT", "AVVIST"],
+  TILTAK_IVERKSATT: ["LUKKET", "UNDER_BEHANDLING"],
+  LUKKET: ["UNDER_BEHANDLING"],
+  AVVIST: ["MELDT"],
+};
+
+/** Avviksnummer vises som AV-0042. */
+export function avviksNummer(n: number): string {
+  return `AV-${String(n).padStart(4, "0")}`;
+}
