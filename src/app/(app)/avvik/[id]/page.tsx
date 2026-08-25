@@ -41,6 +41,17 @@ export default async function AvvikSide(props: PageProps<"/avvik/[id]">) {
   const { id } = await props.params;
   const { db, session } = await requireModul("avvik");
 
+  // Dokumenttypene og brukerlista er uavhengige av avviket. De sendes med én
+  // gang og ventes på der svaret trengs, slik at de tre spørringene går
+  // samtidig i stedet for etter hverandre. Står serveren et annet sted enn
+  // databasen, koster hver runde like mye som selve arbeidet.
+  const dokumenttyperSvar = hentListe(db, "dokumenttype", true);
+  const brukereSvar = db.user.findMany({
+    where: { isActive: true },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
+
   const avvik = await db.deviation.findFirst({
     where: { id },
     include: {
@@ -60,15 +71,11 @@ export default async function AvvikSide(props: PageProps<"/avvik/[id]">) {
   const kanBehandle = kanSession(session, "avvik", "administrere");
   const kanEndre = kanSession(session, "avvik", "endre");
 
-  const dokumenttyper = await hentListe(db, "dokumenttype", true);
+  const dokumenttyper = await dokumenttyperSvar;
 
-  const ansvarlige = kanBehandle
-    ? await db.user.findMany({
-        where: { isActive: true },
-        select: { id: true, name: true },
-        orderBy: { name: "asc" },
-      })
-    : [];
+  // Lista hentes uansett siden spørringen alt er sendt, men vises bare til
+  // den som skal bruke den.
+  const ansvarlige = kanBehandle ? await brukereSvar : [];
 
   const overFrist =
     avvik.deadline !== null &&
