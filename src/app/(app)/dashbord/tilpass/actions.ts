@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireTenant } from "@/lib/auth";
+import { krevFunksjon, requireTenant } from "@/lib/auth";
 import { tolkOppsett } from "../oppsett";
 
 export type Resultat = { ok: boolean; feil?: string; melding?: string };
@@ -71,6 +71,7 @@ export async function delOppsett(
   formData: FormData,
 ): Promise<Resultat> {
   const { db, session } = await requireTenant();
+  krevFunksjon(session, "deling");
 
   const eget = await db.dashboard.findFirst({
     where: { userId: session.userId },
@@ -119,6 +120,7 @@ export async function delOppsett(
  */
 export async function taIBruk(dashboardId: string): Promise<Resultat> {
   const { db, session } = await requireTenant();
+  krevFunksjon(session, "deling");
 
   // Oppslaget går gjennom dashboards og ikke delingstabellen, slik at
   // flerklient-filteret gjelder. Uten det ville en id fra en annen kunde

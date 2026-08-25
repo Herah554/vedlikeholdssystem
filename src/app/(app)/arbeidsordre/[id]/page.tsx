@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, History, Image as ImageIcon, Lightbulb } from "lucide-react";
-import { kanSession, requireModul, requireTenant } from "@/lib/auth";
+import { harFunksjonSession, kanSession, requireModul, requireTenant } from "@/lib/auth";
 import { liknendeSaker } from "@/lib/sok";
 import { NESTE_STATUS, ORDRE_STATUS, ORDRE_TYPE, PRIORITET } from "@/lib/domene";
 import { dato, datoTid, kroner, ordreNummer, relativTid, tall, timer, toNumber } from "@/lib/format";
@@ -169,30 +169,32 @@ export default async function OrdreSide(props: PageProps<"/arbeidsordre/[id]">) 
           )}
 
 
-          <Card>
-            <CardHeader
-              title={
-                <span className="inline-flex items-center gap-2">
-                  <ImageIcon className="size-4 text-tekst-svak" aria-hidden />
-                  Bilder og dokumenter
-                </span>
-              }
-            />
-            <CardBody>
-              <Vedleggsliste
-                feste={{ type: "arbeidsordre", id: ordre.id }}
-                kanEndre={kanSession(session, "arbeidsordre", "endre")}
-                vedlegg={vedlegg.map((v) => ({
-                  id: v.id,
-                  fileName: v.fileName,
-                  url: v.url,
-                  mimeType: v.mimeType,
-                  sizeBytes: v.sizeBytes,
-                  lastetOppAv: v.uploadedBy?.name ?? null,
-                }))}
+          {harFunksjonSession(session, "vedlegg") && (
+            <Card>
+              <CardHeader
+                title={
+                  <span className="inline-flex items-center gap-2">
+                    <ImageIcon className="size-4 text-tekst-svak" aria-hidden />
+                    Bilder og dokumenter
+                  </span>
+                }
               />
-            </CardBody>
-          </Card>
+              <CardBody>
+                <Vedleggsliste
+                  feste={{ type: "arbeidsordre", id: ordre.id }}
+                  kanEndre={kanSession(session, "arbeidsordre", "endre")}
+                  vedlegg={vedlegg.map((v) => ({
+                    id: v.id,
+                    fileName: v.fileName,
+                    url: v.url,
+                    mimeType: v.mimeType,
+                    sizeBytes: v.sizeBytes,
+                    lastetOppAv: v.uploadedBy?.name ?? null,
+                  }))}
+                />
+              </CardBody>
+            </Card>
+          )}
 
           <Card>
             <CardHeader

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Image as ImageIcon, Plus } from "lucide-react";
-import { kanSession, requireModul, requireTenant } from "@/lib/auth";
+import { harFunksjonSession, kanSession, requireModul, requireTenant } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import {
   ANLEGG_STATUS,
@@ -161,31 +161,33 @@ export default async function UtstyrSide(props: PageProps<"/anlegg/[id]">) {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
-          <Card>
-            <CardHeader
-              title={
-                <span className="inline-flex items-center gap-2">
-                  <ImageIcon className="size-4 text-tekst-svak" aria-hidden />
-                  Bilder og dokumenter
-                </span>
-              }
-              description="Typeskilt, koblingsskjema, bilder av montasjen"
-            />
-            <CardBody>
-              <Vedleggsliste
-                feste={{ type: "anlegg", id: utstyr.id }}
-                kanEndre={kanSession(session, "anlegg", "endre")}
-                vedlegg={vedlegg.map((v) => ({
-                  id: v.id,
-                  fileName: v.fileName,
-                  url: v.url,
-                  mimeType: v.mimeType,
-                  sizeBytes: v.sizeBytes,
-                  lastetOppAv: v.uploadedBy?.name ?? null,
-                }))}
+          {harFunksjonSession(session, "vedlegg") && (
+            <Card>
+              <CardHeader
+                title={
+                  <span className="inline-flex items-center gap-2">
+                    <ImageIcon className="size-4 text-tekst-svak" aria-hidden />
+                    Bilder og dokumenter
+                  </span>
+                }
+                description="Typeskilt, koblingsskjema, bilder av montasjen"
               />
-            </CardBody>
-          </Card>
+              <CardBody>
+                <Vedleggsliste
+                  feste={{ type: "anlegg", id: utstyr.id }}
+                  kanEndre={kanSession(session, "anlegg", "endre")}
+                  vedlegg={vedlegg.map((v) => ({
+                    id: v.id,
+                    fileName: v.fileName,
+                    url: v.url,
+                    mimeType: v.mimeType,
+                    sizeBytes: v.sizeBytes,
+                    lastetOppAv: v.uploadedBy?.name ?? null,
+                  }))}
+                />
+              </CardBody>
+            </Card>
+          )}
 
           <Card>
             <CardHeader

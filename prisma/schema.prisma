@@ -29,6 +29,11 @@ model Organization {
   /// Hva hver rolle får se, endre og administrere. Null = standardoppsettet
   /// i src/lib/rettigheter.ts. Se der for formatet.
   permissions Json?
+  /// Hva kunden betaler for
+  plan        Plan    @default(BASIS)
+  /// Enkeltfunksjoner slått av eller på for denne kunden, uavhengig av planen.
+  /// Formatet står i src/lib/planer.ts.
+  features    Json?
   /// Standard timepris brukt når bruker mangler egen sats
   hourlyRate  Decimal @default(950) @db.Decimal(10, 2)
   currency    String  @default("NOK")
@@ -94,6 +99,18 @@ model FailureCause {
   @@unique([organizationId, code])
   @@index([organizationId])
   @@map("failure_causes")
+}
+
+/**
+ * Hva kunden betaler for.
+ * Planen er utgangspunktet, ikke fasiten. En kunde kan få én enkelt funksjon
+ * slått på uten å bytte plan — det er ofte slik en oppgradering begynner, og
+ * det skal ikke kreve at noen skriver om koden.
+ */
+enum Plan {
+  BASIS
+  PLUSS
+  PRO
 }
 
 enum Role {

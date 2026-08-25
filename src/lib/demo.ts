@@ -223,6 +223,12 @@ export async function opprettDemobedrift(): Promise<Demobedrift> {
   const orgId = org.id;
   const hash = await hashPassword(passord);
 
+  // Demoen skal vise alt systemet kan, ellers er den ikke verdt å vise fram.
+  await prisma.organization.update({
+    where: { id: orgId },
+    data: { plan: "PRO" },
+  });
+
   // ── Brukere i alle roller ────────────────────────────────────
   const brukere = [admin];
   for (const b of BRUKERE) {

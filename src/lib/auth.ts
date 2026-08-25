@@ -6,6 +6,14 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { dbForOrg, type TenantDb } from "@/lib/tenant";
 import {
+  harFunksjon,
+  lesUnntak,
+  modulErKjopt,
+  type Funksjon,
+  type Unntak,
+} from "@/lib/planer";
+import type { Plan } from "@/generated/prisma/client";
+import {
   kan,
   lesMatrise,
   STANDARD_MATRISE,
@@ -94,6 +102,12 @@ export type Session = {
    */
   rettigheter?: Matrise;
   /**
+   * Hva bedriften betaler for. Leses fra organisasjonen ved hver sidevisning,
+   * ikke fra tokenet — sier du opp en funksjon, gjelder det med det samme.
+   */
+  plan?: Plan;
+  unntak?: Unntak;
+  /**
    * Når tokenet ble utstedt, i sekunder. Leses fra tokenet selv og brukes til
    * å kaste ut økter som er eldre enn siste passordbytte.
    */
@@ -115,7 +129,13 @@ export function verifyPassword(plain: string, hash: string): Promise<boolean> {
 async function signSession(session: Session): Promise<string> {
   // Rettighetene hører hjemme i databasen, ikke i kapselen. Lagt inn her
   // ville de både blåst opp tokenet og blitt stående uendret i 30 dager.
-  const { rettigheter: _, utstedt: __, ...iToken } = session;
+  const {
+    rettigheter: _,
+    utstedt: __,
+    plan: ___,
+    unntak: ____,
+    ...iToken
+  } = session;
 
   return new SignJWT({ ...iToken })
     .setProtectedHeader({ alg: "HS256" })
@@ -195,7 +215,14 @@ export const gyldigSesjon = cache(async function gyldigSesjon(): Promise<Session
       role: true,
       isSuperAdmin: true,
       sessionsValidFrom: true,
-      organization: { select: { isActive: true, permissions: true } },
+      organization: {
+        select: {
+          isActive: true,
+          permissions: true,
+          plan: true,
+          features: true,
+        },
+      },
     },
   });
 
@@ -226,6 +253,8 @@ export const gyldigSesjon = cache(async function gyldigSesjon(): Promise<Session
       role: bruker.role,
       superadmin: bruker.isSuperAdmin,
       rettigheter: lesMatrise(bruker.organization.permissions),
+      plan: bruker.organization.plan,
+      unntak: lesUnntak(bruker.organization.features),
     };
   }
 
@@ -236,7 +265,7 @@ export const gyldigSesjon = cache(async function gyldigSesjon(): Promise<Session
 
   const besokt = await prisma.organization.findFirst({
     where: { id: session.organizationId, isActive: true },
-    select: { id: true, permissions: true },
+    select: { id: true, permissions: true, plan: true, features: true },
   });
   if (!besokt) return null;
 
@@ -246,6 +275,8 @@ export const gyldigSesjon = cache(async function gyldigSesjon(): Promise<Session
     ...session,
     superadmin: true,
     rettigheter: lesMatrise(besokt.permissions),
+    plan: besokt.plan,
+    unntak: lesUnntak(besokt.features),
   };
 });
 
@@ -295,6 +326,13 @@ export function kanSession(
   modul: Modul,
   nivaa: Nivaa = "se",
 ): boolean {
+  // Planen først. Har ikke bedriften kjøpt modulen, hjelper det ikke hvilken
+  // rolle man har — og en administrator skal ikke kunne gi seg selv noe
+  // firmaet ikke betaler for ved å endre rettighetene.
+  if (!modulErKjopt(session.plan ?? "BASIS", session.unntak ?? {}, modul)) {
+    return false;
+  }
+
   return kan(session.role, session.rettigheter ?? STANDARD_MATRISE, modul, nivaa);
 }
 
@@ -423,4 +461,28 @@ export async function requireModul(
   const { session, db } = await requireTenant();
   if (!kanSession(session, modul, nivaa)) notFound();
   return { session, db };
+}
+
+/**
+ * Sant hvis bedriften betaler for funksjonen.
+ *
+ * Brukes for det som ikke er en egen modul med egne rettigheter — import,
+ * vedlegg og deling av dashbord. Modulene går gjennom kanSession(), som
+ * sjekker planen selv.
+ */
+export function harFunksjonSession(
+  session: Session,
+  funksjon: Funksjon,
+): boolean {
+  return harFunksjon(session.plan ?? "BASIS", session.unntak ?? {}, funksjon);
+}
+
+/**
+ * Som over, men avviser med «finnes ikke».
+ *
+ * En kunde som ikke har kjøpt noe skal ikke få vite hva de går glipp av ved
+ * å prøve adresser — det er en salgssamtale, ikke en feilmelding.
+ */
+export function krevFunksjon(session: Session, funksjon: Funksjon): void {
+  if (!harFunksjonSession(session, funksjon)) notFound();
 }

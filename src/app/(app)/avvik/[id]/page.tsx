@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ClipboardList, Image as Bilde } from "lucide-react";
-import { kanSession, requireModul } from "@/lib/auth";
+import { harFunksjonSession, kanSession, requireModul } from "@/lib/auth";
 import {
   APNE_AVVIK,
   AVVIK_ALVOR,
@@ -204,31 +204,33 @@ export default async function AvvikSide(props: PageProps<"/avvik/[id]">) {
               </Card>
             )}
 
-          <Card>
-            <CardHeader
-              title={
-                <span className="inline-flex items-center gap-2">
-                  <Bilde className="size-4 text-tekst-svak" aria-hidden />
-                  Bilder og dokumenter
-                </span>
-              }
-              description="Et bilde forklarer som regel mer enn beskrivelsen."
-            />
-            <CardBody>
-              <Vedleggsliste
-                feste={{ type: "avvik", id: avvik.id }}
-                kanEndre={kanEndre}
-                vedlegg={avvik.attachments.map((v) => ({
-                  id: v.id,
-                  fileName: v.fileName,
-                  url: v.url,
-                  mimeType: v.mimeType,
-                  sizeBytes: v.sizeBytes,
-                  lastetOppAv: v.uploadedBy?.name ?? null,
-                }))}
+          {harFunksjonSession(session, "vedlegg") && (
+            <Card>
+              <CardHeader
+                title={
+                  <span className="inline-flex items-center gap-2">
+                    <Bilde className="size-4 text-tekst-svak" aria-hidden />
+                    Bilder og dokumenter
+                  </span>
+                }
+                description="Et bilde forklarer som regel mer enn beskrivelsen."
               />
-            </CardBody>
-          </Card>
+              <CardBody>
+                <Vedleggsliste
+                  feste={{ type: "avvik", id: avvik.id }}
+                  kanEndre={kanEndre}
+                  vedlegg={avvik.attachments.map((v) => ({
+                    id: v.id,
+                    fileName: v.fileName,
+                    url: v.url,
+                    mimeType: v.mimeType,
+                    sizeBytes: v.sizeBytes,
+                    lastetOppAv: v.uploadedBy?.name ?? null,
+                  }))}
+                />
+              </CardBody>
+            </Card>
+          )}
         </div>
 
         {kanBehandle && (

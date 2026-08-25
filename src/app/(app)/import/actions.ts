@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { krev, requireTenant } from "@/lib/auth";
+import { krev, krevFunksjon, requireTenant } from "@/lib/auth";
 import { lesTabell, MAKS_RADER } from "@/lib/import/les";
 import { felterFor, gjettKobling, type Importtype } from "@/lib/import/felter";
 import { importer, type Radfeil } from "@/lib/import/utfor";
@@ -20,6 +20,7 @@ function krevTilgang(
   session: Parameters<typeof krev>[0],
   type: Importtype,
 ): void {
+  krevFunksjon(session, "import");
   krev(session, type === "utstyr" ? "anlegg" : "reservedeler", "administrere");
 }
 

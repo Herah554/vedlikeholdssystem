@@ -7,6 +7,13 @@ import { prisma } from "@/lib/prisma";
 import { requireSuperadmin, startSession } from "@/lib/auth";
 import { opprettBedrift } from "@/lib/bedrift";
 import { opprettDemobedrift } from "@/lib/demo";
+import {
+  FUNKSJON_IDER,
+  lesUnntak,
+  PLAN_REKKEFOLGE,
+  type Funksjon,
+} from "@/lib/planer";
+import type { Plan } from "@/generated/prisma/client";
 
 /**
  * Handlingene på plattformsiden.
@@ -182,4 +189,69 @@ export async function lagDemobedrift(): Promise<Resultat> {
     ok: true,
     melding: `${demo.navn} er klar. Logg inn som ${demo.innlogging} med passordet ${demo.passord} — dette vises bare nå.`,
   };
+}
+
+// ─── Planer og funksjoner ─────────────────────────────────────
+
+/**
+ * Setter hvilken plan kunden er på.
+ *
+ * Unntakene røres ikke. Har du gitt en kunde assistenten på prøve, skal ikke
+ * en oppgradering til Pluss ta den fra dem igjen.
+ */
+export async function settPlan(formData: FormData): Promise<void> {
+  await requireSuperadmin();
+
+  const id = String(formData.get("id") ?? "");
+  const plan = String(formData.get("plan") ?? "");
+
+  if (!PLAN_REKKEFOLGE.includes(plan as Plan)) {
+    throw new Error("Ukjent plan.");
+  }
+
+  await prisma.organization.update({
+    where: { id },
+    data: { plan: plan as Plan },
+  });
+
+  revalidatePath("/plattform");
+  revalidatePath(`/plattform/${id}`);
+}
+
+/**
+ * Slår én funksjon av eller på for én kunde, uavhengig av planen.
+ *
+ * Tre tilstander, ikke to: «følg planen», «på» og «av». Uten den første ville
+ * en kunde som byttet plan sittet fast med det de hadde før, og ingen ville
+ * skjønt hvorfor.
+ */
+export async function settFunksjon(formData: FormData): Promise<void> {
+  await requireSuperadmin();
+
+  const id = String(formData.get("id") ?? "");
+  const funksjon = String(formData.get("funksjon") ?? "") as Funksjon;
+  const verdi = String(formData.get("verdi") ?? "");
+
+  if (!FUNKSJON_IDER.includes(funksjon)) throw new Error("Ukjent funksjon.");
+
+  const org = await prisma.organization.findUniqueOrThrow({
+    where: { id },
+    select: { features: true },
+  });
+
+  const unntak = lesUnntak(org.features);
+
+  if (verdi === "plan") {
+    delete unntak[funksjon];
+  } else {
+    unntak[funksjon] = verdi === "pa";
+  }
+
+  await prisma.organization.update({
+    where: { id },
+    data: { features: unntak },
+  });
+
+  revalidatePath("/plattform");
+  revalidatePath(`/plattform/${id}`);
 }

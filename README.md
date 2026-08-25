@@ -193,6 +193,7 @@ Nye bedrifter oppretter du fra `/plattform`. Kunder registrerer seg ikke selv.
 | `npm run sjekk:passord` | Kontroller flyten for glemt passord |
 | `npm run sjekk:import` | Kontroller import fra regneark |
 | `npm run sjekk:avvik` | Kontroller avviksflyten og filkontrollen |
+| `npm run sjekk:planer` | Kontroller at planene faktisk stenger moduler |
 
 ## Hvordan dataadskillelsen virker
 
@@ -316,6 +317,29 @@ stripe på toppen gjør det umulig å glemme hvem sitt system du står i.
 
 Rettigheten leses fra databasen ved hver sidevisning, ikke fra
 innloggingstokenet. Fjernes den, gjelder det umiddelbart.
+
+## Planer
+
+Systemet selges i tre nivåer. Planen styrer hva bedriften **har kjøpt**;
+rollene styrer hvem i bedriften som får bruke det. Begge må si ja.
+
+| Plan | Inneholder |
+|---|---|
+| **Basis** | Arbeidsordre, anlegg, reservedeler, ukeplan, forebyggende, rapporter og import |
+| **Pluss** | Basis, pluss avvik, bilder, bestillinger, budsjett og deling av dashbord |
+| **Pro** | Alt, inkludert AI-assistenten |
+
+Rekkefølgen betyr noe. En modul som er stengt av planen kan ikke åpnes ved å
+endre en rolle — ellers kunne en administrator hos kunden gitt seg selv noe
+firmaet ikke betaler for.
+
+I tillegg kan enkeltfunksjoner slås av eller på for én kunde, uavhengig av
+planen. Det er slik en prøveperiode ser ut: «dere får assistenten i en måned»
+uten å flytte kunden til et annet nivå. Tre tilstander, ikke to — «følg
+planen», «på» og «av» — slik at et planbytte ikke etterlater kunden i noe
+ingen skjønner hvor kom fra.
+
+Alt styres fra plattformsiden, én side per kunde.
 
 ## Roller
 

@@ -23,6 +23,7 @@ import {
   Th,
   Tr,
 } from "@/components/ui";
+import { PLANER } from "@/lib/planer";
 import { apneBedrift, settAktiv } from "./actions";
 import { DemoKnapp } from "./demoknapp";
 import { NyKundeSkjema } from "./skjema";
@@ -45,6 +46,7 @@ export default async function PlattformSide() {
       slug: true,
       orgNumber: true,
       isActive: true,
+      plan: true,
       createdAt: true,
       _count: { select: { users: true, assets: true, workOrders: true } },
     },
@@ -92,6 +94,7 @@ export default async function PlattformSide() {
             <thead>
               <Tr>
                 <Th>Bedrift</Th>
+                <Th>Plan</Th>
                 <Th>Brukere</Th>
                 <Th>Utstyr</Th>
                 <Th>Ordre</Th>
@@ -106,7 +109,12 @@ export default async function PlattformSide() {
                 <Tr key={b.id}>
                   <Td>
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-tekst">{b.name}</span>
+                      <Link
+                        href={`/plattform/${b.id}`}
+                        className="font-medium text-tekst hover:text-aksent hover:underline"
+                      >
+                        {b.name}
+                      </Link>
                       {b.id === egen.organizationId && (
                         <Badge className="bg-merke-50 text-merke-700 ring-merke-200 dark:bg-merke-500/15 dark:text-merke-300 dark:ring-merke-500/30">
                           ditt
@@ -121,6 +129,14 @@ export default async function PlattformSide() {
                     <p className="text-xs text-tekst-svak">
                       {b.orgNumber ? `Org.nr. ${b.orgNumber}` : b.slug}
                     </p>
+                  </Td>
+                  <Td>
+                    <Link
+                      href={`/plattform/${b.id}`}
+                      className="inline-block rounded-full bg-flate-dempet px-2 py-0.5 text-xs font-medium text-tekst ring-1 ring-kant ring-inset hover:bg-flate-hover"
+                    >
+                      {PLANER[b.plan].navn}
+                    </Link>
                   </Td>
                   <Td className="tabular-nums">{b._count.users}</Td>
                   <Td className="tabular-nums">{b._count.assets}</Td>

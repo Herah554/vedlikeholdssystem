@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Info } from "lucide-react";
-import { kanSession, requireTenant } from "@/lib/auth";
+import { kanSession, krevFunksjon, requireTenant } from "@/lib/auth";
 import { PageHeader } from "@/components/ui";
 import { Importskjema } from "./skjema";
 
@@ -9,6 +9,7 @@ export const metadata: Metadata = { title: "Importer fra regneark" };
 
 export default async function ImportSide() {
   const { session } = await requireTenant();
+  krevFunksjon(session, "import");
 
   // Den som ikke kan administrere hverken utstyr eller deler, har ingenting
   // her å gjøre. Selve valget kontrolleres på nytt i server-handlingen.

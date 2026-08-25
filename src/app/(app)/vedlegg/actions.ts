@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { krev, requireTenant } from "@/lib/auth";
+import { krev, krevFunksjon, requireTenant } from "@/lib/auth";
 import type { Modul } from "@/lib/rettigheter";
 import { harLagring, lagreFil, sjekkFil, slettFil } from "@/lib/lagring";
 
@@ -63,6 +63,7 @@ export async function lastOppVedlegg(
     return { ok: false, feil: e instanceof Error ? e.message : "Ugyldig." };
   }
 
+  krevFunksjon(session, "vedlegg");
   krev(session, MODUL[feste.type], "endre");
 
   if (!harLagring()) {
@@ -142,6 +143,7 @@ export async function slettVedlegg(id: string): Promise<{ ok: boolean; feil?: st
       ? { type: "avvik", id: vedlegg.deviationId }
       : { type: "anlegg", id: vedlegg.assetId ?? "" };
 
+  krevFunksjon(session, "vedlegg");
   krev(session, MODUL[feste.type], "endre");
 
   // Raden fjernes først. Blir fila liggende igjen hos lagringstjenesten er
