@@ -28,6 +28,21 @@ uten å se hverandres data.
 
 Dashbordet flyttes med dra-og-slipp, og systemet har lyst og mørkt tema som følger operativsystemet hvis du vil.
 
+### Dokumentasjon på anlegget
+
+Hvert stykke utstyr kan ha driftsinstrukser og erfaringer skrevet rett inn —
+«steng ventil V-12 før pumpa startes», «normal vibrasjon er 2–3 mm/s». Dette er
+ofte den mest verdifulle kunnskapen i et anlegg, fordi den ellers bare finnes i
+hodet til én person og forsvinner den dagen han slutter.
+
+I tillegg leses teksten ut av PDF-er ved opplasting, slik at manualer og
+sertifikater blir søkbare. En skannet PDF uten tekstlag har ingen tekst å lese,
+og da lagres filen som den er — den blir bare ikke søkbar.
+
+Begge deler er med i assistentens søk, ved siden av arbeidsordrehistorikken.
+Historikken forteller hva som gikk galt før; dokumentasjonen forteller hvordan
+det skal være.
+
 ### Assistenten
 
 Den viktigste funksjonen er gjenbruk av historikk. Når en tekniker beskriver et
@@ -225,6 +240,7 @@ Nye bedrifter oppretter du fra `/plattform`. Kunder registrerer seg ikke selv.
 | `npm run sjekk:planer` | Kontroller at planene faktisk stenger moduler |
 | `npm run sjekk:lister` | Kontroller egendefinerte verdilister |
 | `npm run sjekk:skjema` | Kontroller at utfylte skjemaer ikke endres av malen |
+| `npm run sjekk:dokumentsok` | Kontroller søk i dokumentasjon og PDF-tekst |
 
 ## Hvordan dataadskillelsen virker
 

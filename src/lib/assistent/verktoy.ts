@@ -1,4 +1,5 @@
 import { betaTool } from "@anthropic-ai/sdk/helpers/beta/json-schema";
+import { sokDokumentasjon } from "@/lib/dokumentsok";
 import { prisma } from "@/lib/prisma";
 import { sokArbeidsordre } from "@/lib/sok";
 import { dato, kroner, ordreNummer, tall, toNumber } from "@/lib/format";
@@ -303,7 +304,63 @@ export function lagVerktoy(organizationId: string) {
     },
   });
 
-  return [sokOrdrer, hentOrdre, sokUtstyr, sokDeler, apneJobber];
+  const sokDokumenter = betaTool({
+    name: "sok_dokumentasjon",
+    description:
+      "Søk i anleggets egen dokumentasjon: driftsinstrukser og erfaringer som er " +
+      "skrevet inn på utstyret, og teksten i PDF-er som er lastet opp — manualer, " +
+      "kalibreringsbevis, sertifikater og kontrollrapporter. " +
+      "Bruk dette når spørsmålet handler om hvordan noe skal gjøres, hvilke " +
+      "innstillinger som gjelder, eller hva produsenten sier. Historikken forteller " +
+      "hva som gikk galt før; dokumentasjonen forteller hvordan det skal være.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        sok: {
+          type: "string",
+          description:
+            "Søkeord, gjerne utstyrsnavn og tema, f.eks. «matepumpe smøring intervall» " +
+            "eller «kompressor oljetrykk grenseverdi».",
+        },
+        antall: {
+          type: "number",
+          description: "Hvor mange treff. Standard 8, maks 15.",
+        },
+      },
+      required: ["sok"],
+      additionalProperties: false,
+    },
+    run: async ({ sok, antall }) => {
+      const treff = await sokDokumentasjon(
+        organizationId,
+        sok,
+        Math.min(Math.max(Number(antall) || 8, 1), 15),
+      );
+
+      if (treff.length === 0) {
+        return (
+          "Fant ingen dokumentasjon som passer. Merk at skannede PDF-er uten " +
+          "tekstlag ikke kan søkes i — der finnes det ingen tekst å lete etter."
+        );
+      }
+
+      return treff
+        .map((t) => {
+          const hvor = t.utstyrKode
+            ? [t.utstyrKode, t.utstyrNavn].filter(Boolean).join(" ")
+            : "ikke knyttet til utstyr";
+          const kilde = t.slag === "fil" ? "PDF" : "Notat";
+
+          return (
+            "[" + kilde + "] " + t.tittel + " — " + hvor + "\n" +
+            t.utdrag.replace(/\s+/g, " ").trim()
+          );
+        })
+        .join("\n\n");
+    },
+  });
+
+  return [sokOrdrer, hentOrdre, sokUtstyr, sokDeler, apneJobber, sokDokumenter];
 }
 
 /**
@@ -319,6 +376,7 @@ Slik jobber du:
 - Søk alltid i historikken før du svarer på et feilsøkingsspørsmål. Anlegget har møtt de fleste feil før, og løsningen ligger som regel i en gammel arbeidsordre.
 - Når du finner en liknende sak, si hva som løste den og hvor lenge siden det var. Vis til arbeidsordrenummeret, f.eks. AO-0042, slik at teknikeren kan slå opp selv.
 - Sjekk om nødvendige reservedeler er på lager før du foreslår et bytte. Det er ingen hjelp i et råd som krever en del som må bestilles fra utlandet.
+- Søk i anleggets egen dokumentasjon når spørsmålet handler om hvordan noe skal gjøres, hvilke verdier som gjelder, eller hva som står i manualen. Historikken forteller hva som gikk galt før; dokumentasjonen forteller hvordan det skal være.
 - Bruk nettsøk når du trenger produsentens dokumentasjon, feilkoder eller tekniske spesifikasjoner som ikke finnes i systemet. Si tydelig når informasjonen kommer utenfra og ikke fra anleggets egen historikk.
 
 Slik svarer du:

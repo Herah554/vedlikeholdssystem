@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Image as ImageIcon, Plus } from "lucide-react";
+import { ArrowLeft, BookOpen, Image as ImageIcon, Plus } from "lucide-react";
 import { harFunksjonSession, kanSession, requireModul, requireTenant } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { hentListe } from "@/lib/lister";
+import { Anleggsdokumentasjon } from "@/components/anleggsdokumentasjon";
 import {
   ANLEGG_STATUS,
   ANLEGG_TYPE,
@@ -72,7 +73,7 @@ export default async function UtstyrSide(props: PageProps<"/anlegg/[id]">) {
   // også viser det som er gjort på utstyret under.
   const deltre = `${utstyr.path}%`;
 
-  const [ordrer, kostnad, vedlegg, dokumenttyper] = await Promise.all([
+  const [ordrer, kostnad, vedlegg, dokumenttyper, notater] = await Promise.all([
     prisma.workOrder.findMany({
       where: {
         organizationId: session.organizationId,
@@ -109,6 +110,11 @@ export default async function UtstyrSide(props: PageProps<"/anlegg/[id]">) {
       orderBy: { createdAt: "asc" },
     }),
     hentListe(db, "dokumenttype", true),
+    db.assetDoc.findMany({
+      where: { assetId: id },
+      include: { createdBy: { select: { name: true } } },
+      orderBy: { updatedAt: "desc" },
+    }),
   ]);
 
   const k = kostnad[0] ?? { arbeid: 0, deler: 0, nedetid: 0, antall: 0 };
@@ -163,6 +169,33 @@ export default async function UtstyrSide(props: PageProps<"/anlegg/[id]">) {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
+          <Card>
+            <CardHeader
+              title={
+                <span className="inline-flex items-center gap-2">
+                  <BookOpen className="size-4 text-tekst-svak" aria-hidden />
+                  Dokumentasjon
+                </span>
+              }
+              description="Driftsinstrukser og erfaringer. Assistenten søker i dette sammen med historikken."
+            />
+            <CardBody>
+              <Anleggsdokumentasjon
+                assetId={utstyr.id}
+                kanEndre={kanSession(session, "anlegg", "endre")}
+                kanSlette={kanSession(session, "anlegg", "administrere")}
+                notater={notater.map((n) => ({
+                  id: n.id,
+                  title: n.title,
+                  body: n.body,
+                  category: n.category,
+                  skrevetAv: n.createdBy?.name ?? null,
+                  endret: n.updatedAt.toISOString(),
+                }))}
+              />
+            </CardBody>
+          </Card>
+
           {harFunksjonSession(session, "vedlegg") && (
             <Card>
               <CardHeader

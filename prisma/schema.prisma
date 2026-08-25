@@ -71,6 +71,7 @@ model Organization {
   listValues     ListValue[]
   formTemplates  FormTemplate[]
   formResponses  FormResponse[]
+  assetDocs      AssetDoc[]
   deviations     Deviation[]
 
   @@map("organizations")
@@ -159,6 +160,7 @@ model User {
   auditLogs          AuditLog[]
   dashboardShares    DashboardShare[]
   passwordResets     PasswordReset[]
+  assetDocs          AssetDoc[]
   startedForms       FormResponse[]   @relation("SkjemaStartet")
   lockedForms        FormResponse[]   @relation("SkjemaLaast")
   reportedDeviations Deviation[]      @relation("AvvikMelder")
@@ -227,6 +229,7 @@ model Asset {
   workOrders  WorkOrder[]
   pmPlans     PmPlan[]
   deviations  Deviation[]
+  docs        AssetDoc[]
   parts       AssetPart[]
   attachments Attachment[]
   budgets     Budget[]
@@ -921,6 +924,38 @@ model FormResponse {
   @@map("form_responses")
 }
 
+/**
+ * Dokumentasjon skrevet direkte på utstyret.
+ * Driftsinstrukser, erfaringer, «husk å stenge ventil X først». Dette er ofte
+ * den mest verdifulle kunnskapen i et anlegg, fordi den ellers bare finnes i
+ * hodet til én person — og forsvinner den dagen han slutter.
+ * Teksten er med i assistentens søk på lik linje med arbeidsordrehistorikken.
+ */
+model AssetDoc {
+  id             String  @id @default(cuid())
+  organizationId String
+  assetId        String
+  title          String
+  body           String
+  /// Fri kategori, f.eks. «Driftsinstruks» eller «Erfaring»
+  category       String?
+
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  /// Vedlikeholdes av en trigger — se migrasjonen dokumentasjon_sok.
+  searchVector Unsupported("tsvector")? @map("search_vector")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  asset        Asset        @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  createdBy    User?        @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, assetId])
+  @@index([searchVector], type: Gin, map: "asset_docs_search_idx")
+  @@map("asset_docs")
+}
+
 model Dashboard {
   id             String   @id @default(cuid())
   organizationId String
@@ -1002,7 +1037,7 @@ model Comment {
 }
 
 model Attachment {
-  id             String    @id @default(cuid())
+  id             String                   @id @default(cuid())
   organizationId String
   workOrderId    String?
   assetId        String?
@@ -1016,13 +1051,19 @@ model Attachment {
   validFrom      DateTime?
   /// Når beviset går ut. Et kalibreringsbevis uten utløpsdato er bare en fil.
   validUntil     DateTime?
+  /// Teksten lest ut av PDF-en ved opplasting, slik at assistenten kan søke
+  /// i manualer og kalibreringsbevis. Null for bilder og for PDF-er som bare
+  /// inneholder skannede sider uten tekstlag.
+  extractedText  String?
+  /// Vedlikeholdes av en trigger — se migrasjonen dokumentasjon_sok.
+  searchVector   Unsupported("tsvector")? @map("search_vector")
   /// Nøkkelen hos lagringstjenesten. Se src/lib/lagring.ts.
   storagePath    String
   /// Adressen filen kan hentes fra
   url            String
   mimeType       String
   sizeBytes      Int
-  createdAt      DateTime  @default(now())
+  createdAt      DateTime                 @default(now())
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   workOrder    WorkOrder?   @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
@@ -1034,6 +1075,7 @@ model Attachment {
   @@index([organizationId, assetId])
   @@index([organizationId, deviationId])
   @@index([organizationId, validUntil])
+  @@index([searchVector], type: Gin, map: "attachments_search_idx")
   @@map("attachments")
 }
 

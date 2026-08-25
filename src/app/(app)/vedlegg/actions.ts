@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { krev, krevFunksjon, requireTenant } from "@/lib/auth";
 import type { Modul } from "@/lib/rettigheter";
 import { harLagring, lagreFil, sjekkFil, slettFil } from "@/lib/lagring";
+import { lesPdfTekst } from "@/lib/pdftekst";
 
 /**
  * Vedlegg til arbeidsordre, avvik og utstyr.
@@ -92,11 +93,19 @@ export async function lastOppVedlegg(
     const kontroll = sjekkFil(fil.name, fil.type, fil.size);
     if (!kontroll.ok) return { ok: false, feil: kontroll.feil, antall };
 
+    const innhold = new Uint8Array(await fil.arrayBuffer());
+
+    // Teksten leses ut før filen sendes videre, slik at assistenten kan søke
+    // i manualer og sertifikater. Finner den ingenting — for eksempel i en
+    // skannet PDF uten tekstlag — lagres filen likevel.
+    const tekst =
+      fil.type === "application/pdf" ? await lesPdfTekst(innhold) : null;
+
     const lagret = await lagreFil({
       organizationId: session.organizationId,
       filnavn: fil.name,
       mimeType: fil.type,
-      data: await fil.arrayBuffer(),
+      data: innhold,
     });
 
     await db.attachment.create({
@@ -111,6 +120,7 @@ export async function lastOppVedlegg(
         url: lagret.url,
         mimeType: fil.type,
         sizeBytes: fil.size,
+        extractedText: tekst,
       },
     });
 

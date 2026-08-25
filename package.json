@@ -20,7 +20,8 @@
     "sjekk:avvik": "tsx src/verktoy/sjekk-avvik.ts",
     "sjekk:planer": "tsx src/verktoy/sjekk-planer.ts",
     "sjekk:lister": "tsx src/verktoy/sjekk-lister.ts",
-    "sjekk:skjema": "tsx src/verktoy/sjekk-skjema.ts"
+    "sjekk:skjema": "tsx src/verktoy/sjekk-skjema.ts",
+    "sjekk:dokumentsok": "tsx src/verktoy/sjekk-dokumentsok.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.117.1",
@@ -40,6 +41,7 @@
     "react-dom": "19.2.8",
     "recharts": "^3.10.1",
     "tailwind-merge": "^3.6.0",
+    "unpdf": "^1.8.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {
