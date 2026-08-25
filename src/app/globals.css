@@ -146,3 +146,20 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/*
+ * Fri plassering av dashbord-widgets.
+ *
+ * Koordinatene settes som variabler på hvert element, men brukes bare når
+ * rutenettet faktisk har fire kolonner. På smalere skjermer flyter widgetene
+ * i stedet, i den rekkefølgen de ligger — fri plassering på en telefon ville
+ * gitt et dashbord man må rulle sidelengs i for å se.
+ *
+ * Grensen må stemme med xl:grid-cols-4 i rutenett.tsx.
+ */
+@media (min-width: 80rem) {
+  .widget-plassert {
+    grid-column: var(--wx) / span var(--ww);
+    grid-row: var(--wy) / span var(--wh);
+  }
+}

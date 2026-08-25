@@ -13,7 +13,7 @@ uten å se hverandres data.
 | **Plattform** | Din egen side: alle kundene, opprett nye, hopp inn hos én av dem, lag en demobedrift |
 | **Import** | Få inn utstyrslista og reservedelene fra et regneark, uten å skrive dem inn på nytt |
 | **Oppsett** | Administratorens side: hvem får gjøre hva, egne verdilister og årsaker |
-| **Dashbord** | Widgets du drar i posisjon og størrelse. Oppsettet kan deles med kolleger |
+| **Dashbord** | Widgets du plasserer fritt i rutenettet og drar i størrelse. Oppsettet kan deles med kolleger |
 | **Ukeplan** | Dra-og-slipp-tavle for ukens jobber, fordelt på dager og teknikere |
 | **Avvik** | HMS, nestenulykker, kvalitet og miljø. Årsak og tiltak må fylles ut før et avvik kan lukkes |
 | **Arbeidsordre** | Meld en feil med tre felter. Timeføring, deleuttak, sjekklister, bilder og kommentarer |
@@ -241,6 +241,7 @@ Nye bedrifter oppretter du fra `/plattform`. Kunder registrerer seg ikke selv.
 | `npm run sjekk:lister` | Kontroller egendefinerte verdilister |
 | `npm run sjekk:skjema` | Kontroller at utfylte skjemaer ikke endres av malen |
 | `npm run sjekk:dokumentsok` | Kontroller søk i dokumentasjon og PDF-tekst |
+| `npm run sjekk:plassering` | Kontroller at widgets aldri havner oppå hverandre |
 
 ## Hvordan dataadskillelsen virker
 

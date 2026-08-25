@@ -48,6 +48,10 @@ export type WidgetOppsett = {
   type: WidgetType;
   w: Bredde;
   h: Hoyde;
+  /** Kolonne fra venstre, 0 til 3. Se src/lib/plassering.ts. */
+  x: number;
+  /** Rad nedover, 0 og oppover. */
+  y: number;
 };
 
 /** Katalogen brukeren velger fra når hen tilpasser dashbordet. */
@@ -75,14 +79,14 @@ export const WIDGET_KATALOG: {
 
 /** Oppsettet nye brukere ser før de har tilpasset noe selv. */
 export const STANDARD_OPPSETT: WidgetOppsett[] = [
-  { id: "w1", type: "apne-ordrer", w: 1, h: 1 },
-  { id: "w2", type: "kritiske-ordrer", w: 1, h: 1 },
-  { id: "w3", type: "forfalt-pm", w: 1, h: 1 },
-  { id: "w4", type: "lav-beholdning", w: 1, h: 1 },
-  { id: "w5", type: "ordrer-per-status", w: 2, h: 2 },
-  { id: "w6", type: "kostnad-per-maaned", w: 2, h: 2 },
-  { id: "w7", type: "nedetid-per-utstyr", w: 2, h: 2 },
-  { id: "w8", type: "mine-jobber", w: 2, h: 2 },
+  { id: "w1", type: "apne-ordrer", w: 1, h: 1, x: 0, y: 0 },
+  { id: "w2", type: "kritiske-ordrer", w: 1, h: 1, x: 1, y: 0 },
+  { id: "w3", type: "forfalt-pm", w: 1, h: 1, x: 2, y: 0 },
+  { id: "w4", type: "lav-beholdning", w: 1, h: 1, x: 3, y: 0 },
+  { id: "w5", type: "ordrer-per-status", w: 2, h: 2, x: 0, y: 1 },
+  { id: "w6", type: "kostnad-per-maaned", w: 2, h: 2, x: 2, y: 1 },
+  { id: "w7", type: "nedetid-per-utstyr", w: 2, h: 2, x: 0, y: 3 },
+  { id: "w8", type: "mine-jobber", w: 2, h: 2, x: 2, y: 3 },
 ];
 
 /** Ikon per widget, brukt i tilpasningsvisningen. */
@@ -128,11 +132,11 @@ export const MALER: Mal[] = [
     navn: "Tekniker",
     beskrivelse: "Dine egne jobber først, og det som haster.",
     oppsett: [
-      { id: "t1", type: "mine-jobber", w: 2, h: 3 },
-      { id: "t2", type: "kritiske-ordrer", w: 1, h: 1 },
-      { id: "t3", type: "forfalt-pm", w: 1, h: 1 },
-      { id: "t4", type: "lav-beholdning", w: 2, h: 1 },
-      { id: "t5", type: "siste-ordrer", w: 2, h: 2 },
+      { id: "t1", type: "mine-jobber", w: 2, h: 3, x: 0, y: 0 },
+      { id: "t2", type: "kritiske-ordrer", w: 1, h: 1, x: 2, y: 0 },
+      { id: "t3", type: "forfalt-pm", w: 1, h: 1, x: 3, y: 0 },
+      { id: "t4", type: "lav-beholdning", w: 2, h: 1, x: 0, y: 3 },
+      { id: "t5", type: "siste-ordrer", w: 2, h: 2, x: 2, y: 3 },
     ],
   },
   {
@@ -140,13 +144,13 @@ export const MALER: Mal[] = [
     navn: "Leder",
     beskrivelse: "Kostnad, nedetid og etterlevelse — det du rapporterer på.",
     oppsett: [
-      { id: "l1", type: "kostnad-hittil", w: 1, h: 1 },
-      { id: "l2", type: "nedetid-30", w: 1, h: 1 },
-      { id: "l3", type: "pm-etterlevelse", w: 1, h: 1 },
-      { id: "l4", type: "apne-ordrer", w: 1, h: 1 },
-      { id: "l5", type: "kostnad-per-maaned", w: 4, h: 3 },
-      { id: "l6", type: "nedetid-per-utstyr", w: 2, h: 2 },
-      { id: "l7", type: "ordrer-per-status", w: 2, h: 2 },
+      { id: "l1", type: "kostnad-hittil", w: 1, h: 1, x: 0, y: 0 },
+      { id: "l2", type: "nedetid-30", w: 1, h: 1, x: 1, y: 0 },
+      { id: "l3", type: "pm-etterlevelse", w: 1, h: 1, x: 2, y: 0 },
+      { id: "l4", type: "apne-ordrer", w: 1, h: 1, x: 3, y: 0 },
+      { id: "l5", type: "kostnad-per-maaned", w: 4, h: 3, x: 0, y: 1 },
+      { id: "l6", type: "nedetid-per-utstyr", w: 2, h: 2, x: 0, y: 4 },
+      { id: "l7", type: "ordrer-per-status", w: 2, h: 2, x: 2, y: 4 },
     ],
   },
   {
@@ -154,10 +158,10 @@ export const MALER: Mal[] = [
     navn: "Delelager",
     beskrivelse: "Beholdning og det som må bestilles.",
     oppsett: [
-      { id: "d1", type: "lav-beholdning", w: 2, h: 2 },
-      { id: "d2", type: "kostnad-hittil", w: 2, h: 1 },
-      { id: "d3", type: "siste-ordrer", w: 2, h: 3 },
-      { id: "d4", type: "ordrer-per-status", w: 2, h: 2 },
+      { id: "d1", type: "lav-beholdning", w: 2, h: 2, x: 0, y: 0 },
+      { id: "d2", type: "kostnad-hittil", w: 2, h: 1, x: 2, y: 0 },
+      { id: "d3", type: "siste-ordrer", w: 2, h: 3, x: 0, y: 2 },
+      { id: "d4", type: "ordrer-per-status", w: 2, h: 2, x: 2, y: 2 },
     ],
   },
   {
@@ -165,14 +169,14 @@ export const MALER: Mal[] = [
     navn: "Kompakt",
     beskrivelse: "Bare tallene, ingen diagrammer. Passer på en skjerm i verkstedet.",
     oppsett: [
-      { id: "k1", type: "apne-ordrer", w: 1, h: 1 },
-      { id: "k2", type: "kritiske-ordrer", w: 1, h: 1 },
-      { id: "k3", type: "forfalt-pm", w: 1, h: 1 },
-      { id: "k4", type: "lav-beholdning", w: 1, h: 1 },
-      { id: "k5", type: "nedetid-30", w: 1, h: 1 },
-      { id: "k6", type: "kostnad-hittil", w: 1, h: 1 },
-      { id: "k7", type: "pm-etterlevelse", w: 1, h: 1 },
-      { id: "k8", type: "mine-jobber", w: 1, h: 1 },
+      { id: "k1", type: "apne-ordrer", w: 1, h: 1, x: 0, y: 0 },
+      { id: "k2", type: "kritiske-ordrer", w: 1, h: 1, x: 1, y: 0 },
+      { id: "k3", type: "forfalt-pm", w: 1, h: 1, x: 2, y: 0 },
+      { id: "k4", type: "lav-beholdning", w: 1, h: 1, x: 3, y: 0 },
+      { id: "k5", type: "nedetid-30", w: 1, h: 1, x: 0, y: 1 },
+      { id: "k6", type: "kostnad-hittil", w: 1, h: 1, x: 1, y: 1 },
+      { id: "k7", type: "pm-etterlevelse", w: 1, h: 1, x: 2, y: 1 },
+      { id: "k8", type: "mine-jobber", w: 1, h: 1, x: 3, y: 1 },
     ],
   },
 ];

@@ -20,48 +20,33 @@ import {
   type Hoyde,
   type WidgetOppsett,
 } from "@/components/widget-katalog";
+import { klemInn, pakk, ruteFraPunkt } from "@/lib/plassering";
 import { lagreOppsett } from "./tilpass/actions";
 
 /**
- * Dashbordrutenettet med flyttbare widgets som kan dras i størrelse.
+ * Dashbordrutenettet med fritt plasserbare widgets.
  *
  * Widgetene tegnes ferdig på serveren og sendes hit som barn. Denne
- * komponenten bytter bare om på rekkefølgen og størrelsen — den vet ingenting
- * om hva den enkelte widgeten viser, og trenger derfor ingen databasetilgang.
+ * komponenten styrer bare hvor de ligger og hvor store de er — den vet
+ * ingenting om hva den enkelte viser, og trenger derfor ingen databasetilgang.
+ *
+ * Plasseringen ligger i x og y på hver widget, ikke i rekkefølgen. Det er det
+ * som gjør at man kan legge én i høyre hjørne og la det stå tomt til venstre.
+ * Selve regnestykket for kollisjon og pakking ligger i src/lib/plassering.ts.
  *
  * Flytting og størrelse ligger bak en egen redigeringsmodus. Uten den ville
  * hvert forsøk på å dra en widget i stedet trykke på lenkene inni den.
  */
 
-/**
- * Kolonnespennet må skrives ut som hele klassenavn.
- *
- * Tailwind leser kildekoden som tekst og finner ikke klasser som settes
- * sammen underveis, så `col-span-${w}` ville blitt borte i produksjonsbygget.
- */
-const SPENN: Record<Bredde, string> = {
-  1: "",
-  2: "sm:col-span-2",
-  3: "sm:col-span-2 xl:col-span-3",
-  4: "sm:col-span-2 xl:col-span-4",
-};
+/** Mellomrommet mellom rutene, i piksler. Må stemme med gap-4 under. */
+const MELLOMROM = 16;
 
-/**
- * Høyden er rader i rutenettet, ikke piksler på den enkelte widgeten.
- *
- * Med min-høyde ble hver widget så høy som den ville, og naboene strakk seg
- * etter den høyeste i raden. Resultatet var kort fulle av luft. Nå er raden
- * 7rem, og en widget dekker et helt antall av dem — da står alt på linje.
- */
-const RADER: Record<Hoyde, string> = {
-  1: "row-span-1",
-  2: "row-span-2",
-  3: "row-span-3",
+type Draging = {
+  id: string;
+  /** Hvor i widgeten man tok tak, i ruter. Ellers ville den hoppet til musa. */
+  grepX: number;
+  grepY: number;
 };
-
-function klem(verdi: number, maks: number): number {
-  return Math.min(maks, Math.max(1, verdi));
-}
 
 type Endring = {
   id: string;
@@ -69,7 +54,6 @@ type Endring = {
   startY: number;
   startW: Bredde;
   startH: Hoyde;
-  /** Bredden på én kolonne pluss mellomrommet, målt idet dragingen startet. */
   kolonneBredde: number;
 };
 
@@ -82,8 +66,7 @@ export function Rutenett({
 }) {
   const [oppsett, settOppsett] = useState<WidgetOppsett[]>(start);
   const [redigerer, settRedigerer] = useState(false);
-  const [drar, settDrar] = useState<string | null>(null);
-  const [over, settOver] = useState<string | null>(null);
+  const [drar, settDrar] = useState<Draging | null>(null);
   const [endrer, settEndrer] = useState<Endring | null>(null);
   const [lagrer, startLagring] = useTransition();
   const [melding, settMelding] = useState<string>();
@@ -93,9 +76,9 @@ export function Rutenett({
   /**
    * Siste oppsett, tilgjengelig utenfor React sin gjengivelse.
    *
-   * Når man slipper et hjørne må vi lagre det som nettopp ble dratt fram.
-   * Å lese det ut av en tilstandsoppdatering ville betydd å kalle en
-   * oppdatering inne i en annen, og det gjør React med rette opprør mot.
+   * Når man slipper må vi lagre det som nettopp ble dratt fram. Å lese det ut
+   * av en tilstandsoppdatering ville betydd å kalle en oppdatering inne i en
+   * annen, og det gjør React med rette opprør mot.
    */
   const sisteOppsett = useRef<WidgetOppsett[]>(start);
 
@@ -112,78 +95,95 @@ export function Rutenett({
     });
   }, []);
 
-  function flyttTil(fraId: string, tilId: string) {
-    if (fraId === tilId) return;
-    const fra = oppsett.findIndex((w) => w.id === fraId);
-    const til = oppsett.findIndex((w) => w.id === tilId);
-    if (fra < 0 || til < 0) return;
-
-    const kopi = [...oppsett];
-    const [flyttet] = kopi.splice(fra, 1);
-    kopi.splice(til, 0, flyttet);
-    lagre(kopi);
-  }
-
-  function flyttMedTastatur(id: string, retning: -1 | 1) {
-    const i = oppsett.findIndex((w) => w.id === id);
-    const mål = i + retning;
-    if (mål < 0 || mål >= oppsett.length) return;
-    const kopi = [...oppsett];
-    [kopi[i], kopi[mål]] = [kopi[mål], kopi[i]];
-    lagre(kopi);
-  }
-
-  /** Setter størrelsen uten å lagre. Brukes mens man drar. */
-  function settStorrelse(id: string, w: Bredde, h: Hoyde) {
-    const nytt = sisteOppsett.current.map((el) =>
-      el.id === id ? { ...el, w, h } : el,
-    );
+  /** Setter oppsettet uten å lagre. Brukes mens man drar. */
+  function visMidlertidig(nytt: WidgetOppsett[]) {
     sisteOppsett.current = nytt;
     settOppsett(nytt);
   }
 
-  /** Endrer størrelsen ett hakk og lagrer. Tastaturets vei inn. */
-  function endreStorrelse(id: string, dw: number, dh: number) {
-    const nytt = oppsett.map((el) =>
-      el.id === id
-        ? {
-            ...el,
-            w: klem(el.w + dw, MAKS_BREDDE) as Bredde,
-            h: klem(el.h + dh, MAKS_HOYDE) as Hoyde,
-          }
-        : el,
+  /** Flytter én widget til en rute og rydder opp etter seg. */
+  function flyttTil(id: string, x: number, y: number) {
+    const nytt = pakk(
+      sisteOppsett.current.map((w) =>
+        w.id === id ? klemInn({ ...w, x, y }) : w,
+      ),
+      id,
     );
-    lagre(nytt);
+
+    // Ingen grunn til å tegne på nytt hvis ingenting flyttet seg
+    const likt = nytt.every((n) => {
+      const f = sisteOppsett.current.find((w) => w.id === n.id);
+      return f && f.x === n.x && f.y === n.y;
+    });
+    if (likt) return;
+
+    visMidlertidig(nytt);
+  }
+
+  function endreStorrelse(id: string, w: Bredde, h: Hoyde, lagreNaa: boolean) {
+    const nytt = pakk(
+      sisteOppsett.current.map((el) =>
+        el.id === id ? klemInn({ ...el, w, h }) : el,
+      ),
+      id,
+    );
+
+    if (lagreNaa) lagre(nytt);
+    else visMidlertidig(nytt);
   }
 
   function fjern(id: string) {
     if (oppsett.length <= 1) return;
-    lagre(oppsett.filter((w) => w.id !== id));
+    lagre(pakk(sisteOppsett.current.filter((w) => w.id !== id)));
     router.refresh();
   }
 
-  /**
-   * Starter en størrelsesendring.
-   *
-   * Kolonnebredden måles her og ikke ved hver musebevegelse. Rutenettet
-   * endrer seg ikke mens man drar, og en måling per bevegelse ville tvunget
-   * nettleseren til å regne om hele oppsettet på nytt førti ganger i sekundet.
-   */
-  function startEndring(e: React.PointerEvent, widget: WidgetOppsett) {
-    e.preventDefault();
-    e.stopPropagation();
-
+  /** Måler rutenettet én gang, ved starten av en draging. */
+  function malRutenett() {
     const el = rutenett.current;
-    if (!el) return;
+    if (!el) return null;
 
     const stil = getComputedStyle(el);
     const spor = stil.gridTemplateColumns
       .split(" ")
       .map(parseFloat)
       .filter(Number.isFinite);
-    if (!spor.length) return;
 
-    const mellomrom = parseFloat(stil.columnGap) || 0;
+    return {
+      rect: el.getBoundingClientRect(),
+      kolonner: spor.length,
+      kolonneBredde: spor[0] + MELLOMROM,
+    };
+  }
+
+  function startDraging(e: React.PointerEvent, w: WidgetOppsett) {
+    if (!redigerer || endrer) return;
+
+    const mal = malRutenett();
+    // Under fire kolonner ligger widgetene i flyt, og fri plassering gir
+    // ingen mening. Da er dra-og-slipp slått av med vilje.
+    if (!mal || mal.kolonner < MAKS_BREDDE) return;
+
+    e.preventDefault();
+
+    const rute = ruteFraPunkt(
+      mal.rect,
+      mal.kolonner,
+      RAD_PIKSLER - MELLOMROM,
+      MELLOMROM,
+      e.clientX,
+      e.clientY,
+    );
+
+    settDrar({ id: w.id, grepX: rute.x - w.x, grepY: rute.y - w.y });
+  }
+
+  function startEndring(e: React.PointerEvent, widget: WidgetOppsett) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const mal = malRutenett();
+    if (!mal) return;
 
     settEndrer({
       id: widget.id,
@@ -191,12 +191,48 @@ export function Rutenett({
       startY: e.clientY,
       startW: widget.w,
       startH: widget.h,
-      kolonneBredde: spor[0] + mellomrom,
+      kolonneBredde: mal.kolonneBredde,
     });
   }
 
-  // Musa forlater ofte det lille håndtaket mens man drar, så bevegelsene
-  // må følges på hele vinduet — ikke bare på elementet man startet på.
+  // Musa forlater ofte widgeten mens man drar, så bevegelsene må følges på
+  // hele vinduet — ikke bare på elementet man startet på.
+  useEffect(() => {
+    if (!drar) return;
+
+    function beveg(e: PointerEvent) {
+      if (!drar) return;
+      const mal = malRutenett();
+      if (!mal) return;
+
+      const rute = ruteFraPunkt(
+        mal.rect,
+        mal.kolonner,
+        RAD_PIKSLER - MELLOMROM,
+        MELLOMROM,
+        e.clientX,
+        e.clientY,
+      );
+
+      flyttTil(drar.id, rute.x - drar.grepX, rute.y - drar.grepY);
+    }
+
+    function slipp() {
+      settDrar(null);
+      lagre(sisteOppsett.current);
+    }
+
+    window.addEventListener("pointermove", beveg);
+    window.addEventListener("pointerup", slipp);
+    window.addEventListener("pointercancel", slipp);
+
+    return () => {
+      window.removeEventListener("pointermove", beveg);
+      window.removeEventListener("pointerup", slipp);
+      window.removeEventListener("pointercancel", slipp);
+    };
+  }, [drar, lagre]);
+
   useEffect(() => {
     if (!endrer) return;
 
@@ -205,20 +241,22 @@ export function Rutenett({
       const dx = e.clientX - endrer.startX;
       const dy = e.clientY - endrer.startY;
 
-      settStorrelse(
+      endreStorrelse(
         endrer.id,
-        klem(
-          endrer.startW + Math.round(dx / endrer.kolonneBredde),
+        Math.min(
           MAKS_BREDDE,
+          Math.max(1, endrer.startW + Math.round(dx / endrer.kolonneBredde)),
         ) as Bredde,
-        klem(endrer.startH + Math.round(dy / RAD_PIKSLER), MAKS_HOYDE) as Hoyde,
+        Math.min(
+          MAKS_HOYDE,
+          Math.max(1, endrer.startH + Math.round(dy / RAD_PIKSLER)),
+        ) as Hoyde,
+        false,
       );
     }
 
     function slipp() {
       settEndrer(null);
-      // Lagres først når man slipper. Å lagre for hver piksel ville sendt
-      // hundrevis av forespørsler for én eneste endring.
       lagre(sisteOppsett.current);
     }
 
@@ -232,6 +270,8 @@ export function Rutenett({
       window.removeEventListener("pointercancel", slipp);
     };
   }, [endrer, lagre]);
+
+  const aktiv = drar?.id ?? endrer?.id;
 
   return (
     <>
@@ -262,7 +302,7 @@ export function Rutenett({
         {redigerer && (
           <p className="text-sm text-tekst-svak">
             Dra widgetene dit du vil ha dem, og dra i hjørnet nede til høyre for
-            å endre størrelsen.
+            å endre størrelsen. Fri plassering krever full bredde på skjermen.
           </p>
         )}
 
@@ -284,51 +324,42 @@ export function Rutenett({
       <div
         ref={rutenett}
         className={cn(
-          "grid grid-cols-1 gap-4 auto-rows-[7rem] sm:grid-cols-2 xl:grid-cols-4",
-          // Mens man drar i et hjørne skal ikke teksten i andre widgets
-          // bli markert av musebevegelsen.
-          endrer && "select-none",
+          "grid auto-rows-[7rem] grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4",
+          // Mens man drar skal ikke teksten i andre widgets bli markert
+          aktiv && "touch-none select-none",
         )}
       >
         {oppsett.map((w) => {
           const meta = WIDGET_KATALOG.find((k) => k.type === w.type);
-          const erOver = over === w.id && drar !== w.id;
-          const endres = endrer?.id === w.id;
+          const dennes = aktiv === w.id;
 
           return (
             <div
               key={w.id}
-              draggable={redigerer && !endrer}
-              onDragStart={() => settDrar(w.id)}
-              onDragEnd={() => {
-                settDrar(null);
-                settOver(null);
-              }}
-              onDragOver={(e) => {
-                if (!redigerer) return;
-                e.preventDefault();
-                settOver(w.id);
-              }}
-              onDragLeave={() => settOver((f) => (f === w.id ? null : f))}
-              onDrop={(e) => {
-                if (!redigerer) return;
-                e.preventDefault();
-                if (drar) flyttTil(drar, w.id);
-                settDrar(null);
-                settOver(null);
-              }}
+              onPointerDown={(e) => startDraging(e, w)}
+              /**
+               * Plasseringen settes som variabler og brukes bare når rutenettet
+               * faktisk har fire kolonner — se .widget-plassert i globals.css.
+               * På smalere skjermer flyter widgetene i stedet, sortert etter
+               * hvor de ligger. Fri plassering på en telefon ville gitt et
+               * dashbord man må rulle sidelengs i.
+               */
+              style={
+                {
+                  "--wx": w.x + 1,
+                  "--wy": w.y + 1,
+                  "--ww": w.w,
+                  "--wh": w.h,
+                } as React.CSSProperties
+              }
               className={cn(
-                "relative min-h-0 [&>*]:h-full",
-                SPENN[w.w],
-                RADER[w.h],
-                !endrer && "transition-all",
-                redigerer && !endrer && "cursor-grab active:cursor-grabbing",
-                drar === w.id && "opacity-40",
-                erOver && "scale-[1.02] rounded-xl ring-2 ring-merke-500",
-                // Mens man drar vises tydelig hvor widgeten vil lande når
-                // man slipper. Uten det er det ikke til å se at den knepper
-                // på plass i rutenettet.
-                endres && "rounded-xl outline-2 outline-dashed outline-merke-500 outline-offset-2",
+                "widget-plassert relative min-h-0 [&>*]:h-full",
+                w.w >= 2 && "sm:col-span-2",
+                !aktiv && "transition-all",
+                redigerer && !dennes && "cursor-grab",
+                dennes && "z-10 cursor-grabbing",
+                dennes &&
+                  "rounded-xl opacity-90 outline-2 outline-dashed outline-merke-500 outline-offset-2",
               )}
             >
               {redigerer && (
@@ -342,40 +373,23 @@ export function Rutenett({
                     <span
                       className={cn(
                         "tabular-nums",
-                        endres ? "font-semibold text-aksent" : "text-tekst-svakest",
+                        dennes ? "font-semibold text-aksent" : "text-tekst-svakest",
                       )}
                     >
                       {w.w}×{w.h}
                     </span>
                   </span>
 
-                  <span className="flex items-center gap-0.5">
-                    <button
-                      type="button"
-                      onClick={() => flyttMedTastatur(w.id, -1)}
-                      className="rounded-md bg-flate p-1.5 text-tekst-svak shadow-sm ring-1 ring-kant ring-inset hover:text-tekst"
-                      aria-label={`Flytt ${meta?.navn} tidligere`}
-                    >
-                      ←
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => flyttMedTastatur(w.id, 1)}
-                      className="rounded-md bg-flate p-1.5 text-tekst-svak shadow-sm ring-1 ring-kant ring-inset hover:text-tekst"
-                      aria-label={`Flytt ${meta?.navn} senere`}
-                    >
-                      →
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => fjern(w.id)}
-                      disabled={oppsett.length <= 1}
-                      className="rounded-md bg-flate p-1.5 text-tekst-svak shadow-sm ring-1 ring-kant ring-inset hover:text-red-600 disabled:opacity-30"
-                      aria-label={`Fjern ${meta?.navn}`}
-                    >
-                      <X className="size-3.5" aria-hidden />
-                    </button>
-                  </span>
+                  <button
+                    type="button"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={() => fjern(w.id)}
+                    disabled={oppsett.length <= 1}
+                    className="rounded-md bg-flate p-1.5 text-tekst-svak shadow-sm ring-1 ring-kant ring-inset hover:text-red-600 disabled:opacity-30"
+                    aria-label={`Fjern ${meta?.navn}`}
+                  >
+                    <X className="size-3.5" aria-hidden />
+                  </button>
 
                   {/*
                     Håndtaket er en knapp og ikke bare et hjørne, slik at det
@@ -395,9 +409,22 @@ export function Rutenett({
                       const valg = steg[e.key];
                       if (!valg) return;
                       e.preventDefault();
-                      endreStorrelse(w.id, valg[0], valg[1]);
+
+                      // Med skift flytter man widgeten i stedet for å endre
+                      // størrelsen, slik at alt kan gjøres uten mus.
+                      if (e.shiftKey) {
+                        flyttTil(w.id, w.x + valg[0], w.y + valg[1]);
+                        lagre(sisteOppsett.current);
+                      } else {
+                        endreStorrelse(
+                          w.id,
+                          Math.min(MAKS_BREDDE, Math.max(1, w.w + valg[0])) as Bredde,
+                          Math.min(MAKS_HOYDE, Math.max(1, w.h + valg[1])) as Hoyde,
+                          true,
+                        );
+                      }
                     }}
-                    aria-label={`Endre størrelse på ${meta?.navn}. Nå ${w.w} bred og ${w.h} høy. Bruk piltastene.`}
+                    aria-label={`Endre ${meta?.navn}. Nå ${w.w} bred og ${w.h} høy, i kolonne ${w.x + 1}, rad ${w.y + 1}. Piltaster endrer størrelsen, skift og piltaster flytter.`}
                     className="absolute right-1 bottom-1 flex size-6 cursor-nwse-resize touch-none items-center justify-center rounded-md bg-flate text-tekst-svak shadow-sm ring-1 ring-kant ring-inset hover:text-tekst focus-visible:ring-2 focus-visible:ring-merke-500"
                   >
                     <svg
@@ -413,9 +440,7 @@ export function Rutenett({
               )}
 
               {/* Innholdet er ferdig tegnet på serveren og røres ikke her */}
-              <div
-                className={cn("h-full", redigerer && "pointer-events-none")}
-              >
+              <div className={cn("h-full", redigerer && "pointer-events-none")}>
                 {innhold.get(w.id)}
               </div>
             </div>

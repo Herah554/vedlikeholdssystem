@@ -55,10 +55,23 @@ export function Velger({ start }: { start: WidgetOppsett[] }) {
   const ledige = WIDGET_KATALOG.filter((w) => !brukte.has(w.type));
 
   function leggTil(type: WidgetType, bredde: Bredde, hoyde: Hoyde) {
-    settValgte((f) => [
-      ...f,
-      { id: `w${Date.now().toString(36)}`, type, w: bredde, h: hoyde },
-    ]);
+    settValgte((f) => {
+      // Nye widgets legges nederst til venstre. Å prøve å finne et ledig hull
+      // høyere oppe ville flyttet dem et sted brukeren ikke ser dem.
+      const nederst = f.reduce((m, w) => Math.max(m, w.y + w.h), 0);
+
+      return [
+        ...f,
+        {
+          id: `w${Date.now().toString(36)}`,
+          type,
+          w: bredde,
+          h: hoyde,
+          x: 0,
+          y: nederst,
+        },
+      ];
+    });
     settMelding(undefined);
   }
 

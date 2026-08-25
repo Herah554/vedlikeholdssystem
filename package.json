@@ -21,7 +21,8 @@
     "sjekk:planer": "tsx src/verktoy/sjekk-planer.ts",
     "sjekk:lister": "tsx src/verktoy/sjekk-lister.ts",
     "sjekk:skjema": "tsx src/verktoy/sjekk-skjema.ts",
-    "sjekk:dokumentsok": "tsx src/verktoy/sjekk-dokumentsok.ts"
+    "sjekk:dokumentsok": "tsx src/verktoy/sjekk-dokumentsok.ts",
+    "sjekk:plassering": "tsx src/verktoy/sjekk-plassering.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.117.1",
