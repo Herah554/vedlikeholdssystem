@@ -68,6 +68,7 @@ model Organization {
   counters       Counter[]
   purchaseOrders PurchaseOrder[]
   failureCauses  FailureCause[]
+  listValues     ListValue[]
   deviations     Deviation[]
 
   @@map("organizations")
@@ -238,11 +239,41 @@ model Asset {
 // Arbeidsordre
 // ─────────────────────────────────────────────────────────────
 
-enum WorkOrderType {
-  KORREKTIV // retter en oppstått feil
-  FOREBYGGENDE // generert fra PM-plan
-  INSPEKSJON
-  FORBEDRING
+/**
+ * Verdier i en liste firmaet styrer selv.
+ * Arbeidsordretypen var en enum med fire faste verdier. Det holder til det
+ * første firmaet og ikke det andre: noen skiller mellom garanti og
+ * ombygging, andre vil ha «tredjepart» eller «myndighetspålagt». Å legge til
+ * en verdi skal ikke kreve at noen skriver om koden.
+ * «list» sier hvilken liste verdien hører til. Da kan flere lister komme til
+ * senere uten en ny tabell for hver.
+ * Koden er det som lagres på arbeidsordren, og kan ikke endres etterpå — da
+ * ville gammel historikk plutselig betydd noe annet. Navnet kan endres fritt.
+ */
+model ListValue {
+  id             String  @id @default(cuid())
+  organizationId String
+  /// Hvilken liste, f.eks. "ordretype"
+  list           String
+  /// Kort kode som lagres på raden
+  code           String
+  name           String
+  description    String?
+  /// Fargetone på etiketten. Se TONER i src/lib/lister.ts.
+  tone           String  @default("noytral")
+  sortOrder      Int     @default(0)
+  isActive       Boolean @default(true)
+  /// Innebygde verdier kan ikke slettes — systemet bruker dem selv
+  isBuiltIn      Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, list, code])
+  @@index([organizationId, list])
+  @@map("list_values")
 }
 
 enum WorkOrderStatus {
@@ -270,7 +301,8 @@ model WorkOrder {
   number         Int
   title          String
   description    String?
-  type           WorkOrderType   @default(KORREKTIV)
+  /// Kode fra lista «ordretype». Se src/lib/lister.ts.
+  type           String          @default("KORREKTIV")
   status         WorkOrderStatus @default(MELDT)
   priority       Priority        @default(NORMAL)
 

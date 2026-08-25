@@ -11,7 +11,6 @@ import type {
   Role,
   StockMovementType,
   WorkOrderStatus,
-  WorkOrderType,
 } from "@/generated/prisma/client";
 
 /**
@@ -69,7 +68,14 @@ export const PRIORITET: Record<Priority, Etikett> = {
 
 export const PRIORITET_REKKEFOLGE: Priority[] = ["KRITISK", "HOY", "NORMAL", "LAV"];
 
-export const ORDRE_TYPE: Record<WorkOrderType, Etikett> = {
+/**
+ * Reserveetiketter for de fire innebygde typene.
+ *
+ * Typene styres nå av firmaet selv, se src/lib/lister.ts. Denne brukes bare
+ * der katalogen ikke er hentet, og som fallback for koder som er fjernet fra
+ * lista etter at de ble brukt.
+ */
+export const ORDRE_TYPE: Record<string, Etikett> = {
   KORREKTIV: { tekst: "Korrektiv", klasse: "bg-rose-50 dark:bg-rose-500/15 text-rose-700 dark:text-rose-300 ring-rose-200 dark:ring-rose-500/30" },
   FOREBYGGENDE: { tekst: "Forebyggende", klasse: "bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 ring-emerald-200 dark:ring-emerald-500/30" },
   INSPEKSJON: { tekst: "Inspeksjon", klasse: "bg-sky-50 dark:bg-sky-500/15 text-sky-700 dark:text-sky-300 ring-sky-200 dark:ring-sky-500/30" },
@@ -225,4 +231,24 @@ export const NESTE_AVVIK_STATUS: Record<DeviationStatus, DeviationStatus[]> = {
 /** Avviksnummer vises som AV-0042. */
 export function avviksNummer(n: number): string {
   return `AV-${String(n).padStart(4, "0")}`;
+}
+
+/**
+ * Etikett for en arbeidsordretype, uten å kunne slå feil.
+ *
+ * Typene styres av firmaet selv, så koden på en gammel ordre kan være noe
+ * som ikke står i lista lenger — eller noe firmaet har funnet på selv. Et
+ * direkte oppslag ville gitt undefined og krasjet siden. Her får vi i det
+ * minste koden å vise.
+ *
+ * Der katalogen er hentet, bruk etikettOppslag() fra src/lib/lister.ts i
+ * stedet. Den kjenner firmaets egne navn og farger.
+ */
+export function ordreType(kode: string): Etikett {
+  return (
+    ORDRE_TYPE[kode] ?? {
+      tekst: kode,
+      klasse: "bg-flate-dempet text-tekst ring-kant",
+    }
+  );
 }

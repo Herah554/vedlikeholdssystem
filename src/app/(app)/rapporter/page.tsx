@@ -8,7 +8,7 @@ import {
   nedetidPerUtstyr,
   pmEtterlevelse,
 } from "@/lib/statistikk";
-import { ORDRE_TYPE } from "@/lib/domene";
+import { ordreType } from "@/lib/domene";
 import { kroner, tall } from "@/lib/format";
 import {
   Card,
@@ -158,7 +158,7 @@ export default async function RapporterSide() {
                         <li key={f.type}>
                           <div className="mb-1 flex items-baseline justify-between text-sm">
                             <span className="font-medium text-tekst">
-                              {ORDRE_TYPE[f.type].tekst}
+                              {ordreType(f.type).tekst}
                             </span>
                             <span className="text-tekst-svak tabular-nums">
                               {f.antall} stk · {andel} %

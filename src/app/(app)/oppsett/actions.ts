@@ -13,6 +13,7 @@ import {
   type Nivaa,
 } from "@/lib/rettigheter";
 import type { Role } from "@/generated/prisma/client";
+import { LISTER, TONE_IDER } from "@/lib/lister";
 
 export type Resultat = { ok: boolean; feil?: string; melding?: string };
 
@@ -180,4 +181,135 @@ export async function endreAarsak(
 
   revalidatePath("/oppsett");
   return { ok: true, melding: "Lagret." };
+}
+
+// ─── Verdilister ──────────────────────────────────────────────
+
+const listeverdi = z.object({
+  liste: z.string().trim().min(1),
+  code: z
+    .string()
+    .trim()
+    .min(2, "Koden må ha minst to tegn.")
+    .max(30, "Koden er for lang.")
+    .regex(
+      /^[A-ZÆØÅ0-9_-]+$/,
+      "Koden kan bare ha store bokstaver, tall, bindestrek og understrek.",
+    ),
+  name: z.string().trim().min(2, "Skriv inn hva verdien heter."),
+  description: z.string().trim().optional(),
+  tone: z.string().trim().optional(),
+});
+
+/**
+ * Legger til en verdi i en liste.
+ *
+ * Koden er det som lagres på arbeidsordren og kan ikke endres etterpå — da
+ * ville hundre gamle ordre plutselig betydd noe annet. Navnet kan endres
+ * fritt, og slår igjennom overalt med det samme.
+ */
+export async function leggTilListeverdi(
+  _forrige: Resultat,
+  formData: FormData,
+): Promise<Resultat> {
+  const { db, session } = await requireTenant();
+  assertRole(session.role, "ADMIN");
+
+  const parsed = listeverdi.safeParse({
+    liste: formData.get("liste"),
+    code: String(formData.get("code") ?? "").toUpperCase(),
+    name: formData.get("name"),
+    description: formData.get("description"),
+    tone: formData.get("tone"),
+  });
+
+  if (!parsed.success) {
+    return { ok: false, feil: parsed.error.issues[0].message };
+  }
+  const d = parsed.data;
+
+  if (!LISTER.some((l) => l.id === d.liste)) {
+    return { ok: false, feil: "Ukjent liste." };
+  }
+
+  const finnes = await db.listValue.findFirst({
+    where: { list: d.liste, code: d.code },
+    select: { id: true },
+  });
+  if (finnes) return { ok: false, feil: `Koden ${d.code} er allerede i bruk.` };
+
+  const antall = await db.listValue.count({ where: { list: d.liste } });
+
+  await db.listValue.create({
+    data: {
+      organizationId: session.organizationId,
+      list: d.liste,
+      code: d.code,
+      name: d.name,
+      description: d.description || null,
+      tone: TONE_IDER.includes(d.tone ?? "") ? d.tone! : "noytral",
+      sortOrder: antall,
+    },
+  });
+
+  revalidatePath("/oppsett");
+  return { ok: true, melding: `${d.name} er lagt til.` };
+}
+
+/** Endrer navn, forklaring og farge. Koden står fast. */
+export async function endreListeverdi(
+  _forrige: Resultat,
+  formData: FormData,
+): Promise<Resultat> {
+  const { db, session } = await requireTenant();
+  assertRole(session.role, "ADMIN");
+
+  const id = String(formData.get("id") ?? "");
+  const navn = String(formData.get("name") ?? "").trim();
+  const tone = String(formData.get("tone") ?? "");
+
+  if (navn.length < 2) return { ok: false, feil: "Navnet er for kort." };
+
+  await db.listValue.updateMany({
+    where: { id },
+    data: {
+      name: navn,
+      description: String(formData.get("description") ?? "").trim() || null,
+      tone: TONE_IDER.includes(tone) ? tone : "noytral",
+    },
+  });
+
+  revalidatePath("/oppsett");
+  return { ok: true, melding: "Lagret." };
+}
+
+/**
+ * Tar en verdi ut av bruk, eller inn igjen.
+ *
+ * Den slettes ikke. Arbeidsordre som allerede er merket med koden skal
+ * fortsatt vise hva de var, selv om verdien ikke lenger er et gyldig valg.
+ * Innebygde verdier kan ikke tas ut — systemet bruker dem selv når det lager
+ * ordre fra forebyggende planer.
+ */
+export async function settListeverdiAktiv(formData: FormData): Promise<void> {
+  const { db, session } = await requireTenant();
+  assertRole(session.role, "ADMIN");
+
+  const id = String(formData.get("id") ?? "");
+  const aktiv = formData.get("aktiv") === "ja";
+
+  const verdi = await db.listValue.findFirst({
+    where: { id },
+    select: { isBuiltIn: true },
+  });
+
+  if (!verdi) return;
+  if (verdi.isBuiltIn && !aktiv) {
+    throw new Error(
+      "Denne verdien er systemet avhengig av og kan ikke tas ut av bruk.",
+    );
+  }
+
+  await db.listValue.updateMany({ where: { id }, data: { isActive: aktiv } });
+  revalidatePath("/oppsett");
 }

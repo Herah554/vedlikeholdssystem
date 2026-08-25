@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { kanSession, requireModul } from "@/lib/auth";
 import { ANLEGG_TYPE } from "@/lib/domene";
+import { hentListe } from "@/lib/lister";
 import { Card, CardBody, PageHeader } from "@/components/ui";
 import { NyOrdreSkjema } from "./skjema";
 
@@ -12,7 +13,7 @@ export default async function NyOrdreSide(props: PageProps<"/arbeidsordre/ny">) 
   const { db, session } = await requireModul("arbeidsordre");
   const sp = await props.searchParams;
 
-  const [utstyr, brukere] = await Promise.all([
+  const [utstyr, brukere, typer] = await Promise.all([
     db.asset.findMany({
       where: { status: { not: "UTRANGERT" } },
       select: { id: true, code: true, name: true, type: true, depth: true },
@@ -23,6 +24,7 @@ export default async function NyOrdreSide(props: PageProps<"/arbeidsordre/ny">) 
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),
+    hentListe(db, "ordretype", true),
   ]);
 
   return (
@@ -53,6 +55,7 @@ export default async function NyOrdreSide(props: PageProps<"/arbeidsordre/ny">) 
             brukere={brukere}
             forvalgtUtstyr={typeof sp.utstyr === "string" ? sp.utstyr : undefined}
             kanPlanlegge={kanSession(session, "arbeidsordre", "administrere")}
+            typer={typer}
           />
         </CardBody>
       </Card>

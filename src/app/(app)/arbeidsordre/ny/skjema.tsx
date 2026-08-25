@@ -5,7 +5,7 @@ import { useFormStatus } from "react-dom";
 import { AlertCircle, ChevronDown, Plus } from "lucide-react";
 import { Button, Field, Input, Select, Textarea } from "@/components/ui";
 import { Utstyrsvelger, type Utstyrsvalg } from "@/components/utstyrsvelger";
-import { ORDRE_TYPE, PRIORITET, PRIORITET_REKKEFOLGE } from "@/lib/domene";
+import { PRIORITET, PRIORITET_REKKEFOLGE } from "@/lib/domene";
 import { opprettOrdre, type Resultat } from "../actions";
 
 function SendKnapp() {
@@ -35,11 +35,14 @@ export function NyOrdreSkjema({
   brukere,
   forvalgtUtstyr,
   kanPlanlegge,
+  typer,
 }: {
   utstyr: Utstyrsvalg[];
   brukere: { id: string; name: string }[];
   forvalgtUtstyr?: string;
   kanPlanlegge: boolean;
+  /** Typene firmaet har satt opp. Se Oppsett. */
+  typer: { code: string; name: string }[];
 }) {
   const [state, action] = useActionState<Resultat, FormData>(opprettOrdre, {
     ok: true,
@@ -121,9 +124,9 @@ export function NyOrdreSkjema({
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <Field label="Type" required>
                 <Select name="type" defaultValue="KORREKTIV" required>
-                  {Object.entries(ORDRE_TYPE).map(([verdi, e]) => (
-                    <option key={verdi} value={verdi}>
-                      {e.tekst}
+                  {typer.map((t) => (
+                    <option key={t.code} value={t.code}>
+                      {t.name}
                     </option>
                   ))}
                 </Select>

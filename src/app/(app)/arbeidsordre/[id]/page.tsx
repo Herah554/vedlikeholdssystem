@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, History, Image as ImageIcon, Lightbulb } from "lucide-react";
 import { harFunksjonSession, kanSession, requireModul, requireTenant } from "@/lib/auth";
 import { liknendeSaker } from "@/lib/sok";
-import { NESTE_STATUS, ORDRE_STATUS, ORDRE_TYPE, PRIORITET } from "@/lib/domene";
+import { NESTE_STATUS, ORDRE_STATUS, ordreType, PRIORITET } from "@/lib/domene";
 import { dato, datoTid, kroner, ordreNummer, relativTid, tall, timer, toNumber } from "@/lib/format";
 import { Badge, Card, CardBody, CardHeader, Table, Td, Th, Tr } from "@/components/ui";
 import { Vedleggsliste } from "@/components/vedlegg";
@@ -121,8 +121,8 @@ export default async function OrdreSide(props: PageProps<"/arbeidsordre/[id]">) 
           <Badge className={PRIORITET[ordre.priority].klasse}>
             {PRIORITET[ordre.priority].tekst}
           </Badge>
-          <Badge className={ORDRE_TYPE[ordre.type].klasse}>
-            {ORDRE_TYPE[ordre.type].tekst}
+          <Badge className={ordreType(ordre.type).klasse}>
+            {ordreType(ordre.type).tekst}
           </Badge>
           <span className="text-xs text-tekst-svakest">
             meldt av {ordre.requestedBy.name} {relativTid(ordre.createdAt)}

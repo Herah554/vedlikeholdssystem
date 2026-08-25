@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CalendarOff, GripVertical } from "lucide-react";
-import { ORDRE_TYPE, PRIORITET } from "@/lib/domene";
+import { ordreType, PRIORITET } from "@/lib/domene";
 import { ordreNummer, timer } from "@/lib/format";
 import { Badge } from "@/components/ui";
 import { planleggOrdre } from "@/app/(app)/arbeidsordre/actions";
@@ -14,7 +14,8 @@ export type Jobb = {
   number: number;
   title: string;
   priority: keyof typeof PRIORITET;
-  type: keyof typeof ORDRE_TYPE;
+  /** Kode fra lista «ordretype». Kan være noe firmaet har lagt til selv. */
+  type: string;
   estimatedHours: number | null;
   assetCode: string | null;
   assignedTo: string | null;
@@ -84,8 +85,8 @@ export function Tavle({
               <Badge className={PRIORITET[jobb.priority].klasse}>
                 {PRIORITET[jobb.priority].tekst}
               </Badge>
-              <Badge className={ORDRE_TYPE[jobb.type].klasse}>
-                {ORDRE_TYPE[jobb.type].tekst}
+              <Badge className={ordreType(jobb.type).klasse}>
+                {ordreType(jobb.type).tekst}
               </Badge>
               {jobb.estimatedHours != null && (
                 <span className="text-[11px] text-tekst-svakest">

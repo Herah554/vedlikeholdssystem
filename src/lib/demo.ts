@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth";
 import { opprettBedrift } from "@/lib/bedrift";
 import { STANDARD_OPPSETT } from "@/components/widget-katalog";
-import type { Priority, WorkOrderStatus, WorkOrderType } from "@/generated/prisma/client";
+import type { Priority, WorkOrderStatus } from "@/generated/prisma/client";
 
 /**
  * Bygger en ferdig utfylt demobedrift.
@@ -396,7 +396,7 @@ export async function opprettDemobedrift(): Promise<Demobedrift> {
   ];
 
   const PRIORITETER: Priority[] = ["KRITISK", "HOY", "NORMAL", "NORMAL", "LAV"];
-  const TYPER: WorkOrderType[] = ["KORREKTIV", "KORREKTIV", "FOREBYGGENDE", "INSPEKSJON", "FORBEDRING"];
+  const TYPER: string[] = ["KORREKTIV", "KORREKTIV", "FOREBYGGENDE", "INSPEKSJON", "FORBEDRING"];
 
   let nummer = 0;
   for (const { status, andel } of STATUSER) {

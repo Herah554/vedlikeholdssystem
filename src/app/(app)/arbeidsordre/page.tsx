@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ClipboardList, Plus } from "lucide-react";
 import { requireModul } from "@/lib/auth";
+import { etikettOppslag, hentListe } from "@/lib/lister";
 import { sokArbeidsordre } from "@/lib/sok";
 import {
   APNE_STATUSER,
   ORDRE_STATUS,
-  ORDRE_TYPE,
   PRIORITET,
 } from "@/lib/domene";
 import { dato, ordreNummer, relativTid } from "@/lib/format";
@@ -25,7 +25,6 @@ import { Filtre } from "./filtre";
 import type {
   Priority,
   WorkOrderStatus,
-  WorkOrderType,
 } from "@/generated/prisma/client";
 
 export const metadata: Metadata = { title: "Arbeidsordre" };
@@ -45,9 +44,14 @@ export default async function ArbeidsordreSide(props: PageProps<"/arbeidsordre">
     "MELDT", "GODKJENT", "PLANLAGT", "PAAGAAR", "VENTER_DELER", "UTFORT", "LUKKET", "AVVIST",
   ]);
   const prioritet = somEnum<Priority>(sp.prioritet, ["KRITISK", "HOY", "NORMAL", "LAV"]);
-  const type = somEnum<WorkOrderType>(sp.type, [
-    "KORREKTIV", "FOREBYGGENDE", "INSPEKSJON", "FORBEDRING",
-  ]);
+  // Typene er ikke lenger faste. Filteret kontrolleres mot det firmaet
+  // faktisk har satt opp, slik at en adresse med en oppdiktet type ikke
+  // gir en tom liste uten forklaring.
+  const typer = await hentListe(db, "ordretype");
+  const type = typer.some((t) => t.code === sp.type)
+    ? (sp.type as string)
+    : undefined;
+  const typeEtikett = etikettOppslag(typer);
   const kunMine = sp.mine === "1";
   const kunApne = sp.apne === "1";
 
@@ -102,6 +106,7 @@ export default async function ArbeidsordreSide(props: PageProps<"/arbeidsordre">
       />
 
       <Filtre
+        typer={typer.filter((t) => t.isActive)}
         verdier={{ sok, status, prioritet, type, mine: kunMine, apne: kunApne }}
       />
 
@@ -153,8 +158,8 @@ export default async function ArbeidsordreSide(props: PageProps<"/arbeidsordre">
                       {o.title}
                     </Link>
                     <div className="mt-0.5 flex items-center gap-1.5">
-                      <Badge className={ORDRE_TYPE[o.type].klasse}>
-                        {ORDRE_TYPE[o.type].tekst}
+                      <Badge className={typeEtikett(o.type).klasse}>
+                        {typeEtikett(o.type).tekst}
                       </Badge>
                       <span className="text-xs text-tekst-svakest">
                         {relativTid(o.createdAt)}

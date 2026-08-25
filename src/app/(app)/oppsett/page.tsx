@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { ShieldCheck, Wrench } from "lucide-react";
+import { List, ShieldCheck, Wrench } from "lucide-react";
 import { requireTenant } from "@/lib/auth";
 import { lesMatrise } from "@/lib/rettigheter";
+import { LISTER, hentListe, type Listeverdi } from "@/lib/lister";
 import { Card, CardBody, CardHeader, PageHeader } from "@/components/ui";
 import { Aarsaker } from "./aarsaker";
+import { Verdiliste } from "./lister";
 import { RettighetsMatrise } from "./matrise";
 
 export const metadata: Metadata = { title: "Oppsett" };
@@ -16,7 +18,7 @@ export default async function OppsettSide() {
   // rettigheter er ikke noe alle ansatte trenger å vite finnes.
   if (session.role !== "ADMIN") notFound();
 
-  const [org, aarsaker] = await Promise.all([
+  const [org, aarsaker, ...lister] = await Promise.all([
     db.organization.findUniqueOrThrow({
       where: { id: session.organizationId },
       select: { permissions: true },
@@ -31,6 +33,7 @@ export default async function OppsettSide() {
         isActive: true,
       },
     }),
+    ...LISTER.map((l) => hentListe(db, l.id)),
   ]);
 
   return (
@@ -55,6 +58,26 @@ export default async function OppsettSide() {
             <RettighetsMatrise matrise={lesMatrise(org.permissions)} />
           </CardBody>
         </Card>
+
+        {LISTER.map((l, i) => (
+          <Card key={l.id}>
+            <CardHeader
+              title={
+                <span className="inline-flex items-center gap-2">
+                  <List className="size-4 text-tekst-svak" aria-hidden />
+                  {l.navn}
+                </span>
+              }
+              description={l.beskrivelse}
+            />
+            <CardBody>
+              <Verdiliste
+                liste={l.id}
+                verdier={(lister[i] ?? []) as Listeverdi[]}
+              />
+            </CardBody>
+          </Card>
+        ))}
 
         <Card>
           <CardHeader

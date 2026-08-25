@@ -12,7 +12,7 @@ uten å se hverandres data.
 |---|---|
 | **Plattform** | Din egen side: alle kundene, opprett nye, hopp inn hos én av dem, lag en demobedrift |
 | **Import** | Få inn utstyrslista og reservedelene fra et regneark, uten å skrive dem inn på nytt |
-| **Oppsett** | Administratorens side: hvem får gjøre hva, og hvilke årsaker teknikerne velger mellom |
+| **Oppsett** | Administratorens side: hvem får gjøre hva, egne verdilister og årsaker |
 | **Dashbord** | Widgets du drar i posisjon og størrelse. Oppsettet kan deles med kolleger |
 | **Ukeplan** | Dra-og-slipp-tavle for ukens jobber, fordelt på dager og teknikere |
 | **Avvik** | HMS, nestenulykker, kvalitet og miljø. Årsak og tiltak må fylles ut før et avvik kan lukkes |
@@ -194,6 +194,7 @@ Nye bedrifter oppretter du fra `/plattform`. Kunder registrerer seg ikke selv.
 | `npm run sjekk:import` | Kontroller import fra regneark |
 | `npm run sjekk:avvik` | Kontroller avviksflyten og filkontrollen |
 | `npm run sjekk:planer` | Kontroller at planene faktisk stenger moduler |
+| `npm run sjekk:lister` | Kontroller egendefinerte verdilister |
 
 ## Hvordan dataadskillelsen virker
 

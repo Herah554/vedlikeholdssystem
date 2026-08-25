@@ -36,6 +36,20 @@ async function ledigSlug(firmanavn: string): Promise<string> {
   throw new Error("Fant ingen ledig kortform av firmanavnet.");
 }
 
+/**
+ * Verdiene en ny bedrift starter med.
+ *
+ * De to første kan ikke fjernes: systemet lager selv forebyggende ordre fra
+ * planer, og en korrektiv jobb er det en feilmelding blir til. De to andre er
+ * bare et fornuftig utgangspunkt og kan slettes fritt.
+ */
+const STANDARD_ORDRETYPER = [
+  { code: "KORREKTIV", name: "Korrektiv", description: "Retter en feil som har oppstått", tone: "rose", isBuiltIn: true },
+  { code: "FOREBYGGENDE", name: "Forebyggende", description: "Planlagt vedlikehold, ofte fra en plan", tone: "emerald", isBuiltIn: true },
+  { code: "INSPEKSJON", name: "Inspeksjon", description: "Kontroll uten at noe er meldt galt", tone: "sky", isBuiltIn: false },
+  { code: "FORBEDRING", name: "Forbedring", description: "Endring som gjør noe bedre enn før", tone: "violet", isBuiltIn: false },
+];
+
 export type NyBedrift = {
   firma: string;
   orgNumber?: string;
@@ -82,6 +96,17 @@ export async function opprettBedrift(
         passwordHash: passordHash,
         isSuperAdmin: d.plattformeier === true,
       },
+    });
+
+    // Uten typer i lista ville skjemaet for ny arbeidsordre hatt et tomt
+    // nedtrekk, og ingen ville skjønt hvorfor.
+    await tx.listValue.createMany({
+      data: STANDARD_ORDRETYPER.map((t, i) => ({
+        organizationId: org.id,
+        list: "ordretype",
+        sortOrder: i,
+        ...t,
+      })),
     });
 
     // Et tomt dashbord er en dårlig førsteopplevelse, så den nye

@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useRef } from "react";
 import { Search, X } from "lucide-react";
-import { ORDRE_STATUS, ORDRE_TYPE, PRIORITET } from "@/lib/domene";
+import { ORDRE_STATUS, PRIORITET } from "@/lib/domene";
 import { Select } from "@/components/ui";
 
 type Verdier = {
@@ -21,7 +21,14 @@ type Verdier = {
  * Alle valg legges i adressen, ikke i komponenttilstand. Da kan en tekniker
  * lagre eller dele en filtrert liste som en helt vanlig lenke.
  */
-export function Filtre({ verdier }: { verdier: Verdier }) {
+export function Filtre({
+  verdier,
+  typer,
+}: {
+  verdier: Verdier;
+  /** Typene firmaet har satt opp. Se src/lib/lister.ts. */
+  typer: { code: string; name: string }[];
+}) {
   const router = useRouter();
   const skjema = useRef<HTMLFormElement>(null);
 
@@ -104,8 +111,8 @@ export function Filtre({ verdier }: { verdier: Verdier }) {
         className="w-auto"
       >
         <option value="">Alle typer</option>
-        {Object.entries(ORDRE_TYPE).map(([verdi, e]) => (
-          <option key={verdi} value={verdi}>{e.tekst}</option>
+        {typer.map((t) => (
+          <option key={t.code} value={t.code}>{t.name}</option>
         ))}
       </Select>
 
