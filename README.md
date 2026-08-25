@@ -16,7 +16,7 @@ uten å se hverandres data.
 | **Dashbord** | Widgets du drar i posisjon og størrelse. Oppsettet kan deles med kolleger |
 | **Ukeplan** | Dra-og-slipp-tavle for ukens jobber, fordelt på dager og teknikere |
 | **Avvik** | HMS, nestenulykker, kvalitet og miljø. Årsak og tiltak må fylles ut før et avvik kan lukkes |
-| **Arbeidsordre** | Meld, godkjenn, planlegg og utfør. Timeføring, deleuttak, sjekklister og kommentarer |
+| **Arbeidsordre** | Meld en feil med tre felter. Timeføring, deleuttak, sjekklister, bilder og kommentarer |
 | **Assistent** | Søker i all historikk, finner liknende feil og hva som løste dem. Kan søke på nettet |
 | **Anlegg** | Hierarki: anlegg → system → utstyr → komponent, med full historikk per enhet |
 | **Reservedeler** | Lager med minimumsnivå, kobling mot utstyr, uttak og opptelling |

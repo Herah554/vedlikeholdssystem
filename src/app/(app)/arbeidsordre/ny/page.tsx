@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { requireModul } from "@/lib/auth";
+import { kanSession, requireModul } from "@/lib/auth";
 import { ANLEGG_TYPE } from "@/lib/domene";
 import { Card, CardBody, PageHeader } from "@/components/ui";
 import { NyOrdreSkjema } from "./skjema";
@@ -9,7 +9,7 @@ import { NyOrdreSkjema } from "./skjema";
 export const metadata: Metadata = { title: "Ny arbeidsordre" };
 
 export default async function NyOrdreSide(props: PageProps<"/arbeidsordre/ny">) {
-  const { db } = await requireModul("arbeidsordre");
+  const { db, session } = await requireModul("arbeidsordre");
   const sp = await props.searchParams;
 
   const [utstyr, brukere] = await Promise.all([
@@ -37,7 +37,7 @@ export default async function NyOrdreSide(props: PageProps<"/arbeidsordre/ny">) 
 
       <PageHeader
         title="Ny arbeidsordre"
-        description="Meld inn en feil eller planlegg en jobb"
+        description="Tre felter er alt som kreves. Resten kan fylles ut senere."
       />
 
       <Card className="max-w-2xl">
@@ -45,11 +45,14 @@ export default async function NyOrdreSide(props: PageProps<"/arbeidsordre/ny">) 
           <NyOrdreSkjema
             utstyr={utstyr.map((u) => ({
               id: u.id,
-              // Innrykk i nedtrekkslista gjør anleggshierarkiet lesbart
-              etikett: `${"  ".repeat(u.depth)}${u.code} — ${u.name} (${ANLEGG_TYPE[u.type]})`,
+              kode: u.code,
+              navn: u.name,
+              type: ANLEGG_TYPE[u.type],
+              dybde: u.depth,
             }))}
             brukere={brukere}
             forvalgtUtstyr={typeof sp.utstyr === "string" ? sp.utstyr : undefined}
+            kanPlanlegge={kanSession(session, "arbeidsordre", "administrere")}
           />
         </CardBody>
       </Card>
