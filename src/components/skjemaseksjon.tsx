@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Plus } from "lucide-react";
 import { Button, Select } from "@/components/ui";
 import { Skjemautfylling, type UtfyltSkjema } from "@/components/skjemautfylling";
@@ -25,12 +26,15 @@ export function Skjemaseksjon({
   maler,
   kanEndre,
   kanAdministrere,
+  erAdmin = false,
 }: {
   feste: { type: "arbeidsordre" | "avvik"; id: string };
   skjemaer: UtfyltSkjema[];
   maler: Skjemamal[];
   kanEndre: boolean;
   kanAdministrere: boolean;
+  /** Vises bare for den som kan lage maler, slik at lenken ikke fører til 404. */
+  erAdmin?: boolean;
 }) {
   const [valgt, settValgt] = useState(maler[0]?.id ?? "");
 
@@ -49,6 +53,23 @@ export function Skjemaseksjon({
       ) : (
         <p className="text-sm text-tekst-svak">
           Ingen skjemaer på denne jobben ennå.
+        </p>
+      )}
+
+      {kanEndre && maler.length === 0 && (
+        <p className="rounded-lg bg-flate-dempet px-3 py-2.5 text-sm text-tekst-svak">
+          Det finnes ingen skjemamaler ennå.{" "}
+          {erAdmin ? (
+            <>
+              Lag den første under{" "}
+              <Link href="/oppsett" className="font-medium text-aksent hover:underline">
+                Oppsett → Skjemaer
+              </Link>
+              . Et ferdig SJA-forslag følger med.
+            </>
+          ) : (
+            "Be en administrator lage en under Oppsett."
+          )}
         </p>
       )}
 

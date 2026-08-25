@@ -26,25 +26,54 @@ import {
 import { cn } from "@/lib/format";
 
 /**
- * Hovedmenyen. Rekkefølgen følger arbeidsdagen til en tekniker:
- * først oversikt, så dagens jobber, så det man slår opp i.
+ * Hovedmenyen, delt i bolker.
+ *
+ * Femten lenker på rad blir en vegg. Bolkene følger hva man holder på med —
+ * dagens arbeid øverst, det man slår opp i under, og administrasjon nederst
+ * fordi man er der sjelden.
+ *
+ * Dashbordet står alene uten overskrift. Det er inngangen, ikke en av
+ * kategoriene.
  */
-const LENKER = [
-  { href: "/dashbord", tekst: "Dashbord", ikon: LayoutDashboard },
-  { href: "/ukeplan", tekst: "Ukeplan", ikon: CalendarDays },
-  { href: "/arbeidsordre", tekst: "Arbeidsordre", ikon: ClipboardList },
-  { href: "/avvik", tekst: "Avvik", ikon: ShieldAlert },
-  { href: "/assistent", tekst: "Assistent", ikon: MessageSquareText },
-  { href: "/anlegg", tekst: "Anlegg", ikon: Network },
-  { href: "/reservedeler", tekst: "Reservedeler", ikon: Boxes },
-  { href: "/bestillinger", tekst: "Bestillinger", ikon: ShoppingCart },
-  { href: "/leverandorer", tekst: "Leverandører", ikon: Truck },
-  { href: "/forebyggende", tekst: "Forebyggende", ikon: Repeat2 },
-  { href: "/budsjett", tekst: "Budsjett", ikon: Wallet },
-  { href: "/rapporter", tekst: "Rapporter", ikon: ChartNoAxesCombined },
-  { href: "/import", tekst: "Import", ikon: FileSpreadsheet },
-  { href: "/oppsett", tekst: "Oppsett", ikon: SlidersHorizontal },
-  { href: "/innstillinger", tekst: "Innstillinger", ikon: Settings },
+const BOLKER = [
+  {
+    navn: null,
+    lenker: [{ href: "/dashbord", tekst: "Dashbord", ikon: LayoutDashboard }],
+  },
+  {
+    navn: "Arbeid",
+    lenker: [
+      { href: "/ukeplan", tekst: "Ukeplan", ikon: CalendarDays },
+      { href: "/arbeidsordre", tekst: "Arbeidsordre", ikon: ClipboardList },
+      { href: "/forebyggende", tekst: "Forebyggende", ikon: Repeat2 },
+      { href: "/avvik", tekst: "Avvik", ikon: ShieldAlert },
+    ],
+  },
+  {
+    navn: "Anlegg og deler",
+    lenker: [
+      { href: "/anlegg", tekst: "Anlegg", ikon: Network },
+      { href: "/reservedeler", tekst: "Reservedeler", ikon: Boxes },
+      { href: "/bestillinger", tekst: "Bestillinger", ikon: ShoppingCart },
+      { href: "/leverandorer", tekst: "Leverandører", ikon: Truck },
+    ],
+  },
+  {
+    navn: "Oppfølging",
+    lenker: [
+      { href: "/rapporter", tekst: "Rapporter", ikon: ChartNoAxesCombined },
+      { href: "/budsjett", tekst: "Budsjett", ikon: Wallet },
+      { href: "/assistent", tekst: "Assistent", ikon: MessageSquareText },
+    ],
+  },
+  {
+    navn: "Administrasjon",
+    lenker: [
+      { href: "/import", tekst: "Import", ikon: FileSpreadsheet },
+      { href: "/oppsett", tekst: "Oppsett", ikon: SlidersHorizontal },
+      { href: "/innstillinger", tekst: "Innstillinger", ikon: Settings },
+    ],
+  },
 ] as const;
 
 /**
@@ -63,29 +92,50 @@ function Lenker({
   const pathname = usePathname();
   const tillatt = new Set(synlige);
 
+  // En bolk der alt er stengt av planen eller rollen skal ikke etterlate
+  // en overskrift som svever over ingenting.
+  const bolker = BOLKER.map((b) => ({
+    ...b,
+    lenker: b.lenker.filter((l) => tillatt.has(l.href)),
+  })).filter((b) => b.lenker.length > 0);
+
   return (
-    <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-4">
-      {LENKER.filter((l) => tillatt.has(l.href)).map(({ href, tekst, ikon: Ikon }) => {
-        // "/arbeidsordre/42" skal også markere "Arbeidsordre" som aktiv
-        const aktiv = pathname === href || pathname.startsWith(`${href}/`);
-        return (
-          <Link
-            key={href}
-            href={href}
-            onClick={onNavigate}
-            aria-current={aktiv ? "page" : undefined}
-            className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-              aktiv
-                ? "bg-merke-50 text-aksent"
-                : "text-tekst-svak hover:bg-flate-dempet hover:text-tekst",
-            )}
-          >
-            <Ikon className="size-4 shrink-0" aria-hidden />
-            {tekst}
-          </Link>
-        );
-      })}
+    <nav className="flex-1 overflow-y-auto px-3 py-4">
+      {bolker.map((bolk, i) => (
+        <div key={bolk.navn ?? "start"} className={i > 0 ? "mt-5" : undefined}>
+          {bolk.navn && (
+            <p className="mb-1 px-3 text-xs font-semibold tracking-wide text-tekst-svakest uppercase">
+              {bolk.navn}
+            </p>
+          )}
+
+          <div className="space-y-0.5">
+            {bolk.lenker.map(({ href, tekst, ikon: Ikon }) => {
+              // "/arbeidsordre/42" skal også markere "Arbeidsordre" som aktiv
+              const aktiv =
+                pathname === href || pathname.startsWith(`${href}/`);
+
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  onClick={onNavigate}
+                  aria-current={aktiv ? "page" : undefined}
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                    aktiv
+                      ? "bg-merke-50 text-aksent dark:bg-merke-500/15"
+                      : "text-tekst-svak hover:bg-flate-dempet hover:text-tekst",
+                  )}
+                >
+                  <Ikon className="size-4 shrink-0" aria-hidden />
+                  {tekst}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      ))}
     </nav>
   );
 }
@@ -115,7 +165,10 @@ export function Sidemeny({
   synlige: readonly string[];
 }) {
   return (
-    <aside className="hidden w-60 shrink-0 flex-col border-r border-kant bg-flate lg:flex">
+    // sticky + full skjermhøyde: menyen står stille mens innholdet ruller.
+    // Uten dette forsvinner den oppover så snart siden er lengre enn skjermen,
+    // og man må bla helt til topps for å komme seg videre.
+    <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col self-start overflow-hidden border-r border-kant bg-flate lg:flex">
       <Merke organisasjon={organisasjon} />
       <Lenker synlige={synlige} />
     </aside>

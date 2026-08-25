@@ -221,9 +221,12 @@ export default async function OrdreSide(props: PageProps<"/arbeidsordre/[id]">) 
             </Card>
           )}
 
+          {/* Kortet vises også når det ikke finnes maler, men bare for den
+              som kan lage dem. Ellers ville en tom seksjon stått der uten at
+              noen kunne gjøre noe med den. */}
           {(skjemaer.length > 0 ||
-            (skjemamaler.length > 0 &&
-              kanSession(session, "arbeidsordre", "endre"))) && (
+            (kanSession(session, "arbeidsordre", "endre") &&
+              (skjemamaler.length > 0 || session.role === "ADMIN"))) && (
             <Card>
               <CardHeader
                 title={
@@ -247,6 +250,7 @@ export default async function OrdreSide(props: PageProps<"/arbeidsordre/[id]">) 
                     "arbeidsordre",
                     "administrere",
                   )}
+                  erAdmin={session.role === "ADMIN"}
                   skjemaer={skjemaer.map((sk) => ({
                     id: sk.id,
                     navn: sk.templateName,
