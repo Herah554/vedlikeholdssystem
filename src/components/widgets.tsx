@@ -269,8 +269,88 @@ export function Widget({ type, db, session }: Ctx & { type: WidgetType }) {
       return <MineJobber db={db} session={session} />;
     case "siste-ordrer":
       return <SisteOrdrer db={db} session={session} />;
+    case "utloper-snart":
+      return <UtloperSnart db={db} session={session} />;
     default:
       return null;
   }
 }
 
+
+/**
+ * Dokumenter som nærmer seg utløp, og de som allerede har gått ut.
+ *
+ * Nitti dager fram i tid. Et kalibreringsbevis må bestilles, utstyret sendes
+ * inn og komme tilbake — får man beskjed uka før, er det for sent. De som
+ * allerede har gått ut står øverst, fordi de betyr at utstyret i praksis ikke
+ * kan brukes til noe som teller.
+ */
+async function UtloperSnart({ db }: Ctx) {
+  const grense = new Date();
+  grense.setDate(grense.getDate() + 90);
+
+  const dokumenter = await db.attachment.findMany({
+    where: { validUntil: { not: null, lte: grense } },
+    include: { asset: { select: { id: true, code: true, name: true } } },
+    orderBy: { validUntil: "asc" },
+    take: 12,
+  });
+
+  return (
+    <Card className="flex h-full flex-col">
+      <CardHeader
+        title="Går snart ut"
+        description="Kalibreringsbevis og sertifikater med utløp innen tre måneder"
+      />
+      {dokumenter.length === 0 ? (
+        <EmptyState
+          title="Ingenting går ut med det første"
+          description="Dokumenter med utløpsdato dukker opp her når det nærmer seg."
+        />
+      ) : (
+        <ul className="min-h-0 flex-1 divide-y divide-kant overflow-auto">
+          {dokumenter.map((d) => {
+            const dager = Math.ceil(
+              (d.validUntil!.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+            );
+            const utgatt = dager < 0;
+
+            return (
+              <li key={d.id}>
+                <Link
+                  href={d.asset ? `/anlegg/${d.asset.id}` : d.url}
+                  className="flex items-center gap-3 px-5 py-3 hover:bg-flate-hover"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-tekst">
+                      {d.fileName}
+                    </p>
+                    <p className="truncate text-xs text-tekst-svak">
+                      {d.asset
+                        ? `${d.asset.code} · ${d.asset.name}`
+                        : "Ikke knyttet til utstyr"}
+                      {d.reference && ` · ${d.reference}`}
+                    </p>
+                  </div>
+                  <Badge
+                    className={
+                      utgatt
+                        ? "bg-red-50 text-red-700 ring-red-200 dark:bg-red-500/15 dark:text-red-300 dark:ring-red-500/30"
+                        : dager <= 30
+                          ? "bg-amber-50 text-amber-900 ring-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:ring-amber-500/30"
+                          : "bg-flate-dempet text-tekst-svak ring-kant"
+                    }
+                  >
+                    {utgatt
+                      ? `${Math.abs(dager)} d over`
+                      : `${dager} d igjen`}
+                  </Badge>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </Card>
+  );
+}

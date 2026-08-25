@@ -1,6 +1,7 @@
 import {
   AlertTriangle,
   Boxes,
+  CalendarClock,
   ClipboardList,
   Clock,
   Repeat2,
@@ -27,7 +28,8 @@ export type WidgetType =
   | "kostnad-per-maaned"
   | "nedetid-per-utstyr"
   | "mine-jobber"
-  | "siste-ordrer";
+  | "siste-ordrer"
+  | "utloper-snart";
 
 /** Rutenettet er fire kolonner bredt. En widget kan dekke fra én til alle. */
 export type Bredde = 1 | 2 | 3 | 4;
@@ -68,6 +70,7 @@ export const WIDGET_KATALOG: {
   { type: "nedetid-per-utstyr", navn: "Nedetid per utstyr", beskrivelse: "Utstyret som stopper produksjonen mest", bredde: 2, hoyde: 2 },
   { type: "mine-jobber", navn: "Mine jobber", beskrivelse: "Arbeidsordre tildelt deg", bredde: 2, hoyde: 2 },
   { type: "siste-ordrer", navn: "Siste meldinger", beskrivelse: "Nyeste arbeidsordre i systemet", bredde: 2, hoyde: 2 },
+  { type: "utloper-snart", navn: "Går snart ut", beskrivelse: "Kalibreringsbevis og sertifikater som nærmer seg utløp", bredde: 2, hoyde: 2 },
 ];
 
 /** Oppsettet nye brukere ser før de har tilpasset noe selv. */
@@ -96,6 +99,7 @@ export const WIDGET_IKON: Record<WidgetType, typeof ClipboardList> = {
   "nedetid-per-utstyr": Clock,
   "mine-jobber": ClipboardList,
   "siste-ordrer": ClipboardList,
+  "utloper-snart": CalendarClock,
 };
 
 /**

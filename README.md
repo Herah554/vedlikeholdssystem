@@ -84,6 +84,17 @@ veier, slik at den som leser jobben senere skjønner hvorfor den ble opprettet.
 
 ### Bilder og dokumenter
 
+Kalibreringsbevis, sertifikater og kontrollrapporter kan få dokumenttype,
+referansenummer og **utløpsdato**. Uten utløpsdatoen er et kalibreringsbevis
+bare en fil i en mappe; med den kan systemet si fra i tide. Widgeten «Går snart
+ut» viser alt som utløper innen tre måneder, med de utgåtte øverst.
+
+Nitti dagers varsel er valgt fordi kalibrering må bestilles, utstyret sendes
+inn og komme tilbake. Beskjed uka før hjelper ingen.
+
+Dokumenttypene er en vanlig verdiliste, så hvert firma kan legge til sine egne.
+
+
 Arbeidsordre, avvik og utstyr kan ha bilder og PDF-er. Bilder krympes i
 nettleseren før de sendes: et mobilbilde er fort seks megabyte, og teknikeren
 står gjerne ute på anlegget med dårlig dekning.

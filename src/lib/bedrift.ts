@@ -50,6 +50,17 @@ const STANDARD_ORDRETYPER = [
   { code: "FORBEDRING", name: "Forbedring", description: "Endring som gjør noe bedre enn før", tone: "violet", isBuiltIn: false },
 ];
 
+/** Dokumenttyper en ny bedrift starter med. Ingen av dem er innebygde. */
+const STANDARD_DOKUMENTTYPER = [
+  { code: "KALIBRERING", name: "Kalibreringsbevis", description: "Måleutstyr som må kalibreres med jevne mellomrom", tone: "sky" },
+  { code: "SERTIFIKAT", name: "Sertifikat", description: "Løfteutstyr, trykkbeholdere og annet med krav", tone: "emerald" },
+  { code: "KONTROLL", name: "Kontrollrapport", description: "Periodisk kontroll utført av tredjepart", tone: "amber" },
+  { code: "SAMSVAR", name: "Samsvarserklæring", description: "Dokumentasjon fra leverandøren", tone: "violet" },
+  { code: "DATABLAD", name: "Datablad", description: "Teknisk beskrivelse av utstyret", tone: "noytral" },
+  { code: "TEGNING", name: "Tegning", description: "Koblingsskjema, plantegning eller lignende", tone: "noytral" },
+  { code: "MANUAL", name: "Bruksanvisning", description: "Manual fra produsenten", tone: "noytral" },
+];
+
 export type NyBedrift = {
   firma: string;
   orgNumber?: string;
@@ -101,12 +112,20 @@ export async function opprettBedrift(
     // Uten typer i lista ville skjemaet for ny arbeidsordre hatt et tomt
     // nedtrekk, og ingen ville skjønt hvorfor.
     await tx.listValue.createMany({
-      data: STANDARD_ORDRETYPER.map((t, i) => ({
-        organizationId: org.id,
-        list: "ordretype",
-        sortOrder: i,
-        ...t,
-      })),
+      data: [
+        ...STANDARD_ORDRETYPER.map((t, i) => ({
+          organizationId: org.id,
+          list: "ordretype",
+          sortOrder: i,
+          ...t,
+        })),
+        ...STANDARD_DOKUMENTTYPER.map((t, i) => ({
+          organizationId: org.id,
+          list: "dokumenttype",
+          sortOrder: i,
+          ...t,
+        })),
+      ],
     });
 
     // Et tomt dashbord er en dårlig førsteopplevelse, så den nye

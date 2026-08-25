@@ -21,6 +21,13 @@ export const LISTER = [
     /** Koder systemet selv er avhengig av og som derfor ikke kan fjernes. */
     innebygde: ["KORREKTIV", "FOREBYGGENDE"],
   },
+  {
+    id: "dokumenttype",
+    navn: "Typer dokument",
+    beskrivelse:
+      "Hva slags dokument som henges på utstyret. Kalibreringsbevis, sertifikater og kontrollrapporter kan ha utløpsdato.",
+    innebygde: [],
+  },
 ] as const;
 
 export type Liste = (typeof LISTER)[number]["id"];

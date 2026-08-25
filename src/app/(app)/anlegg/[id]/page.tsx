@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Image as ImageIcon, Plus } from "lucide-react";
 import { harFunksjonSession, kanSession, requireModul, requireTenant } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { hentListe } from "@/lib/lister";
 import {
   ANLEGG_STATUS,
   ANLEGG_TYPE,
@@ -71,7 +72,7 @@ export default async function UtstyrSide(props: PageProps<"/anlegg/[id]">) {
   // også viser det som er gjort på utstyret under.
   const deltre = `${utstyr.path}%`;
 
-  const [ordrer, kostnad, vedlegg] = await Promise.all([
+  const [ordrer, kostnad, vedlegg, dokumenttyper] = await Promise.all([
     prisma.workOrder.findMany({
       where: {
         organizationId: session.organizationId,
@@ -107,6 +108,7 @@ export default async function UtstyrSide(props: PageProps<"/anlegg/[id]">) {
       include: { uploadedBy: { select: { name: true } } },
       orderBy: { createdAt: "asc" },
     }),
+    hentListe(db, "dokumenttype", true),
   ]);
 
   const k = kostnad[0] ?? { arbeid: 0, deler: 0, nedetid: 0, antall: 0 };
@@ -176,6 +178,7 @@ export default async function UtstyrSide(props: PageProps<"/anlegg/[id]">) {
                 <Vedleggsliste
                   feste={{ type: "anlegg", id: utstyr.id }}
                   kanEndre={kanSession(session, "anlegg", "endre")}
+                dokumenttyper={dokumenttyper}
                   vedlegg={vedlegg.map((v) => ({
                     id: v.id,
                     fileName: v.fileName,

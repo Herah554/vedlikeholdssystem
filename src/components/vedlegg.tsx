@@ -2,13 +2,14 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, Camera, FileText, Trash2 } from "lucide-react";
+import { AlertCircle, Camera, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui";
 import {
   lastOppVedlegg,
   slettVedlegg,
   type Feste,
 } from "@/app/(app)/vedlegg/actions";
+import { Dokumentrad, type Dokumenttype } from "@/components/dokumentrad";
 
 export type Vedlegg = {
   id: string;
@@ -17,6 +18,11 @@ export type Vedlegg = {
   mimeType: string;
   sizeBytes: number;
   lastetOppAv: string | null;
+  /** Kode fra lista «dokumenttype». Bare satt på dokumenter, ikke bilder. */
+  docType?: string | null;
+  reference?: string | null;
+  validFrom?: string | null;
+  validUntil?: string | null;
 };
 
 /** Lengste side på et bilde etter krymping. */
@@ -70,20 +76,20 @@ async function krymp(fil: File): Promise<File> {
   }
 }
 
-function lesbarStorrelse(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} kB`;
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-}
-
 export function Vedleggsliste({
   feste,
   vedlegg,
   kanEndre,
+  dokumenttyper = [],
 }: {
   feste: Feste;
   vedlegg: Vedlegg[];
   kanEndre: boolean;
+  /**
+   * Typene firmaet har satt opp. Er lista tom, vises dokumentene fortsatt —
+   * bare uten type og gyldighet.
+   */
+  dokumenttyper?: Dokumenttype[];
 }) {
   const [venter, start] = useTransition();
   const [feil, settFeil] = useState<string>();
@@ -174,31 +180,21 @@ export function Vedleggsliste({
       {andre.length > 0 && (
         <ul className="divide-y divide-kant rounded-lg ring-1 ring-kant ring-inset">
           {andre.map((v) => (
-            <li key={v.id} className="flex items-center gap-3 px-4 py-2.5">
-              <FileText className="size-4 shrink-0 text-tekst-svakest" aria-hidden />
-              <a
-                href={v.url}
-                target="_blank"
-                rel="noreferrer"
-                className="min-w-0 flex-1 truncate text-sm font-medium text-aksent hover:underline"
-              >
-                {v.fileName}
-              </a>
-              <span className="text-xs text-tekst-svak">
-                {lesbarStorrelse(v.sizeBytes)}
-              </span>
-              {kanEndre && (
-                <button
-                  type="button"
-                  onClick={() => fjern(v.id)}
-                  disabled={venter}
-                  aria-label={`Slett ${v.fileName}`}
-                  className="rounded-md p-1.5 text-tekst-svak hover:text-red-600"
-                >
-                  <Trash2 className="size-3.5" aria-hidden />
-                </button>
-              )}
-            </li>
+            <Dokumentrad
+              key={v.id}
+              kanEndre={kanEndre}
+              typer={dokumenttyper}
+              dokument={{
+                id: v.id,
+                fileName: v.fileName,
+                url: v.url,
+                sizeBytes: v.sizeBytes,
+                docType: v.docType ?? null,
+                reference: v.reference ?? null,
+                validFrom: v.validFrom ?? null,
+                validUntil: v.validUntil ?? null,
+              }}
+            />
           ))}
         </ul>
       )}
@@ -225,11 +221,11 @@ export function Vedleggsliste({
             onClick={() => filfelt.current?.click()}
           >
             <Camera className="size-4" aria-hidden />
-            {venter ? "Laster opp …" : "Legg til bilde"}
+            {venter ? "Laster opp …" : "Legg til bilde eller PDF"}
           </Button>
           <p className="mt-1.5 text-xs text-tekst-svak">
-            Bilder krympes automatisk før de sendes. Du kan velge flere om
-            gangen, og ta bilde direkte med mobilen.
+            Bilder krympes automatisk før de sendes. PDF-er lastes opp som de
+            er — kalibreringsbevis og sertifikater kan få utløpsdato etterpå.
           </p>
         </div>
       )}

@@ -154,3 +154,65 @@ export async function slettVedlegg(id: string): Promise<{ ok: boolean; feil?: st
   revalidatePath(sti(feste));
   return { ok: true };
 }
+
+/**
+ * Setter dokumenttype, referanse og gyldighet på et vedlegg.
+ *
+ * Dette er det som skiller et kalibreringsbevis fra en tilfeldig PDF. Uten
+ * utløpsdatoen er dokumentet bare en fil i en mappe; med den kan systemet si
+ * fra før måleren ikke lenger kan brukes til noe som teller.
+ */
+export async function settDokumentinfo(
+  _forrige: Opplastingssvar,
+  formData: FormData,
+): Promise<Opplastingssvar> {
+  const { db, session } = await requireTenant();
+  krevFunksjon(session, "vedlegg");
+
+  const id = String(formData.get("id") ?? "");
+
+  const vedlegg = await db.attachment.findFirst({
+    where: { id },
+    select: { workOrderId: true, deviationId: true, assetId: true },
+  });
+  if (!vedlegg) return { ok: false, feil: "Fant ikke vedlegget." };
+
+  const feste: Feste = vedlegg.workOrderId
+    ? { type: "arbeidsordre", id: vedlegg.workOrderId }
+    : vedlegg.deviationId
+      ? { type: "avvik", id: vedlegg.deviationId }
+      : { type: "anlegg", id: vedlegg.assetId ?? "" };
+
+  krev(session, MODUL[feste.type], "endre");
+
+  // Typen kontrolleres mot firmaets egen liste. En kode som ikke finnes der
+  // ville vist seg som rå tekst i grensesnittet.
+  const type = String(formData.get("docType") ?? "").trim();
+  if (type) {
+    const kjent = await db.listValue.findFirst({
+      where: { list: "dokumenttype", code: type },
+      select: { id: true },
+    });
+    if (!kjent) return { ok: false, feil: "Ukjent dokumenttype." };
+  }
+
+  const lesDato = (navn: string): Date | null => {
+    const rå = String(formData.get(navn) ?? "").trim();
+    if (!rå) return null;
+    const d = new Date(rå);
+    return Number.isNaN(d.getTime()) ? null : d;
+  };
+
+  await db.attachment.updateMany({
+    where: { id },
+    data: {
+      docType: type || null,
+      reference: String(formData.get("reference") ?? "").trim() || null,
+      validFrom: lesDato("validFrom"),
+      validUntil: lesDato("validUntil"),
+    },
+  });
+
+  revalidatePath(sti(feste));
+  return { ok: true };
+}

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, History, Image as ImageIcon, Lightbulb } from "lucide-react";
 import { harFunksjonSession, kanSession, requireModul, requireTenant } from "@/lib/auth";
 import { liknendeSaker } from "@/lib/sok";
+import { hentListe } from "@/lib/lister";
 import { NESTE_STATUS, ORDRE_STATUS, ordreType, PRIORITET } from "@/lib/domene";
 import { dato, datoTid, kroner, ordreNummer, relativTid, tall, timer, toNumber } from "@/lib/format";
 import { Badge, Card, CardBody, CardHeader, Table, Td, Th, Tr } from "@/components/ui";
@@ -66,7 +67,7 @@ export default async function OrdreSide(props: PageProps<"/arbeidsordre/[id]">) 
 
   if (!ordre) notFound();
 
-  const [deler, liknende, aarsaker, vedlegg] = await Promise.all([
+  const [deler, liknende, aarsaker, vedlegg, dokumenttyper] = await Promise.all([
     db.part.findMany({
       where: { isActive: true },
       select: { id: true, number: true, name: true, unit: true, quantityOnHand: true },
@@ -88,6 +89,7 @@ export default async function OrdreSide(props: PageProps<"/arbeidsordre/[id]">) 
       include: { uploadedBy: { select: { name: true } } },
       orderBy: { createdAt: "asc" },
     }),
+    hentListe(db, "dokumenttype", true),
   ]);
 
   const arbeidskost = ordre.timeEntries.reduce(
@@ -183,6 +185,7 @@ export default async function OrdreSide(props: PageProps<"/arbeidsordre/[id]">) 
                 <Vedleggsliste
                   feste={{ type: "arbeidsordre", id: ordre.id }}
                   kanEndre={kanSession(session, "arbeidsordre", "endre")}
+                dokumenttyper={dokumenttyper}
                   vedlegg={vedlegg.map((v) => ({
                     id: v.id,
                     fileName: v.fileName,

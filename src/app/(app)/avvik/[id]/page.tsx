@@ -12,6 +12,7 @@ import {
   avviksNummer,
 } from "@/lib/domene";
 import { datoTid, ordreNummer } from "@/lib/format";
+import { hentListe } from "@/lib/lister";
 import { Badge, Card, CardBody, CardHeader, PageHeader } from "@/components/ui";
 import { Vedleggsliste } from "@/components/vedlegg";
 import { lagreBehandling } from "../actions";
@@ -58,6 +59,8 @@ export default async function AvvikSide(props: PageProps<"/avvik/[id]">) {
 
   const kanBehandle = kanSession(session, "avvik", "administrere");
   const kanEndre = kanSession(session, "avvik", "endre");
+
+  const dokumenttyper = await hentListe(db, "dokumenttype", true);
 
   const ansvarlige = kanBehandle
     ? await db.user.findMany({
@@ -219,6 +222,7 @@ export default async function AvvikSide(props: PageProps<"/avvik/[id]">) {
                 <Vedleggsliste
                   feste={{ type: "avvik", id: avvik.id }}
                   kanEndre={kanEndre}
+                dokumenttyper={dokumenttyper}
                   vedlegg={avvik.attachments.map((v) => ({
                     id: v.id,
                     fileName: v.fileName,

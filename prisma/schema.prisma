@@ -907,20 +907,27 @@ model Comment {
 }
 
 model Attachment {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   organizationId String
   workOrderId    String?
   assetId        String?
   deviationId    String?
   uploadedById   String?
   fileName       String
+  /// Kode fra lista «dokumenttype», f.eks. KALIBRERING. Null for vanlige bilder.
+  docType        String?
+  /// Sertifikat- eller rapportnummer
+  reference      String?
+  validFrom      DateTime?
+  /// Når beviset går ut. Et kalibreringsbevis uten utløpsdato er bare en fil.
+  validUntil     DateTime?
   /// Nøkkelen hos lagringstjenesten. Se src/lib/lagring.ts.
   storagePath    String
   /// Adressen filen kan hentes fra
   url            String
   mimeType       String
   sizeBytes      Int
-  createdAt      DateTime @default(now())
+  createdAt      DateTime  @default(now())
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   workOrder    WorkOrder?   @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
@@ -931,6 +938,7 @@ model Attachment {
   @@index([organizationId, workOrderId])
   @@index([organizationId, assetId])
   @@index([organizationId, deviationId])
+  @@index([organizationId, validUntil])
   @@map("attachments")
 }
 
