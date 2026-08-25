@@ -78,7 +78,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
               <Link
                 href="/plattform"
                 title="Plattform"
-                className="rounded-lg p-2 text-tekst-svak transition-colors hover:bg-flate-dempet hover:text-tekst"
+                className="flex size-11 items-center justify-center rounded-lg text-tekst-svak transition-colors hover:bg-flate-dempet hover:text-tekst sm:size-auto sm:p-2"
               >
                 <ShieldCheck className="size-4" aria-hidden />
                 <span className="sr-only">Plattform</span>
@@ -94,7 +94,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
             <form action={loggUt}>
               <button
                 type="submit"
-                className="rounded-lg p-2 text-tekst-svak transition-colors hover:bg-flate-dempet hover:text-tekst"
+                className="flex size-11 items-center justify-center rounded-lg text-tekst-svak transition-colors hover:bg-flate-dempet hover:text-tekst sm:size-auto sm:p-2"
                 title="Logg ut"
               >
                 <LogOut className="size-4" aria-hidden />

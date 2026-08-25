@@ -193,3 +193,123 @@ export function BudsjettSoyler({
     </ResponsiveContainer>
   );
 }
+
+/**
+ * Meldt mot utført, måned for måned.
+ *
+ * To søyler side om side er valgt framfor to linjer fordi det er lettere å se
+ * hvilken som er høyest når de står ved siden av hverandre. Og det er nettopp
+ * det spørsmålet grafen skal svare på: holder vi tritt?
+ */
+export function MeldtUtfortSoyler({
+  data,
+  hoyde = 260,
+}: {
+  data: { maned: string; meldt: number; utfort: number }[];
+} & MedHoyde) {
+  const { akse, rutenett, boks, markor } = farger(useErMorkt());
+
+  return (
+    <ResponsiveContainer width="100%" height={hoyde}>
+      <BarChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 8 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke={rutenett} vertical={false} />
+        <XAxis dataKey="maned" tick={akse} tickLine={false} axisLine={false} />
+        <YAxis tick={akse} tickLine={false} axisLine={false} allowDecimals={false} />
+        <Tooltip
+          contentStyle={boks}
+          cursor={markor}
+          formatter={(v, n) => [`${Number(v)} stk`, n === "meldt" ? "Meldt inn" : "Utført"]}
+        />
+        <Legend
+          formatter={(v) => (v === "meldt" ? "Meldt inn" : "Utført")}
+          wrapperStyle={{ fontSize: 12 }}
+        />
+        <Bar dataKey="meldt" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="utfort" fill="#10b981" radius={[4, 4, 0, 0]} />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+/**
+ * Hvor stor del av arbeidet som er planlagt.
+ *
+ * Stablede søyler, fordi spørsmålet er hvor stor andelen er — ikke hvor mange
+ * det var av hver. Et anlegg som får den grønne delen til å vokse, bruker
+ * mindre penger og har mindre nedetid.
+ */
+export function ArbeidstypeSoyler({
+  data,
+  hoyde = 260,
+}: {
+  data: { maned: string; forebyggende: number; korrektiv: number; annet: number }[];
+} & MedHoyde) {
+  const { akse, rutenett, boks, markor } = farger(useErMorkt());
+
+  const navn: Record<string, string> = {
+    forebyggende: "Forebyggende",
+    korrektiv: "Korrektiv",
+    annet: "Annet",
+  };
+
+  return (
+    <ResponsiveContainer width="100%" height={hoyde}>
+      <BarChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 8 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke={rutenett} vertical={false} />
+        <XAxis dataKey="maned" tick={akse} tickLine={false} axisLine={false} />
+        <YAxis tick={akse} tickLine={false} axisLine={false} allowDecimals={false} />
+        <Tooltip
+          contentStyle={boks}
+          cursor={markor}
+          formatter={(v, n) => [`${Number(v)} stk`, navn[String(n)] ?? String(n)]}
+        />
+        <Legend
+          formatter={(v) => navn[String(v)] ?? String(v)}
+          wrapperStyle={{ fontSize: 12 }}
+        />
+        <Bar dataKey="forebyggende" stackId="a" fill="#10b981" />
+        <Bar dataKey="korrektiv" stackId="a" fill="#f43f5e" />
+        <Bar dataKey="annet" stackId="a" fill="#94a3b8" radius={[4, 4, 0, 0]} />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+/**
+ * Hvor lang tid jobbene tar.
+ *
+ * Både snitt og median vises. Snittet alene lyver når én jobb har ligget i et
+ * halvår — medianen viser hvordan det står til for de fleste.
+ */
+export function ReparasjonstidLinje({
+  data,
+  hoyde = 260,
+}: {
+  data: { maned: string; snitt: number | null; median: number | null }[];
+} & MedHoyde) {
+  const { akse, rutenett, boks, markor } = farger(useErMorkt());
+
+  return (
+    <ResponsiveContainer width="100%" height={hoyde}>
+      <LineChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 8 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke={rutenett} vertical={false} />
+        <XAxis dataKey="maned" tick={akse} tickLine={false} axisLine={false} />
+        <YAxis tick={akse} tickLine={false} axisLine={false} />
+        <Tooltip
+          contentStyle={boks}
+          cursor={markor}
+          formatter={(v, n) => [
+            v === null ? "ingen data" : `${tall(Number(v), 1)} dager`,
+            n === "snitt" ? "Snitt" : "Median",
+          ]}
+        />
+        <Legend
+          formatter={(v) => (v === "snitt" ? "Snitt" : "Median")}
+          wrapperStyle={{ fontSize: 12 }}
+        />
+        <Line type="monotone" dataKey="snitt" stroke="#6366f1" strokeWidth={2} dot={false} connectNulls />
+        <Line type="monotone" dataKey="median" stroke="#10b981" strokeWidth={2} dot={false} connectNulls />
+      </LineChart>
+    </ResponsiveContainer>
+  );
+}

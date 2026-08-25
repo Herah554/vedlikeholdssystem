@@ -58,7 +58,10 @@ export function TemaVelger({ start }: { start: Tema }) {
           title={navn}
           aria-pressed={tema === verdi}
           className={cn(
-            "rounded-md p-1.5 transition-colors",
+            // 44 piksler er minstemålet for noe som skal treffes med en
+            // finger. På store skjermer holder det med mindre, siden en
+            // musepeker er nøyaktig.
+            "flex size-11 items-center justify-center rounded-md transition-colors sm:size-auto sm:p-1.5",
             tema === verdi
               ? "bg-flate text-tekst shadow-sm"
               : "text-tekst-svak hover:text-tekst",

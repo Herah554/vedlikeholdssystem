@@ -4,9 +4,13 @@ import { requireModul } from "@/lib/auth";
 import {
   arbeidsfordeling,
   delerMestBrukt,
+  etterslep,
+  forebyggendeAndel,
   kostnadPerUtstyr,
+  meldtMotUtfort,
   nedetidPerUtstyr,
   pmEtterlevelse,
+  reparasjonstid,
 } from "@/lib/statistikk";
 import { ordreType } from "@/lib/domene";
 import { kroner, tall } from "@/lib/format";
@@ -22,7 +26,12 @@ import {
   Th,
   Tr,
 } from "@/components/ui";
-import { NedetidSoyler } from "@/components/diagrammer";
+import {
+  ArbeidstypeSoyler,
+  MeldtUtfortSoyler,
+  NedetidSoyler,
+  ReparasjonstidLinje,
+} from "@/components/diagrammer";
 
 export const metadata: Metadata = { title: "Rapporter" };
 
@@ -41,6 +50,26 @@ export default async function RapporterSide() {
   const forebyggende = fordeling.find((f) => f.type === "FOREBYGGENDE")?.antall ?? 0;
   const andelForebyggende =
     totaltAntall === 0 ? 0 : Math.round((forebyggende / totaltAntall) * 100);
+
+  // De fire nye rapportene er uavhengige av hverandre og hentes samtidig.
+  const [balanse, arbeidstype, tidsbruk, kø] = await Promise.all([
+    meldtMotUtfort(session.organizationId),
+    forebyggendeAndel(session.organizationId),
+    reparasjonstid(session.organizationId),
+    etterslep(session.organizationId),
+  ]);
+
+  const sisteTolv = balanse.reduce(
+    (s, m) => ({ meldt: s.meldt + m.meldt, utfort: s.utfort + m.utfort }),
+    { meldt: 0, utfort: 0 },
+  );
+  const balansePunkt = sisteTolv.meldt - sisteTolv.utfort;
+
+  const gamleJobber = kø
+    .filter((b) => b.rekkefolge >= 4)
+    .reduce((s, b) => s + b.antall, 0);
+
+  const sisteMedian = [...tidsbruk].reverse().find((m) => m.median !== null);
 
   const samletNedetid = nedetid.reduce((s, n) => s + n.minutter, 0);
   const samletKostnad = kostnad.reduce((s, k) => s + k.arbeid + k.deler, 0);
@@ -73,9 +102,121 @@ export default async function RapporterSide() {
         />
         <StatCard label="Samlet nedetid" value={`${tall(samletNedetid / 60, 1)} t`} />
         <StatCard label="Samlet kostnad" value={kroner(samletKostnad)} />
+        <StatCard
+          label="Meldt mot utført"
+          value={balansePunkt > 0 ? `+${balansePunkt}` : String(balansePunkt)}
+          sub={
+            balansePunkt > 0
+              ? "flere kom inn enn ble gjort"
+              : balansePunkt < 0
+                ? "etterslepet krymper"
+                : "i balanse"
+          }
+          tone={balansePunkt > 10 ? "kritisk" : balansePunkt > 0 ? "advarsel" : "god"}
+        />
+        <StatCard
+          label="Typisk reparasjonstid"
+          value={sisteMedian?.median != null ? `${tall(sisteMedian.median, 1)} d` : "—"}
+          sub="Median, siste måned med data"
+        />
+        <StatCard
+          label="Eldre enn tre måneder"
+          value={gamleJobber}
+          sub="Åpne jobber som har blitt liggende"
+          tone={gamleJobber > 5 ? "kritisk" : gamleJobber > 0 ? "advarsel" : "god"}
+        />
       </div>
 
       <div className="space-y-4">
+        <Card>
+          <CardHeader
+            title="Holder vi tritt?"
+            description="Jobber meldt inn mot jobber utført, måned for måned. Ligger den gule søylen jevnt over den grønne, vokser etterslepet."
+          />
+          <CardBody className="pt-2">
+            {balanse.some((m) => m.meldt > 0 || m.utfort > 0) ? (
+              <MeldtUtfortSoyler data={balanse} />
+            ) : (
+              <EmptyState title="Ingen arbeidsordre siste år" />
+            )}
+          </CardBody>
+        </Card>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Card>
+            <CardHeader
+              title="Planlagt mot uplanlagt"
+              description="Andelen forebyggende arbeid er målet på om vedlikeholdet er under kontroll. Bransjen sikter mot rundt to tredeler planlagt."
+            />
+            <CardBody className="pt-2">
+              {arbeidstype.some(
+                (m) => m.forebyggende + m.korrektiv + m.annet > 0,
+              ) ? (
+                <ArbeidstypeSoyler data={arbeidstype} />
+              ) : (
+                <EmptyState title="Ingen arbeidsordre siste år" />
+              )}
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardHeader
+              title="Hvor lenge tar jobbene?"
+              description="Fra en feil meldes til den er utført. Medianen sier mer enn snittet — én jobb som ble liggende i et halvår drar snittet opp for alle."
+            />
+            <CardBody className="pt-2">
+              {tidsbruk.some((m) => m.antall > 0) ? (
+                <ReparasjonstidLinje data={tidsbruk} />
+              ) : (
+                <EmptyState title="Ingen fullførte jobber ennå" />
+              )}
+            </CardBody>
+          </Card>
+        </div>
+
+        <Card>
+          <CardHeader
+            title="Hvor gammelt er etterslepet?"
+            description="Åpne jobber etter hvor lenge de har ligget. En jobb fra i går er noe annet enn en fra i fjor."
+          />
+          <CardBody>
+            {kø.length === 0 ? (
+              <EmptyState
+                title="Ingenting står åpent"
+                description="Alle meldte jobber er utført eller lukket."
+              />
+            ) : (
+              <ul className="space-y-2">
+                {kø.map((b) => {
+                  const storst = Math.max(...kø.map((x) => x.antall));
+                  const gammel = b.rekkefolge >= 4;
+
+                  return (
+                    <li key={b.bolk} className="flex items-center gap-3">
+                      <span className="w-28 shrink-0 text-xs text-tekst-svak sm:w-44 sm:text-sm">
+                        {b.bolk}
+                      </span>
+                      <span className="h-6 flex-1 overflow-hidden rounded bg-flate-dempet">
+                        <span
+                          className={
+                            gammel
+                              ? "block h-full rounded bg-red-500/70"
+                              : "block h-full rounded bg-merke-500/60"
+                          }
+                          style={{ width: `${Math.max(4, (b.antall / storst) * 100)}%` }}
+                        />
+                      </span>
+                      <span className="w-10 shrink-0 text-right text-sm font-medium tabular-nums text-tekst">
+                        {b.antall}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </CardBody>
+        </Card>
+
         <Card>
           <CardHeader
             title="Hva koster utstyret oss?"

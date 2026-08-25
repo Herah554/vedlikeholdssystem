@@ -190,7 +190,7 @@ export function MobilMeny({
       <button
         type="button"
         onClick={() => settÅpen(true)}
-        className="rounded-lg p-2 text-tekst-svak hover:bg-flate-dempet lg:hidden"
+        className="flex size-11 items-center justify-center rounded-lg text-tekst-svak hover:bg-flate-dempet lg:hidden"
         aria-label="Åpne meny"
       >
         <Menu className="size-5" aria-hidden />
@@ -212,7 +212,7 @@ export function MobilMeny({
               <button
                 type="button"
                 onClick={() => settÅpen(false)}
-                className="mr-3 rounded-lg p-2 text-tekst-svak hover:bg-flate-dempet"
+                className="mr-2 flex size-11 shrink-0 items-center justify-center rounded-lg text-tekst-svak hover:bg-flate-dempet"
                 aria-label="Lukk meny"
               >
                 <X className="size-5" aria-hidden />

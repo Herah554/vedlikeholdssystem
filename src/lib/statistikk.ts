@@ -322,3 +322,154 @@ export async function arbeidsfordeling(db: TenantDb) {
   });
   return rader.map((r) => ({ type: r.type, antall: r._count._all }));
 }
+
+/**
+ * Meldt mot utført per måned.
+ *
+ * Det viktigste tallet i et vedlikeholdssystem er ikke hvor mange jobber som
+ * er gjort, men om man holder tritt. Kommer det inn femti og gjøres førti,
+ * vokser etterslepet med ti i måneden — og det synes ikke på noen enkelttall.
+ *
+ * Rå SQL fordi den utvidede klienten ikke kan gruppere på måned.
+ * organizationId settes eksplisitt — se kommentaren øverst i denne filen.
+ */
+export async function meldtMotUtfort(organizationId: string, maneder = 12) {
+  return prisma.$queryRaw<
+    { maned: string; meldt: number; utfort: number; lukket: number }[]
+  >`
+    WITH serie AS (
+      SELECT generate_series(
+        date_trunc('month', now()) - make_interval(months => ${maneder - 1}),
+        date_trunc('month', now()),
+        interval '1 month'
+      ) AS m
+    )
+    SELECT
+      to_char(s.m, 'YYYY-MM') AS maned,
+      (SELECT count(*) FROM work_orders w
+        WHERE w."organizationId" = ${organizationId}
+          AND date_trunc('month', w."createdAt") = s.m)::int AS meldt,
+      (SELECT count(*) FROM work_orders w
+        WHERE w."organizationId" = ${organizationId}
+          AND date_trunc('month', w."completedAt") = s.m)::int AS utfort,
+      (SELECT count(*) FROM work_orders w
+        WHERE w."organizationId" = ${organizationId}
+          AND date_trunc('month', w."closedAt") = s.m)::int AS lukket
+    FROM serie s
+    ORDER BY s.m
+  `;
+}
+
+/**
+ * Andel forebyggende arbeid, måned for måned.
+ *
+ * Dette er målet på om vedlikeholdet er under kontroll. Et anlegg som bare
+ * reparerer det som ryker, bruker mer penger og har mer nedetid enn et som
+ * planlegger. Bransjen sikter mot at rundt to tredeler av jobbene er planlagt.
+ *
+ * Det er også den grafen som viser en kunde hva systemet er verdt: den flytter
+ * seg over månedene når man begynner å bruke forebyggende planer.
+ */
+export async function forebyggendeAndel(organizationId: string, maneder = 12) {
+  return prisma.$queryRaw<
+    { maned: string; forebyggende: number; korrektiv: number; annet: number }[]
+  >`
+    WITH serie AS (
+      SELECT generate_series(
+        date_trunc('month', now()) - make_interval(months => ${maneder - 1}),
+        date_trunc('month', now()),
+        interval '1 month'
+      ) AS m
+    )
+    SELECT
+      to_char(s.m, 'YYYY-MM') AS maned,
+      (SELECT count(*) FROM work_orders w
+        WHERE w."organizationId" = ${organizationId}
+          AND w.type = 'FOREBYGGENDE'
+          AND date_trunc('month', w."createdAt") = s.m)::int AS forebyggende,
+      (SELECT count(*) FROM work_orders w
+        WHERE w."organizationId" = ${organizationId}
+          AND w.type = 'KORREKTIV'
+          AND date_trunc('month', w."createdAt") = s.m)::int AS korrektiv,
+      (SELECT count(*) FROM work_orders w
+        WHERE w."organizationId" = ${organizationId}
+          AND w.type NOT IN ('FOREBYGGENDE', 'KORREKTIV')
+          AND date_trunc('month', w."createdAt") = s.m)::int AS annet
+    FROM serie s
+    ORDER BY s.m
+  `;
+}
+
+/**
+ * Hvor lang tid det tar fra en feil meldes til den er utført.
+ *
+ * Snittet alene lyver: én jobb som ble liggende i et halvår drar det opp for
+ * alle de andre. Derfor tas også medianen med, som er den jobben som ligger
+ * midt i bunken.
+ */
+export async function reparasjonstid(organizationId: string, maneder = 12) {
+  return prisma.$queryRaw<
+    { maned: string; snitt: number | null; median: number | null; antall: number }[]
+  >`
+    WITH serie AS (
+      SELECT generate_series(
+        date_trunc('month', now()) - make_interval(months => ${maneder - 1}),
+        date_trunc('month', now()),
+        interval '1 month'
+      ) AS m
+    ),
+    fullfort AS (
+      SELECT
+        date_trunc('month', w."completedAt") AS m,
+        extract(epoch FROM (w."completedAt" - w."createdAt")) / 86400.0 AS dager
+      FROM work_orders w
+      WHERE w."organizationId" = ${organizationId}
+        AND w."completedAt" IS NOT NULL
+        AND w."completedAt" >= w."createdAt"
+    )
+    SELECT
+      to_char(s.m, 'YYYY-MM') AS maned,
+      round(avg(f.dager)::numeric, 1)::float8 AS snitt,
+      round(percentile_cont(0.5) WITHIN GROUP (ORDER BY f.dager)::numeric, 1)::float8 AS median,
+      count(f.dager)::int AS antall
+    FROM serie s
+    LEFT JOIN fullfort f ON f.m = s.m
+    GROUP BY s.m
+    ORDER BY s.m
+  `;
+}
+
+/**
+ * Etterslepet slik det ser ut nå, fordelt på hvor gammelt det er.
+ *
+ * En jobb som har ligget åpen i et halvår er noe annet enn en som kom inn i
+ * går, selv om begge teller som «åpen». Det er de gamle som sier noe om
+ * hvorvidt systemet faktisk brukes.
+ */
+export async function etterslep(organizationId: string) {
+  return prisma.$queryRaw<{ bolk: string; antall: number; rekkefolge: number }[]>`
+    SELECT bolk, count(*)::int AS antall, min(rekkefolge)::int AS rekkefolge
+    FROM (
+      SELECT
+        CASE
+          WHEN now() - w."createdAt" < interval '7 days'  THEN 'Under en uke'
+          WHEN now() - w."createdAt" < interval '30 days' THEN 'En uke til en måned'
+          WHEN now() - w."createdAt" < interval '90 days' THEN 'En til tre måneder'
+          WHEN now() - w."createdAt" < interval '365 days' THEN 'Tre måneder til et år'
+          ELSE 'Over et år'
+        END AS bolk,
+        CASE
+          WHEN now() - w."createdAt" < interval '7 days'  THEN 1
+          WHEN now() - w."createdAt" < interval '30 days' THEN 2
+          WHEN now() - w."createdAt" < interval '90 days' THEN 3
+          WHEN now() - w."createdAt" < interval '365 days' THEN 4
+          ELSE 5
+        END AS rekkefolge
+      FROM work_orders w
+      WHERE w."organizationId" = ${organizationId}
+        AND w.status NOT IN ('UTFORT', 'LUKKET', 'AVVIST')
+    ) t
+    GROUP BY bolk
+    ORDER BY rekkefolge
+  `;
+}
