@@ -93,7 +93,10 @@ export function pakk(widgets: Plassert[], forrang?: string): Plassert[] {
  * oppgradering.
  */
 export function fyllUtPlassering(
-  widgets: (WidgetOppsett & { x?: number; y?: number })[],
+  // Omit, ikke &: WidgetOppsett krever x og y, så et snitt-type ville krevd
+  // dem også — og da kunne funksjonen aldri fått et gammelt oppsett som
+  // mangler dem, som er hele grunnen til at den finnes.
+  widgets: (Omit<WidgetOppsett, "x" | "y"> & { x?: number; y?: number })[],
 ): Plassert[] {
   const harAlle = widgets.every(
     (w) => typeof w.x === "number" && typeof w.y === "number",

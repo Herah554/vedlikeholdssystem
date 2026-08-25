@@ -232,6 +232,7 @@ Nye bedrifter oppretter du fra `/plattform`. Kunder registrerer seg ikke selv.
 | `npm run db:seed` | Legg inn testdata (**sletter eksisterende data**) |
 | `npm run db:studio` | Åpne Prisma Studio for å se i databasen |
 | `npm run db:reset` | Nullstill databasen helt |
+| `npm run sjekk:alt` | **Kjører typesjekken og alle kontrollene under.** Kjør denne før du pusher |
 | `npm run sjekk:isolering` | Kontroller at alle tabeller er dekket av flerklient-filteret |
 | `npm run sjekk:deling` | Kontroller at delte dashbord ikke krysser bedriftsgrensen |
 | `npm run sjekk:passord` | Kontroller flyten for glemt passord |
