@@ -69,6 +69,8 @@ model Organization {
   purchaseOrders PurchaseOrder[]
   failureCauses  FailureCause[]
   listValues     ListValue[]
+  formTemplates  FormTemplate[]
+  formResponses  FormResponse[]
   deviations     Deviation[]
 
   @@map("organizations")
@@ -157,6 +159,8 @@ model User {
   auditLogs          AuditLog[]
   dashboardShares    DashboardShare[]
   passwordResets     PasswordReset[]
+  startedForms       FormResponse[]   @relation("SkjemaStartet")
+  lockedForms        FormResponse[]   @relation("SkjemaLaast")
   reportedDeviations Deviation[]      @relation("AvvikMelder")
   assignedDeviations Deviation[]      @relation("AvvikAnsvarlig")
 
@@ -346,6 +350,7 @@ model WorkOrder {
   stockMoves  StockMovement[]
   checklist   ChecklistItem[]
   deviations  Deviation[]
+  forms       FormResponse[]
 
   @@unique([organizationId, number])
   @@index([organizationId, status])
@@ -818,12 +823,102 @@ model Deviation {
   workOrder    WorkOrder?   @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
 
   attachments Attachment[]
+  forms       FormResponse[]
 
   @@unique([organizationId, number])
   @@index([organizationId, status])
   @@index([organizationId, assetId])
   @@index([organizationId, occurredAt])
   @@map("deviations")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Skjemaer — SJA, sjekklister og andre dokumenter per jobb
+// ─────────────────────────────────────────────────────────────
+
+enum FormScope {
+  ARBEIDSORDRE
+  AVVIK
+  BEGGE
+}
+
+enum FormStatus {
+  UTKAST
+  LAAST
+}
+
+/**
+ * En skjemamal, for eksempel en SJA.
+ * Malen kan endres når som helst. Det er nettopp derfor utfylte skjemaer tar
+ * en kopi av feltene — se FormResponse. Uten den kopien ville en endring i
+ * mars gjort at et SJA signert i januar plutselig hadde andre spørsmål enn
+ * det den som signerte faktisk svarte på.
+ * Versjonsnummeret økes ved hver endring, slik at et utfylt skjema kan si
+ * hvilken utgave det ble fylt ut fra.
+ */
+model FormTemplate {
+  id             String    @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+  /// Hvor malen kan brukes
+  scope          FormScope @default(ARBEIDSORDRE)
+  /// Feltene. Formatet står i src/lib/skjema.ts.
+  fields         Json      @default("[]")
+  version        Int       @default(1)
+  isActive       Boolean   @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  responses    FormResponse[]
+
+  @@index([organizationId, scope])
+  @@map("form_templates")
+}
+
+/**
+ * Et utfylt skjema, knyttet til én jobb eller ett avvik.
+ * schemaSnapshot er kopien av malen slik den var da skjemaet ble påbegynt.
+ * Den er hele poenget: et sikkerhetsdokument noen har satt navnet sitt på
+ * skal ikke kunne endre innhold i ettertid fordi noen ryddet i malen.
+ * Skjemaet er et utkast mens jobben pågår og låses når jobben lukkes. Da er
+ * det et dokument, ikke en kladd.
+ */
+model FormResponse {
+  id             String  @id @default(cuid())
+  organizationId String
+  templateId     String?
+  workOrderId    String?
+  deviationId    String?
+
+  /// Navnet malen hadde da skjemaet ble fylt ut
+  templateName    String
+  templateVersion Int        @default(1)
+  /// Feltene slik de var da. Endres aldri.
+  schemaSnapshot  Json
+  /// Svarene, med feltets id som nøkkel
+  answers         Json       @default("{}")
+  status          FormStatus @default(UTKAST)
+
+  startedById String?
+  lockedById  String?
+  lockedAt    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  template     FormTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  workOrder    WorkOrder?    @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  deviation    Deviation?    @relation(fields: [deviationId], references: [id], onDelete: Cascade)
+  startedBy    User?         @relation("SkjemaStartet", fields: [startedById], references: [id], onDelete: SetNull)
+  lockedBy     User?         @relation("SkjemaLaast", fields: [lockedById], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, workOrderId])
+  @@index([organizationId, deviationId])
+  @@map("form_responses")
 }
 
 model Dashboard {

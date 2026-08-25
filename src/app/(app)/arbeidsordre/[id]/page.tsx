@@ -1,10 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, History, Image as ImageIcon, Lightbulb } from "lucide-react";
+import {
+  ArrowLeft,
+  ClipboardCheck,
+  History,
+  Image as ImageIcon,
+  Lightbulb,
+} from "lucide-react";
 import { harFunksjonSession, kanSession, requireModul, requireTenant } from "@/lib/auth";
 import { liknendeSaker } from "@/lib/sok";
 import { hentListe } from "@/lib/lister";
+import { lesFelter, lesSvar } from "@/lib/skjema";
+import { Skjemaseksjon } from "@/components/skjemaseksjon";
 import { NESTE_STATUS, ORDRE_STATUS, ordreType, PRIORITET } from "@/lib/domene";
 import { dato, datoTid, kroner, ordreNummer, relativTid, tall, timer, toNumber } from "@/lib/format";
 import { Badge, Card, CardBody, CardHeader, Table, Td, Th, Tr } from "@/components/ui";
@@ -67,7 +75,8 @@ export default async function OrdreSide(props: PageProps<"/arbeidsordre/[id]">) 
 
   if (!ordre) notFound();
 
-  const [deler, liknende, aarsaker, vedlegg, dokumenttyper] = await Promise.all([
+  const [deler, liknende, aarsaker, vedlegg, dokumenttyper, skjemaer, skjemamaler] =
+    await Promise.all([
     db.part.findMany({
       where: { isActive: true },
       select: { id: true, number: true, name: true, unit: true, quantityOnHand: true },
@@ -90,7 +99,20 @@ export default async function OrdreSide(props: PageProps<"/arbeidsordre/[id]">) 
       orderBy: { createdAt: "asc" },
     }),
     hentListe(db, "dokumenttype", true),
-  ]);
+      db.formResponse.findMany({
+        where: { workOrderId: id },
+        include: {
+          startedBy: { select: { name: true } },
+          lockedBy: { select: { name: true } },
+        },
+        orderBy: { createdAt: "asc" },
+      }),
+      db.formTemplate.findMany({
+        where: { isActive: true, scope: { in: ["ARBEIDSORDRE", "BEGGE"] } },
+        select: { id: true, name: true, description: true },
+        orderBy: { name: "asc" },
+      }),
+    ]);
 
   const arbeidskost = ordre.timeEntries.reduce(
     (s, t) => s + t.hours * toNumber(t.hourlyRate),
@@ -193,6 +215,48 @@ export default async function OrdreSide(props: PageProps<"/arbeidsordre/[id]">) 
                     mimeType: v.mimeType,
                     sizeBytes: v.sizeBytes,
                     lastetOppAv: v.uploadedBy?.name ?? null,
+                  }))}
+                />
+              </CardBody>
+            </Card>
+          )}
+
+          {(skjemaer.length > 0 ||
+            (skjemamaler.length > 0 &&
+              kanSession(session, "arbeidsordre", "endre"))) && (
+            <Card>
+              <CardHeader
+                title={
+                  <span className="inline-flex items-center gap-2">
+                    <ClipboardCheck
+                      className="size-4 text-tekst-svak"
+                      aria-hidden
+                    />
+                    Skjemaer
+                  </span>
+                }
+                description="SJA og andre dokumenter som hører til jobben. De låses når ordren lukkes."
+              />
+              <CardBody>
+                <Skjemaseksjon
+                  feste={{ type: "arbeidsordre", id: ordre.id }}
+                  maler={skjemamaler}
+                  kanEndre={kanSession(session, "arbeidsordre", "endre")}
+                  kanAdministrere={kanSession(
+                    session,
+                    "arbeidsordre",
+                    "administrere",
+                  )}
+                  skjemaer={skjemaer.map((sk) => ({
+                    id: sk.id,
+                    navn: sk.templateName,
+                    versjon: sk.templateVersion,
+                    felter: lesFelter(sk.schemaSnapshot),
+                    svar: lesSvar(sk.answers, lesFelter(sk.schemaSnapshot)),
+                    laast: sk.status === "LAAST",
+                    startetAv: sk.startedBy?.name ?? null,
+                    laastAv: sk.lockedBy?.name ?? null,
+                    laastDato: sk.lockedAt?.toISOString() ?? null,
                   }))}
                 />
               </CardBody>

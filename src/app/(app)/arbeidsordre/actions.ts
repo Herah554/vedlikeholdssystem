@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { krev, requireTenant } from "@/lib/auth";
 import { nextCounterValue } from "@/lib/tenant";
+import { laasSkjemaerPaaOrdre } from "@/app/(app)/skjema/actions";
 import { NESTE_STATUS } from "@/lib/domene";
 import type { WorkOrderStatus } from "@/generated/prisma/client";
 
@@ -88,7 +89,7 @@ export async function endreStatus(
   ordreId: string,
   nyStatus: WorkOrderStatus,
 ): Promise<Resultat> {
-  const { db } = await requireTenant();
+  const { db, session } = await requireTenant();
 
   const ordre = await db.workOrder.findFirst({ where: { id: ordreId } });
   if (!ordre) return { ok: false, feil: "Fant ikke arbeidsordren." };
@@ -111,6 +112,13 @@ export async function endreStatus(
       closedAt: nyStatus === "LUKKET" ? nå : ordre.closedAt,
     },
   });
+
+  // Et SJA er et dokument fra den dagen jobben ble gjort. Når ordren lukkes,
+  // låses utkastene — de skal ikke kunne endres uka etter fordi noen husker
+  // det annerledes.
+  if (nyStatus === "LUKKET") {
+    await laasSkjemaerPaaOrdre(db, session.userId, ordreId);
+  }
 
   revalidatePath(`/arbeidsordre/${ordreId}`);
   revalidatePath("/arbeidsordre");

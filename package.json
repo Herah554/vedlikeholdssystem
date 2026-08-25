@@ -19,7 +19,8 @@
     "sjekk:import": "tsx src/verktoy/sjekk-import.ts",
     "sjekk:avvik": "tsx src/verktoy/sjekk-avvik.ts",
     "sjekk:planer": "tsx src/verktoy/sjekk-planer.ts",
-    "sjekk:lister": "tsx src/verktoy/sjekk-lister.ts"
+    "sjekk:lister": "tsx src/verktoy/sjekk-lister.ts",
+    "sjekk:skjema": "tsx src/verktoy/sjekk-skjema.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.117.1",

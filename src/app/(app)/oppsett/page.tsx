@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { List, ShieldCheck, Wrench } from "lucide-react";
+import { ClipboardList, List, ShieldCheck, Wrench } from "lucide-react";
 import { requireTenant } from "@/lib/auth";
 import { lesMatrise } from "@/lib/rettigheter";
 import { LISTER, hentListe, type Listeverdi } from "@/lib/lister";
+import { lesFelter } from "@/lib/skjema";
 import { Card, CardBody, CardHeader, PageHeader } from "@/components/ui";
 import { Aarsaker } from "./aarsaker";
 import { Verdiliste } from "./lister";
+import { Skjemamaler } from "./maler";
 import { RettighetsMatrise } from "./matrise";
 
 export const metadata: Metadata = { title: "Oppsett" };
@@ -18,7 +20,7 @@ export default async function OppsettSide() {
   // rettigheter er ikke noe alle ansatte trenger å vite finnes.
   if (session.role !== "ADMIN") notFound();
 
-  const [org, aarsaker, ...lister] = await Promise.all([
+  const [org, aarsaker, maler, ...lister] = await Promise.all([
     db.organization.findUniqueOrThrow({
       where: { id: session.organizationId },
       select: { permissions: true },
@@ -32,6 +34,10 @@ export default async function OppsettSide() {
         description: true,
         isActive: true,
       },
+    }),
+    db.formTemplate.findMany({
+      orderBy: [{ isActive: "desc" }, { name: "asc" }],
+      include: { _count: { select: { responses: true } } },
     }),
     ...LISTER.map((l) => hentListe(db, l.id)),
   ]);
@@ -56,6 +62,32 @@ export default async function OppsettSide() {
           />
           <CardBody>
             <RettighetsMatrise matrise={lesMatrise(org.permissions)} />
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader
+            title={
+              <span className="inline-flex items-center gap-2">
+                <ClipboardList className="size-4 text-tekst-svak" aria-hidden />
+                Skjemaer
+              </span>
+            }
+            description="SJA, sjekklister og andre dokumenter som fylles ut per jobb. Endrer du en mal, står skjemaer som allerede er fylt ut urørt."
+          />
+          <CardBody>
+            <Skjemamaler
+              maler={maler.map((m) => ({
+                id: m.id,
+                name: m.name,
+                description: m.description,
+                scope: m.scope,
+                version: m.version,
+                isActive: m.isActive,
+                felter: lesFelter(m.fields),
+                antallBrukt: m._count.responses,
+              }))}
+            />
           </CardBody>
         </Card>
 

@@ -252,3 +252,59 @@ export function ordreType(kode: string): Etikett {
     }
   );
 }
+
+/**
+ * Hva statusen betyr, og hva som pleier å skje videre.
+ *
+ * «Meldt» sier ingenting til den som ikke kjenner arbeidsflyten fra før. Seks
+ * statuser er ikke mange, men de er usynlige: man ser hvor ordren er, ikke
+ * hvor den skal.
+ *
+ * «vanlig» peker ut den normale veien videre, slik at knappen kan framheves.
+ * De andre stegene finnes fortsatt — de er bare ikke det man gjør oftest.
+ */
+export const STATUS_FORKLARING: Record<
+  WorkOrderStatus,
+  { naa: string; neste: string; vanlig: WorkOrderStatus | null }
+> = {
+  MELDT: {
+    naa: "Feilen er meldt, men ingen har tatt stilling til den ennå.",
+    neste: "Noen med planleggeransvar godkjenner jobben — eller avviser den.",
+    vanlig: "GODKJENT",
+  },
+  GODKJENT: {
+    naa: "Jobben skal gjøres, men er ikke lagt inn i noen uke ennå.",
+    neste: "Sett en planlagt dato, så havner den i ukeplanen.",
+    vanlig: "PLANLAGT",
+  },
+  PLANLAGT: {
+    naa: "Jobben ligger i ukeplanen og venter på at noen begynner.",
+    neste: "Teknikeren setter den i gang når arbeidet starter.",
+    vanlig: "PAAGAAR",
+  },
+  PAAGAAR: {
+    naa: "Arbeidet er i gang.",
+    neste: "Fyll ut løsningen og merk jobben som utført.",
+    vanlig: "UTFORT",
+  },
+  VENTER_DELER: {
+    naa: "Arbeidet står stille til delene kommer.",
+    neste: "Sett den i gang igjen når delene er på plass.",
+    vanlig: "PAAGAAR",
+  },
+  UTFORT: {
+    naa: "Arbeidet er gjort, men ordren er ikke avsluttet.",
+    neste: "Kontroller at løsningen og timene stemmer, og lukk den.",
+    vanlig: "LUKKET",
+  },
+  LUKKET: {
+    naa: "Ordren er ferdig og teller med i historikken.",
+    neste: "Ingenting mer. Må noe gjøres om, kan den åpnes igjen.",
+    vanlig: null,
+  },
+  AVVIST: {
+    naa: "Meldingen ble ikke tatt videre.",
+    neste: "Ingenting mer. Var det feil, kan den meldes på nytt.",
+    vanlig: null,
+  },
+};

@@ -107,6 +107,24 @@ S3 senere er én fil å skrive om.
 Dette krever `BLOB_READ_WRITE_TOKEN`. Uten den sier opplastingen fra i stedet
 for å feile stille.
 
+### Skjemaer og SJA
+
+Administratoren lager skjemamaler under Oppsett — SJA, sjekklister, hva firmaet
+trenger. Et ferdig SJA-forslag på seksten felter følger med, så ingen må
+begynne på blankt ark.
+
+På en arbeidsordre starter man et skjema fra en mal, fyller det ut mens jobben
+pågår, og det **låses automatisk når ordren lukkes**. Da er det et dokument,
+ikke en kladd.
+
+Den viktigste regelen: **et utfylt skjema endrer aldri innhold.** Skjemaet tar
+en kopi av malen i det øyeblikket det startes. Endrer noen malen i mars, står
+et SJA signert i januar med spørsmålene den som signerte faktisk svarte på.
+Uten det er dokumentet verdiløst som bevis — og et SJA er nettopp et bevis.
+
+Et skjema kan ikke låses før alle påkrevde felter er besvart. Et halvferdig SJA
+er verre enn ingen: det ser ut som om noen har vurdert risikoen.
+
 ## Teknologi
 
 - **Next.js 16** (App Router, React 19, Turbopack)
@@ -206,6 +224,7 @@ Nye bedrifter oppretter du fra `/plattform`. Kunder registrerer seg ikke selv.
 | `npm run sjekk:avvik` | Kontroller avviksflyten og filkontrollen |
 | `npm run sjekk:planer` | Kontroller at planene faktisk stenger moduler |
 | `npm run sjekk:lister` | Kontroller egendefinerte verdilister |
+| `npm run sjekk:skjema` | Kontroller at utfylte skjemaer ikke endres av malen |
 
 ## Hvordan dataadskillelsen virker
 

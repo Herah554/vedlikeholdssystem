@@ -5,7 +5,7 @@ import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
 import { AlertCircle, Check, Clock, Package, Send } from "lucide-react";
 import { Button, Field, Input, Select, Textarea } from "@/components/ui";
-import { ORDRE_STATUS } from "@/lib/domene";
+import { STATUS_FORKLARING, ORDRE_STATUS } from "@/lib/domene";
 import type { Resultat } from "../actions";
 import type { WorkOrderStatus } from "@/generated/prisma/client";
 
@@ -48,22 +48,39 @@ export function StatusKnapper({
   const [feil, settFeil] = useState<string>();
   const router = useRouter();
 
+  const forklaring = STATUS_FORKLARING[nåværende];
+
   if (muligeSteg.length === 0) {
     return (
-      <p className="text-sm text-tekst-svak">
-        Ordren er {ORDRE_STATUS[nåværende].tekst.toLowerCase()} og kan ikke
-        endres videre.
-      </p>
+      <div className="text-sm">
+        <p className="text-tekst">{forklaring.naa}</p>
+        <p className="mt-1 text-tekst-svak">{forklaring.neste}</p>
+      </div>
     );
   }
 
   return (
     <div>
+      {/* Statusen alene sier hvor ordren er, ikke hvor den skal. Uten dette
+          må man kjenne arbeidsflyten fra før for å vite hva man skal trykke. */}
+      <div className="mb-3 text-sm">
+        <p className="text-tekst">{forklaring.naa}</p>
+        <p className="mt-0.5 text-tekst-svak">
+          <span className="font-medium">Neste steg:</span> {forklaring.neste}
+        </p>
+      </div>
+
       <div className="flex flex-wrap gap-2">
         {muligeSteg.map((steg) => (
           <Button
             key={steg}
-            variant={steg === "AVVIST" ? "fare" : "sekundær"}
+            variant={
+              steg === "AVVIST"
+                ? "fare"
+                : steg === forklaring.vanlig
+                  ? "primær"
+                  : "sekundær"
+            }
             disabled={venter}
             onClick={() =>
               start(async () => {
