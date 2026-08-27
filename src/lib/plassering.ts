@@ -14,13 +14,20 @@ import {
  * venstre. Nå har hver widget en faktisk rute — x fra venstre, y nedover — og
  * da må systemet håndtere at to kan havne oppå hverandre.
  *
- * Regelen er enkel og forutsigbar: den som slippes vinner plassen, og de som
- * lå der skyves nedover. Deretter trekkes alt så langt opp det kommer, slik at
- * det ikke blir hull etter noe som er flyttet vekk.
+ * Regelen er enkel og forutsigbar: en widget blir liggende der den slippes.
+ * Ligger noe annet i veien, skyves det nedover — men ingenting trekkes oppover
+ * av seg selv.
  *
- * Alternativet — å la widgets ligge der de slippes uansett — gir dashbord med
- * store tomrom som ingen har bedt om, og som er vanskelige å rydde opp i.
+ * Første utgave trakk alt så langt opp det kom, for å unngå hull. Det var feil
+ * to ganger. Widgeten man nettopp flyttet ble behandlet først, og siden
+ * rutenettet da var tomt, havnet den alltid øverst — man måtte dra alt på nytt
+ * hver gang man gjorde noe bredere. Og selv uten den feilen kjempet opptrekket
+ * mot hele poenget: skal plasseringen være fri, må et tomrom man har laget med
+ * vilje få lov til å bli stående.
  */
+
+/** Flest rader et dashbord kan strekke seg over. */
+const MAKS_RADER = 40;
 
 export type Plassert = WidgetOppsett & { x: number; y: number };
 
@@ -45,7 +52,8 @@ export function klemInn(w: Plassert): Plassert {
     h: hoyde,
     // En widget som er tre bred kan ikke begynne i kolonne tre av fire
     x: Math.min(MAKS_BREDDE - bredde, Math.max(0, Math.round(w.x))),
-    y: Math.max(0, Math.round(w.y)),
+    // Taket hindrer at en ødelagt lagret verdi lager tusen tomme rader
+    y: Math.min(MAKS_RADER, Math.max(0, Math.round(w.y))),
   };
 }
 
@@ -68,14 +76,22 @@ export function pakk(widgets: Plassert[], forrang?: string): Plassert[] {
   const plassert: Plassert[] = [];
 
   for (const el of rekkefolge) {
+    // Den man nettopp slapp legges nøyaktig der den ble sluppet. Den er
+    // først i rekka, så den møter aldri noe å kollidere med.
+    if (el.id === forrang) {
+      plassert.push(el);
+      continue;
+    }
+
     let y = el.y;
 
-    // Skyv nedover til den ikke lenger ligger oppå noe
-    while (plassert.some((p) => kolliderer({ ...el, y }, p))) y += 1;
-
-    // Trekk så langt opp den kommer, slik at det ikke blir hull
-    while (y > 0 && !plassert.some((p) => kolliderer({ ...el, y: y - 1 }, p))) {
-      y -= 1;
+    // Skyv nedover til den ikke lenger ligger oppå noe. Oppover skjer
+    // ingenting — et tomrom er noe brukeren har laget med vilje.
+    while (
+      y < MAKS_RADER &&
+      plassert.some((p) => kolliderer({ ...el, y }, p))
+    ) {
+      y += 1;
     }
 
     plassert.push({ ...el, y });
@@ -106,13 +122,21 @@ export function fyllUtPlassering(
 
   let x = 0;
   let y = 0;
+  let radHoyde = 1;
 
   const flyt = widgets.map((w) => {
     const bredde = Math.min(MAKS_BREDDE, Math.max(1, w.w));
+    const hoyde = Math.max(1, w.h);
 
     if (x + bredde > MAKS_BREDDE) {
       x = 0;
-      y += 1;
+      // Neste rad begynner under den høyeste widgeten i den forrige. Hopper
+      // man bare én rad, legger radene seg oppå hverandre og opprydningen må
+      // flytte alt etterpå — med et resultat ingen har bedt om.
+      y += radHoyde;
+      radHoyde = hoyde;
+    } else {
+      radHoyde = Math.max(radHoyde, hoyde);
     }
 
     const plass = { ...w, x, y } as Plassert;

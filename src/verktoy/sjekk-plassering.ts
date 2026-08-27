@@ -106,9 +106,46 @@ function main() {
     2,
   );
 
-  // ── Hull fjernes ──────────────────────────────────────────
+  // ── Tomrom får stå ────────────────────────────────────────
+  // Plasseringen skal være fri. Lager man et tomrom med vilje, skal det bli
+  // stående — ikke lukkes av systemet neste gang noe flyttes.
   const hull = pakk([lag("a", 0, 0, 1, 1), lag("b", 0, 7, 1, 1)]);
-  sjekk("Hull trekkes sammen", hull.find((w) => w.id === "b")?.y, 1);
+  sjekk("Et tomrom blir stående", hull.find((w) => w.id === "b")?.y, 7);
+
+  // ── Den man flytter skal bli liggende der ─────────────────
+  // Dette var en ekte feil: widgeten med forrang ble behandlet først, og
+  // siden rutenettet da var tomt, trakk opprydningen den helt til toppen.
+  // Man måtte dra alt på nytt hver gang man gjorde noe bredere.
+  const flyttet = pakk(
+    [lag("a", 0, 0, 3, 2), lag("stor", 0, 4, 12, 4)],
+    "stor",
+  );
+  sjekk(
+    "Den man flytter havner ikke øverst",
+    flyttet.find((w) => w.id === "stor")?.y,
+    4,
+  );
+  sjekk(
+    "Den som lå der fra før blir stående",
+    flyttet.find((w) => w.id === "a")?.y,
+    0,
+  );
+
+  // Og den skal vinne plassen når den slippes oppå noe
+  const oppaaNoe = pakk(
+    [lag("gammel", 0, 2, 6, 2), lag("stor", 0, 2, 6, 2)],
+    "stor",
+  );
+  sjekk(
+    "Den man slipper beholder ruten sin",
+    oppaaNoe.find((w) => w.id === "stor")?.y,
+    2,
+  );
+  sjekk(
+    "Den andre viker nedover",
+    oppaaNoe.find((w) => w.id === "gammel")?.y,
+    4,
+  );
 
   // Men bare rett opp — noe ved siden av skal ikke flytte seg
   const side = pakk([lag("a", 0, 0, 1, 2), lag("b", 2, 0, 1, 1)]);
@@ -148,9 +185,14 @@ function main() {
   }
 
   // ── Pakking skal være stabil ──────────────────────────────
+  // Kjører man den to ganger skal ingenting flytte seg. Er den ikke stabil,
+  // ville dashbordet endret seg litt for hver innlasting.
   const enGang = pakk(STANDARD_OPPSETT);
   const toGanger = pakk(enGang);
   sjekk("Å pakke to ganger endrer ingenting", toGanger, enGang);
+
+  const medHull = pakk([lag("a", 0, 0, 3, 2), lag("b", 6, 9, 3, 2)]);
+  sjekk("Også med tomrom", pakk(medHull), medHull);
 
   console.log(feil === 0 ? "\nAlt stemmer." : `\n${feil} sjekk(er) feilet.`);
   process.exit(feil === 0 ? 0 : 1);
