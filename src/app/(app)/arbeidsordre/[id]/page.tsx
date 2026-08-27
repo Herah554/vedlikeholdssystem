@@ -7,6 +7,7 @@ import {
   History,
   Image as ImageIcon,
   Lightbulb,
+  ShoppingCart,
 } from "lucide-react";
 import { harFunksjonSession, kanSession, requireModul, requireTenant } from "@/lib/auth";
 import { liknendeSaker } from "@/lib/sok";
@@ -14,6 +15,7 @@ import { hentListe } from "@/lib/lister";
 import { lesFelter, lesSvar } from "@/lib/skjema";
 import { Skjemaseksjon } from "@/components/skjemaseksjon";
 import { NESTE_STATUS, ORDRE_STATUS, ordreType, PRIORITET } from "@/lib/domene";
+import { bestillingsNummer } from "@/lib/epost";
 import { dato, datoTid, kroner, ordreNummer, relativTid, tall, timer, toNumber } from "@/lib/format";
 import { Badge, Card, CardBody, CardHeader, Table, Td, Th, Tr } from "@/components/ui";
 import { Vedleggsliste } from "@/components/vedlegg";
@@ -25,6 +27,12 @@ import {
   StatusKnapper,
   TimeSkjema,
 } from "./handlinger";
+import { Delebehov } from "./delebehov";
+import {
+  meldDelebehov,
+  sokDeler,
+  trekkBehov,
+} from "../../reservedeler/behov-actions";
 import {
   endreStatus,
   kryssAvSjekkpunkt,
@@ -66,6 +74,14 @@ export default async function OrdreSide(props: PageProps<"/arbeidsordre/[id]">) 
         include: { part: { select: { number: true, name: true, unit: true } } },
         orderBy: { createdAt: "desc" },
       },
+      partRequests: {
+        include: {
+          part: { select: { number: true, name: true, unit: true } },
+          requestedBy: { select: { name: true } },
+          purchaseOrder: { select: { id: true, number: true } },
+        },
+        orderBy: [{ urgent: "desc" }, { createdAt: "desc" }],
+      },
       comments: {
         include: { user: { select: { name: true } } },
         orderBy: { createdAt: "asc" },
@@ -75,13 +91,8 @@ export default async function OrdreSide(props: PageProps<"/arbeidsordre/[id]">) 
 
   if (!ordre) notFound();
 
-  const [deler, liknende, aarsaker, vedlegg, dokumenttyper, skjemaer, skjemamaler] =
+  const [liknende, aarsaker, vedlegg, dokumenttyper, skjemaer, skjemamaler] =
     await Promise.all([
-    db.part.findMany({
-      where: { isActive: true },
-      select: { id: true, number: true, name: true, unit: true, quantityOnHand: true },
-      orderBy: { number: "asc" },
-    }),
     liknendeSaker(session.organizationId, {
       id: ordre.id,
       title: ordre.title,
@@ -452,13 +463,41 @@ export default async function OrdreSide(props: PageProps<"/arbeidsordre/[id]">) 
             <CardBody className="border-t border-kant">
               <DeleSkjema
                 registrer={registrerDeleuttak.bind(null, ordre.id)}
-                deler={deler.map((d) => ({
-                  id: d.id,
-                  number: d.number,
-                  name: d.name,
-                  unit: d.unit,
-                  beholdning: d.quantityOnHand,
+                sok={sokDeler}
+              />
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardHeader
+              title="Deler som må bestilles"
+              action={<ShoppingCart className="size-4 text-tekst-svakest" aria-hidden />}
+            />
+            <CardBody>
+              <Delebehov
+                behov={ordre.partRequests.map((b) => ({
+                  id: b.id,
+                  status: b.status,
+                  quantity: b.quantity,
+                  note: b.note,
+                  description: b.description,
+                  urgent: b.urgent,
+                  createdAt: b.createdAt,
+                  handledNote: b.handledNote,
+                  eget: b.requestedById === session.userId,
+                  del: b.part,
+                  bestilling: b.purchaseOrder
+                    ? {
+                        id: b.purchaseOrder.id,
+                        nummer: bestillingsNummer(b.purchaseOrder.number),
+                      }
+                    : null,
+                  meldtAv: b.requestedBy.name,
                 }))}
+                meld={meldDelebehov.bind(null, ordre.id)}
+                trekk={trekkBehov}
+                sok={sokDeler}
+                kanMelde={kanSession(session, "arbeidsordre", "endre")}
               />
             </CardBody>
           </Card>

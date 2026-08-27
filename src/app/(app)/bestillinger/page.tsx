@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Boxes, ShoppingCart, Truck } from "lucide-react";
+import { Boxes, PackageSearch, ShoppingCart, Truck } from "lucide-react";
 import { requireModul } from "@/lib/auth";
 import { bestillingsNummer } from "@/lib/epost";
 import { APNE_BESTILLINGER, BESTILLING_STATUS } from "@/lib/domene";
@@ -40,6 +40,12 @@ export default async function BestillingerSide(props: PageProps<"/bestillinger">
     select: { status: true, lines: { select: { quantity: true, unitCost: true } } },
   });
 
+  const behov = await db.partRequest.findMany({
+    where: { status: "ONSKET" },
+    select: { urgent: true },
+  });
+  const hastebehov = behov.filter((b) => b.urgent).length;
+
   const utkast = alle.filter((b) => b.status === "UTKAST").length;
   const venter = alle.filter(
     (b) => b.status === "SENDT" || b.status === "DELVIS_MOTTATT",
@@ -75,8 +81,44 @@ export default async function BestillingerSide(props: PageProps<"/bestillinger">
         <StatCard label="Utkast" value={utkast} sub="Ikke sendt ennå" tone={utkast ? "advarsel" : "nøytral"} />
         <StatCard label="Venter på levering" value={venter} />
         <StatCard label="Verdi utestående" value={kroner(utestaaendeVerdi)} />
-        <StatCard label="Totalt" value={alle.length} />
+        <StatCard
+          label="Delebehov"
+          value={behov.length}
+          sub={
+            hastebehov > 0
+              ? `${hastebehov} haster`
+              : behov.length > 0
+                ? "Meldt fra arbeidsordre"
+                : undefined
+          }
+          tone={behov.length ? "advarsel" : "nøytral"}
+        />
       </div>
+
+      {behov.length > 0 && (
+        <Link
+          href="/bestillinger/behov"
+          className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 hover:bg-amber-100 dark:border-amber-500/30 dark:bg-amber-500/10 dark:hover:bg-amber-500/15"
+        >
+          <span className="flex items-center gap-2.5">
+            <PackageSearch
+              className="size-5 shrink-0 text-amber-700 dark:text-amber-400"
+              aria-hidden
+            />
+            <span className="text-sm text-amber-900 dark:text-amber-200">
+              <strong className="font-medium">
+                {behov.length}{" "}
+                {behov.length === 1 ? "delebehov venter" : "delebehov venter"}
+              </strong>{" "}
+              fra teknikerne
+              {hastebehov > 0 && `, ${hastebehov} haster`}
+            </span>
+          </span>
+          <span className="shrink-0 text-sm font-medium text-amber-900 dark:text-amber-200">
+            Se og bestill →
+          </span>
+        </Link>
+      )}
 
       <div className="mb-4">
         <Link
@@ -92,7 +134,7 @@ export default async function BestillingerSide(props: PageProps<"/bestillinger">
           <EmptyState
             icon={<ShoppingCart className="size-10" />}
             title="Ingen bestillinger"
-            description="Gå til reservedelene, huk av delene som må bestilles, og la systemet samle dem per leverandør."
+            description="Deler teknikerne melder fra arbeidsordren sin havner under Delebehov. Du kan også gå til reservedelene og huke av det som er under minimum."
             action={
               <ButtonLink href="/reservedeler?filter=lav">
                 <Boxes className="size-4" aria-hidden />

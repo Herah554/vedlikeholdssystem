@@ -23,7 +23,8 @@
     "sjekk:skjema": "tsx src/verktoy/sjekk-skjema.ts",
     "sjekk:dokumentsok": "tsx src/verktoy/sjekk-dokumentsok.ts",
     "sjekk:plassering": "tsx src/verktoy/sjekk-plassering.ts",
-    "sjekk:alt": "tsc --noEmit && npm run sjekk:isolering && npm run sjekk:plassering && npm run sjekk:planer && npm run sjekk:lister && npm run sjekk:skjema && npm run sjekk:deling && npm run sjekk:passord && npm run sjekk:import && npm run sjekk:avvik && npm run sjekk:dokumentsok"
+    "sjekk:delebehov": "tsx src/verktoy/sjekk-delebehov.ts",
+    "sjekk:alt": "tsc --noEmit && npm run sjekk:isolering && npm run sjekk:plassering && npm run sjekk:planer && npm run sjekk:lister && npm run sjekk:skjema && npm run sjekk:deling && npm run sjekk:passord && npm run sjekk:import && npm run sjekk:avvik && npm run sjekk:dokumentsok && npm run sjekk:delebehov"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.117.1",

@@ -42,6 +42,7 @@ export async function opprettOrdre(
   formData: FormData,
 ): Promise<Resultat> {
   const { db, session } = await requireTenant();
+  krev(session, "arbeidsordre", "endre");
 
   const parsed = nyOrdreSkjema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
@@ -85,11 +86,21 @@ export async function opprettOrdre(
   redirect(`/arbeidsordre/${ordre.id}`);
 }
 
+/** Stegene som avgjør om arbeidet er godt nok, ikke om det er gjort. */
+const KREVER_ANSVAR: WorkOrderStatus[] = ["GODKJENT", "AVVIST", "LUKKET"];
+
 export async function endreStatus(
   ordreId: string,
   nyStatus: WorkOrderStatus,
 ): Promise<Resultat> {
   const { db, session } = await requireTenant();
+  // Å starte og fullføre en jobb er å gjøre arbeidet. Å godkjenne den, avvise
+  // den eller lukke den er å gå god for det — og det er et annet ansvar.
+  krev(
+    session,
+    "arbeidsordre",
+    KREVER_ANSVAR.includes(nyStatus) ? "administrere" : "endre",
+  );
 
   const ordre = await db.workOrder.findFirst({ where: { id: ordreId } });
   if (!ordre) return { ok: false, feil: "Fant ikke arbeidsordren." };
@@ -154,7 +165,8 @@ export async function planleggOrdre(
   ordreId: string,
   dato: string | null,
 ): Promise<Resultat> {
-  const { db } = await requireTenant();
+  const { db, session } = await requireTenant();
+  krev(session, "arbeidsordre", "endre");
 
   await db.workOrder.updateMany({
     where: { id: ordreId },
@@ -178,6 +190,7 @@ export async function registrerTimer(
   formData: FormData,
 ): Promise<Resultat> {
   const { db, session } = await requireTenant();
+  krev(session, "arbeidsordre", "endre");
 
   const parsed = timeSkjema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, feil: parsed.error.issues[0].message };
@@ -228,6 +241,7 @@ export async function registrerDeleuttak(
   formData: FormData,
 ): Promise<Resultat> {
   const { db, session } = await requireTenant();
+  krev(session, "arbeidsordre", "endre");
 
   const parsed = deleSkjema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, feil: parsed.error.issues[0].message };
@@ -298,7 +312,8 @@ export async function lagreLosning(
   _forrige: Resultat,
   formData: FormData,
 ): Promise<Resultat> {
-  const { db } = await requireTenant();
+  const { db, session } = await requireTenant();
+  krev(session, "arbeidsordre", "endre");
 
   const parsed = losningSkjema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, feil: parsed.error.issues[0].message };
@@ -326,6 +341,7 @@ export async function leggTilKommentar(
   formData: FormData,
 ): Promise<Resultat> {
   const { db, session } = await requireTenant();
+  krev(session, "arbeidsordre", "endre");
 
   const body = String(formData.get("body") ?? "").trim();
   if (!body) return { ok: false, feil: "Skriv en kommentar først." };
@@ -351,7 +367,8 @@ export async function kryssAvSjekkpunkt(
   punktId: string,
   ferdig: boolean,
 ): Promise<Resultat> {
-  const { db } = await requireTenant();
+  const { db, session } = await requireTenant();
+  krev(session, "arbeidsordre", "endre");
 
   // ChecklistItem har ingen organizationId, så tilhørigheten kontrolleres
   // via arbeidsordren den henger under.

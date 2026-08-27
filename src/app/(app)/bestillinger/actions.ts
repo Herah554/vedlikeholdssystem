@@ -499,6 +499,16 @@ export async function mottaVarer(
           receivedAt: altMottatt ? new Date() : null,
         },
       });
+
+      // Teknikerne som ba om disse delene skal se at de er kommet, uten å
+      // spørre noen. Det er hele poenget med å koble behovet til
+      // bestillingen — ellers stopper sporet i det innkjøperen trykker send.
+      if (altMottatt) {
+        await tx.partRequest.updateMany({
+          where: { purchaseOrderId: bestillingId, status: "BESTILT" },
+          data: { status: "MOTTATT" },
+        });
+      }
     });
   } catch (e) {
     return {
@@ -507,8 +517,17 @@ export async function mottaVarer(
     };
   }
 
+  const ventende = await db.partRequest.findMany({
+    where: { purchaseOrderId: bestillingId },
+    select: { workOrderId: true },
+  });
+  for (const b of ventende) {
+    if (b.workOrderId) revalidatePath(`/arbeidsordre/${b.workOrderId}`);
+  }
+
   revalidatePath(`/bestillinger/${bestillingId}`);
   revalidatePath("/bestillinger");
+  revalidatePath("/bestillinger/behov");
   revalidatePath("/reservedeler");
   revalidatePath("/dashbord");
   return { ok: true, melding: "Varene er ført inn på lager." };

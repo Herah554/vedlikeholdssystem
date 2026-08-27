@@ -17,6 +17,7 @@ export type Nokkeltall = {
   forfalteOrdrer: number;
   forfaltePmPlaner: number;
   delerUnderMinimum: number;
+  ventendeDelebehov: number;
   nedetidSiste30Dager: number;
   kostnadHittilIAr: number;
 };
@@ -35,6 +36,7 @@ export async function hentNokkeltall(
     forfalteOrdrer,
     forfaltePmPlaner,
     deler,
+    delebehov,
     nedetid,
     timekost,
     delekost,
@@ -56,6 +58,7 @@ export async function hentNokkeltall(
         AND "isActive" = true
         AND "quantityOnHand" < "minStock"
     `,
+    db.partRequest.count({ where: { status: "ONSKET" } }),
     db.workOrder.aggregate({
       _sum: { downtimeMinutes: true },
       where: { createdAt: { gte: tredveDagerSiden } },
@@ -80,6 +83,7 @@ export async function hentNokkeltall(
     forfalteOrdrer,
     forfaltePmPlaner,
     delerUnderMinimum: Number(deler[0]?.antall ?? 0),
+    ventendeDelebehov: delebehov,
     nedetidSiste30Dager: nedetid._sum.downtimeMinutes ?? 0,
     kostnadHittilIAr,
   };

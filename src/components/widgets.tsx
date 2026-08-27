@@ -71,6 +71,16 @@ async function Nokkeltall({ db, session, type }: Ctx & { type: WidgetType }) {
           href="/reservedeler?filter=lav"
         />
       );
+    case "delebehov":
+      return (
+        <StatCard
+          label="Delebehov"
+          value={t.ventendeDelebehov}
+          sub="Meldt fra arbeidsordre"
+          tone={t.ventendeDelebehov > 0 ? "advarsel" : "god"}
+          href="/bestillinger/behov"
+        />
+      );
     case "nedetid-30":
       return (
         <StatCard
@@ -254,6 +264,7 @@ export function Widget({ type, db, session }: Ctx & { type: WidgetType }) {
     case "kritiske-ordrer":
     case "forfalt-pm":
     case "lav-beholdning":
+    case "delebehov":
     case "nedetid-30":
     case "kostnad-hittil":
       return <Nokkeltall type={type} db={db} session={session} />;

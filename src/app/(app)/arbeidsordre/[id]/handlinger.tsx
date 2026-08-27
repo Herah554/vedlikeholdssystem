@@ -5,7 +5,9 @@ import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
 import { AlertCircle, Check, Clock, Package, Send } from "lucide-react";
 import { Button, Field, Input, Select, Textarea } from "@/components/ui";
+import { DeleSok } from "@/components/delesok";
 import { STATUS_FORKLARING, ORDRE_STATUS } from "@/lib/domene";
+import type { Deletreff } from "../../reservedeler/behov-actions";
 import type { Resultat } from "../actions";
 import type { WorkOrderStatus } from "@/generated/prisma/client";
 
@@ -141,39 +143,34 @@ export function TimeSkjema({
 
 // ─── Deleuttak ────────────────────────────────────────────────
 
+/**
+ * Uttak av del fra lageret.
+ *
+ * Delen søkes opp i stedet for å velges fra en liste over hele lageret. Et
+ * delelager med tusen deler gjorde nedtrekkslista ubrukelig — og tusen deler
+ * er det normale hos dem systemet skal selges til.
+ */
 export function DeleSkjema({
   registrer,
-  deler,
+  sok,
 }: {
   registrer: (forrige: Resultat, data: FormData) => Promise<Resultat>;
-  deler: { id: string; number: string; name: string; unit: string; beholdning: number }[];
+  sok: (tekst: string) => Promise<Deletreff[]>;
 }) {
   const [state, action] = useActionState(registrer, { ok: true });
-
-  if (deler.length === 0) {
-    return (
-      <p className="text-sm text-tekst-svak">
-        Ingen reservedeler er registrert ennå.
-      </p>
-    );
-  }
+  const [valgt, settValgt] = useState<Deletreff | null>(null);
 
   return (
     <form action={action} className="space-y-3">
-      <Field label="Reservedel" required>
-        <Select name="partId" required defaultValue="">
-          <option value="" disabled>
-            Velg del …
-          </option>
-          {deler.map((d) => (
-            <option key={d.id} value={d.id} disabled={d.beholdning <= 0}>
-              {d.number} — {d.name} ({d.beholdning} {d.unit} på lager)
-            </option>
-          ))}
-        </Select>
-      </Field>
+      <DeleSok navn="partId" sok={sok} paavalgt={settValgt} />
+      {valgt && valgt.beholdning <= 0 && (
+        <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-500/10 dark:text-amber-300">
+          Ingenting på lager. Meld den under «Deler som må bestilles» i stedet,
+          så får delelageret beskjed.
+        </p>
+      )}
       <Field label="Antall" required>
-        <Input name="quantity" type="number" step="1" min="1" defaultValue="1" required />
+        <Input name="quantity" type="number" step="any" min="0.01" defaultValue="1" required />
       </Field>
       <Feil melding={state.feil} />
       <Lagre tekst="Ta ut del" ikon={<Package className="size-4" aria-hidden />} />

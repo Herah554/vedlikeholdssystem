@@ -4,6 +4,7 @@ import {
   CalendarClock,
   ClipboardList,
   Clock,
+  PackageSearch,
   Repeat2,
   Wallet,
 } from "lucide-react";
@@ -21,6 +22,7 @@ export type WidgetType =
   | "kritiske-ordrer"
   | "forfalt-pm"
   | "lav-beholdning"
+  | "delebehov"
   | "nedetid-30"
   | "kostnad-hittil"
   | "pm-etterlevelse"
@@ -77,6 +79,7 @@ export const WIDGET_KATALOG: {
   { type: "kritiske-ordrer", navn: "Kritiske jobber", beskrivelse: "Åpne ordre med prioritet Kritisk", bredde: 3, hoyde: 2 },
   { type: "forfalt-pm", navn: "Forfalt forebyggende", beskrivelse: "Planer som har passert forfallsdato", bredde: 3, hoyde: 2 },
   { type: "lav-beholdning", navn: "Deler under minimum", beskrivelse: "Reservedeler som må bestilles", bredde: 3, hoyde: 2 },
+  { type: "delebehov", navn: "Delebehov", beskrivelse: "Deler teknikerne venter på at noen bestiller", bredde: 3, hoyde: 2 },
   { type: "nedetid-30", navn: "Nedetid siste 30 dager", beskrivelse: "Sum stopptid meldt på arbeidsordre", bredde: 3, hoyde: 2 },
   { type: "kostnad-hittil", navn: "Kostnad hittil i år", beskrivelse: "Timer og deler samlet", bredde: 3, hoyde: 2 },
   { type: "pm-etterlevelse", navn: "PM-etterlevelse", beskrivelse: "Andel forebyggende arbeid utført i tide", bredde: 3, hoyde: 2 },
@@ -106,6 +109,7 @@ export const WIDGET_IKON: Record<WidgetType, typeof ClipboardList> = {
   "kritiske-ordrer": AlertTriangle,
   "forfalt-pm": Repeat2,
   "lav-beholdning": Boxes,
+  delebehov: PackageSearch,
   "nedetid-30": Clock,
   "kostnad-hittil": Wallet,
   "pm-etterlevelse": Repeat2,

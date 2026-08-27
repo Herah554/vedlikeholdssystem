@@ -505,7 +505,55 @@ export async function opprettDemobedrift(): Promise<Demobedrift> {
     data: { organizationId: orgId, name: "deviation", value: AVVIK.length },
   });
 
-  // ── Dashbord delt med hele firmaet ──────────────────────────
+  // ── Delebehov teknikerne har meldt ──────────────────────────
+  // Uten dette står delelagerets arbeidsliste tom i demoen, og det er
+  // nettopp den lista som viser hva systemet gjør for en innkjøper.
+  const apneOrdrer = await prisma.workOrder.findMany({
+    where: {
+      organizationId: orgId,
+      status: { in: ["PAAGAAR", "VENTER_DELER", "PLANLAGT"] },
+    },
+    take: 5,
+  });
+
+  const BEHOV = [
+    { note: "Lekker olje ved akseltetningen, må byttes før oppstart", urgent: true },
+    { note: "Siste på lager gikk med i forrige jobb", urgent: false },
+    { note: "Trenger to i reserve, denne ryker ofte", urgent: false },
+  ];
+
+  for (const [i, ordre] of apneOrdrer.slice(0, BEHOV.length).entries()) {
+    await prisma.partRequest.create({
+      data: {
+        organizationId: orgId,
+        workOrderId: ordre.id,
+        partId: deler[(i + 3) % deler.length].id,
+        quantity: heltall(1, 4),
+        note: BEHOV[i].note,
+        urgent: BEHOV[i].urgent,
+        requestedById: velg(teknikere).id,
+        createdAt: dagerSiden(heltall(1, 6)),
+      },
+    });
+  }
+
+  // Ett behov teknikeren ikke fant delenummeret på — det er den bunken som
+  // krever at noen faktisk gjør noe, og den bør synes i demoen.
+  if (apneOrdrer.length > 0) {
+    await prisma.partRequest.create({
+      data: {
+        organizationId: orgId,
+        workOrderId: apneOrdrer[0].id,
+        description: "Akseltetning til matepumpa, den store på drivsiden",
+        quantity: 1,
+        note: "Fant den ikke i registeret, den er merket med gult",
+        requestedById: velg(teknikere).id,
+        createdAt: dagerSiden(2),
+      },
+    });
+  }
+
+    // ── Dashbord delt med hele firmaet ──────────────────────────
   await prisma.dashboard.create({
     data: {
       organizationId: orgId,

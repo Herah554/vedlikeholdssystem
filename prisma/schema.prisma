@@ -73,6 +73,7 @@ model Organization {
   formResponses  FormResponse[]
   assetDocs      AssetDoc[]
   deviations     Deviation[]
+  partRequests   PartRequest[]
 
   @@map("organizations")
 }
@@ -161,6 +162,8 @@ model User {
   dashboardShares    DashboardShare[]
   passwordResets     PasswordReset[]
   assetDocs          AssetDoc[]
+  requestedParts     PartRequest[]    @relation("BehovMeldt")
+  handledParts       PartRequest[]    @relation("BehovBehandlet")
   startedForms       FormResponse[]   @relation("SkjemaStartet")
   lockedForms        FormResponse[]   @relation("SkjemaLaast")
   reportedDeviations Deviation[]      @relation("AvvikMelder")
@@ -346,14 +349,15 @@ model WorkOrder {
   assignedTo   User?        @relation("Tildelt", fields: [assignedToId], references: [id], onDelete: SetNull)
   pmPlan       PmPlan?      @relation(fields: [pmPlanId], references: [id], onDelete: SetNull)
 
-  timeEntries TimeEntry[]
-  partUsages  PartUsage[]
-  comments    Comment[]
-  attachments Attachment[]
-  stockMoves  StockMovement[]
-  checklist   ChecklistItem[]
-  deviations  Deviation[]
-  forms       FormResponse[]
+  timeEntries  TimeEntry[]
+  partUsages   PartUsage[]
+  comments     Comment[]
+  attachments  Attachment[]
+  stockMoves   StockMovement[]
+  checklist    ChecklistItem[]
+  deviations   Deviation[]
+  forms        FormResponse[]
+  partRequests PartRequest[]
 
   @@unique([organizationId, number])
   @@index([organizationId, status])
@@ -454,6 +458,7 @@ model Part {
   movements     StockMovement[]
   assets        AssetPart[]
   purchaseLines PurchaseOrderLine[]
+  requests      PartRequest[]
 
   @@unique([organizationId, number])
   @@index([organizationId])
@@ -577,6 +582,7 @@ model PurchaseOrder {
   createdBy    User                @relation(fields: [createdById], references: [id], onDelete: Restrict)
   lines        PurchaseOrderLine[]
   movements    StockMovement[]
+  partRequests PartRequest[]
 
   @@unique([organizationId, number])
   @@index([organizationId, status])
@@ -1107,4 +1113,68 @@ model AuditLog {
 
   @@index([organizationId, entityType, entityId])
   @@map("audit_logs")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Delebehov
+// ─────────────────────────────────────────────────────────────
+
+enum PartRequestStatus {
+  ONSKET // teknikeren har bedt om delen
+  BESTILT // lagt inn på en bestilling til leverandør
+  MOTTATT // bestillingen er kommet inn på lager
+  AVVIST // delelager sa nei, med begrunnelse
+}
+
+/// Én tekniker som trenger én del.
+///
+/// Uten dette var eneste vei fra «jeg mangler en pakning» til en faktisk
+/// bestilling en melding på gangen eller en gul lapp. Behovet skrives der
+/// arbeidet står — på arbeidsordren — og dukker opp hos den som bestiller,
+/// med hvem som spurte, til hvilken jobb og hvorfor.
+///
+/// partId er valgfri med vilje. Den som står ved maskinen vet ofte hva hen
+/// trenger uten å vite delenummeret, og et system som krever nummeret ender
+/// med at behovet aldri blir meldt. Da beskrives delen med ord i stedet, og
+/// delelager kobler den til riktig delenummer etterpå.
+model PartRequest {
+  id             String @id @default(cuid())
+  organizationId String
+
+  workOrderId String?
+  partId      String?
+  /// Brukes når teknikeren ikke fant delen i registeret
+  description String?
+
+  quantity Float             @default(1)
+  note     String?
+  status   PartRequestStatus @default(ONSKET)
+  /// Produksjonen står. Sorteres øverst hos den som bestiller.
+  urgent   Boolean           @default(false)
+
+  requestedById String
+  handledById   String?
+  handledAt     DateTime?
+  /// Begrunnelsen når behovet ble avvist
+  handledNote   String?
+
+  /// Bestillingen behovet endte på. Er den satt, kan teknikeren følge
+  /// leveringen fra arbeidsordren sin uten å spørre noen.
+  purchaseOrderId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  workOrder     WorkOrder?     @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  part          Part?          @relation(fields: [partId], references: [id], onDelete: SetNull)
+  requestedBy   User           @relation("BehovMeldt", fields: [requestedById], references: [id], onDelete: Restrict)
+  handledBy     User?          @relation("BehovBehandlet", fields: [handledById], references: [id], onDelete: SetNull)
+  purchaseOrder PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, status, createdAt])
+  @@index([workOrderId])
+  @@index([partId])
+  @@index([purchaseOrderId])
+  @@map("part_requests")
 }

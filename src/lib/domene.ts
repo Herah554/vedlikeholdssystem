@@ -6,6 +6,7 @@ import type {
   AssetType,
   BudgetCategory,
   PmTrigger,
+  PartRequestStatus,
   PurchaseOrderStatus,
   Priority,
   Role,
@@ -308,3 +309,43 @@ export const STATUS_FORKLARING: Record<
     vanlig: null,
   },
 };
+
+// ─── Delebehov ────────────────────────────────────────────────
+
+export const BEHOV_STATUS: Record<PartRequestStatus, Etikett> = {
+  ONSKET: {
+    tekst: "Venter på bestilling",
+    klasse:
+      "bg-amber-50 text-amber-800 ring-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:ring-amber-500/30",
+  },
+  BESTILT: {
+    tekst: "Bestilt",
+    klasse:
+      "bg-sky-100 text-sky-800 ring-sky-200 dark:bg-sky-500/15 dark:text-sky-300 dark:ring-sky-500/30",
+  },
+  MOTTATT: {
+    tekst: "Kommet på lager",
+    klasse:
+      "bg-emerald-50 text-emerald-800 ring-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:ring-emerald-500/30",
+  },
+  AVVIST: {
+    tekst: "Avvist",
+    klasse: "bg-flate-dempet text-tekst-svak ring-kant",
+  },
+};
+
+/**
+ * Hva teknikeren skal gjøre nå, per status.
+ *
+ * Den som melder et behov lurer på én ting: får jeg delen, og når? Dette
+ * svarer på det uten at hen må ringe delelageret.
+ */
+export const BEHOV_NESTE: Record<PartRequestStatus, string> = {
+  ONSKET: "Delelageret har fått beskjed og tar den med i neste bestilling.",
+  BESTILT: "Bestilt fra leverandør. Du får beskjed når den er på lager.",
+  MOTTATT: "Delen ligger på lager. Ta den ut på arbeidsordren.",
+  AVVIST: "Behovet ble ikke tatt videre. Se begrunnelsen under.",
+};
+
+/** Behov som fortsatt venter på at noen gjør noe. */
+export const APNE_BEHOV: PartRequestStatus[] = ["ONSKET"];
