@@ -49,7 +49,21 @@ type Draging = {
   /** Hvor i widgeten man tok tak, i ruter. Ellers ville den hoppet til musa. */
   grepX: number;
   grepY: number;
+  /** Der widgeten lå da dragingen begynte. */
+  fraX: number;
+  fraY: number;
+  /** Ruten den vil lande i akkurat nå. */
+  maalX: number;
+  maalY: number;
+  /** Hvor langt musa har flyttet seg, i piksler. Brukes til å følge fingeren. */
+  dx: number;
+  dy: number;
+  /** Sant først når man har dratt langt nok til at det var ment. */
+  begynt: boolean;
 };
+
+/** Hvor langt man må dra før det regnes som en draging og ikke et klikk. */
+const TERSKEL = 6;
 
 type Endring = {
   id: string;
@@ -75,6 +89,19 @@ export function Rutenett({
   const [melding, settMelding] = useState<string>();
   const rutenett = useRef<HTMLDivElement>(null);
   const router = useRouter();
+
+  /** Der musa var da dragingen begynte. Brukes til å følge fingeren jevnt. */
+  const startPunkt = useRef({ x: 0, y: 0 });
+
+  /**
+   * Dragingen, tilgjengelig for lytterne uten å være en avhengighet.
+   *
+   * Uten dette ville useEffect bygget lytterne opp på nytt for hver eneste
+   * musebevegelse — seksti ganger i sekundet — fordi tilstanden endrer seg
+   * hele tiden mens man drar.
+   */
+  const draging = useRef<Draging | null>(null);
+  draging.current = drar;
 
   /**
    * Siste oppsett, tilgjengelig utenfor React sin gjengivelse.
@@ -163,8 +190,8 @@ export function Rutenett({
     if (!redigerer || endrer) return;
 
     const mal = malRutenett();
-    // Under fire kolonner ligger widgetene i flyt, og fri plassering gir
-    // ingen mening. Da er dra-og-slipp slått av med vilje.
+    // Med færre kolonner ligger widgetene i flyt, og fri plassering gir ingen
+    // mening. Da er dra-og-slipp slått av med vilje.
     if (!mal || mal.kolonner < MAKS_BREDDE) return;
 
     e.preventDefault();
@@ -178,7 +205,20 @@ export function Rutenett({
       e.clientY,
     );
 
-    settDrar({ id: w.id, grepX: rute.x - w.x, grepY: rute.y - w.y });
+    startPunkt.current = { x: e.clientX, y: e.clientY };
+
+    settDrar({
+      id: w.id,
+      grepX: rute.x - w.x,
+      grepY: rute.y - w.y,
+      fraX: w.x,
+      fraY: w.y,
+      maalX: w.x,
+      maalY: w.y,
+      dx: 0,
+      dy: 0,
+      begynt: false,
+    });
   }
 
   function startEndring(e: React.PointerEvent, widget: WidgetOppsett) {
@@ -204,9 +244,13 @@ export function Rutenett({
     if (!drar) return;
 
     function beveg(e: PointerEvent) {
-      if (!drar) return;
       const mal = malRutenett();
       if (!mal) return;
+
+      const dx = e.clientX - startPunkt.current.x;
+      const dy = e.clientY - startPunkt.current.y;
+      const langtNok =
+        Math.abs(dx) > TERSKEL || Math.abs(dy) > TERSKEL;
 
       const rute = ruteFraPunkt(
         mal.rect,
@@ -217,12 +261,35 @@ export function Rutenett({
         e.clientY,
       );
 
-      flyttTil(drar.id, rute.x - drar.grepX, rute.y - drar.grepY);
+      // Rutenettet røres ikke underveis. De andre widgetene blir stående der
+      // de er, og bare rammen viser hvor denne lander. Å regne om hele
+      // oppsettet for hver musebevegelse gjorde at alt hoppet rundt mens man
+      // prøvde å sikte.
+      settDrar((f) =>
+        f
+          ? {
+              ...f,
+              dx,
+              dy,
+              begynt: f.begynt || langtNok,
+              maalX: Math.max(0, rute.x - f.grepX),
+              maalY: Math.max(0, rute.y - f.grepY),
+            }
+          : f,
+      );
     }
 
     function slipp() {
+      const d = draging.current;
       settDrar(null);
-      lagre(sisteOppsett.current);
+      if (!d) return;
+
+      // Opprydningen skjer én gang, når man slipper. Da vet man hva man får,
+      // og det skjer ikke noe uventet mens man holder på.
+      if (d.begynt && (d.maalX !== d.fraX || d.maalY !== d.fraY)) {
+        flyttTil(d.id, d.maalX, d.maalY);
+        lagre(sisteOppsett.current);
+      }
     }
 
     window.addEventListener("pointermove", beveg);
@@ -234,7 +301,10 @@ export function Rutenett({
       window.removeEventListener("pointerup", slipp);
       window.removeEventListener("pointercancel", slipp);
     };
-  }, [drar, lagre]);
+    // Bare id-en, ikke hele dragingen: ellers ville lytterne blitt byttet ut
+    // seksti ganger i sekundet mens man drar.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drar?.id, lagre]);
 
   useEffect(() => {
     if (!endrer) return;
@@ -275,6 +345,7 @@ export function Rutenett({
   }, [endrer, lagre]);
 
   const aktiv = drar?.id ?? endrer?.id;
+  const dratt = drar ? oppsett.find((w) => w.id === drar.id) : undefined;
 
   return (
     <>
@@ -332,9 +403,29 @@ export function Rutenett({
           aktiv && "touch-none select-none",
         )}
       >
+        {/*
+          Rammen der widgeten lander. Den ligger i rutenettet som alt annet,
+          så den viser nøyaktig hvilke ruter som blir opptatt — ikke omtrent.
+        */}
+        {drar?.begynt && dratt && (
+          <div
+            aria-hidden
+            style={
+              {
+                "--wx": drar.maalX + 1,
+                "--wy": drar.maalY + 1,
+                "--ww": dratt.w,
+                "--wh": dratt.h,
+              } as React.CSSProperties
+            }
+            className="widget-plassert pointer-events-none rounded-xl bg-merke-500/10 outline-2 outline-dashed outline-merke-500"
+          />
+        )}
+
         {oppsett.map((w) => {
           const meta = WIDGET_KATALOG.find((k) => k.type === w.type);
           const dennes = aktiv === w.id;
+          const dennesDras = Boolean(drar?.begynt && drar.id === w.id);
 
           return (
             <div
@@ -353,6 +444,12 @@ export function Rutenett({
                   "--wy": w.y + 1,
                   "--ww": w.w,
                   "--wh": w.h,
+                  // Den som dras følger fingeren piksel for piksel. Uten dette
+                  // ville den hoppet fra rute til rute, og med tolv kolonner
+                  // skjer det så ofte at man ikke rekker å sikte.
+                  ...(dennesDras && drar
+                    ? { transform: `translate(${drar.dx}px, ${drar.dy}px)` }
+                    : {}),
                 } as React.CSSProperties
               }
               className={cn(
@@ -360,11 +457,15 @@ export function Rutenett({
                 // På to kolonner tar en widget som er halve bredden eller
                 // mer hele raden. Fri plassering gjelder først fra tolv.
                 w.w >= MAKS_BREDDE / 2 && "sm:col-span-2",
-                !aktiv && "transition-all",
+                // De andre får en myk overgang når de endelig flytter seg.
+                // Den som dras skal ikke ha det — da ville den henge etter
+                // fingeren.
+                !dennesDras && "transition-[grid-area] duration-150",
                 redigerer && !dennes && "cursor-grab",
-                dennes && "z-10 cursor-grabbing",
-                dennes &&
-                  "rounded-xl opacity-90 outline-2 outline-dashed outline-merke-500 outline-offset-2",
+                dennes && "z-20 cursor-grabbing",
+                dennesDras && "opacity-80 shadow-2xl",
+                endrer?.id === w.id &&
+                  "rounded-xl outline-2 outline-dashed outline-merke-500 outline-offset-2",
               )}
             >
               {redigerer && (
