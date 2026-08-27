@@ -1,5 +1,10 @@
 import { fyllUtPlassering, klemInn, pakk, type Plassert } from "@/lib/plassering";
-import { STANDARD_OPPSETT, MALER } from "@/components/widget-katalog";
+import {
+  MAKS_BREDDE,
+  MAKS_HOYDE,
+  STANDARD_OPPSETT,
+  MALER,
+} from "@/components/widget-katalog";
 
 /**
  * Kontrollerer at widgets aldri havner oppå hverandre.
@@ -46,7 +51,9 @@ function overlapp(w: Plassert[]): number {
 
 /** Sant hvis noen widget stikker utenfor rutenettet. */
 function utenfor(w: Plassert[]): number {
-  return w.filter((el) => el.x < 0 || el.y < 0 || el.x + el.w > 4).length;
+  return w.filter(
+    (el) => el.x < 0 || el.y < 0 || el.x + el.w > MAKS_BREDDE,
+  ).length;
 }
 
 function lag(
@@ -56,18 +63,26 @@ function lag(
   w: number,
   h: number,
 ): Plassert {
-  return { id, type: "apne-ordrer", x, y, w: w as 1, h: h as 1 };
+  return { id, type: "apne-ordrer", x, y, w, h };
 }
 
 function main() {
   // ── Klemming inn i rutenettet ─────────────────────────────
-  sjekk("For bred blir fire", klemInn(lag("a", 0, 0, 9, 1)).w, 4);
-  sjekk("For høy blir tre", klemInn(lag("a", 0, 0, 1, 9)).h, 3);
+  sjekk(
+    "For bred klemmes til rutenettets bredde",
+    klemInn(lag("a", 0, 0, 99, 1)).w,
+    MAKS_BREDDE,
+  );
+  sjekk(
+    "For høy klemmes til rutenettets høyde",
+    klemInn(lag("a", 0, 0, 1, 99)).h,
+    MAKS_HOYDE,
+  );
   sjekk("Negativ x blir null", klemInn(lag("a", -5, 0, 1, 1)).x, 0);
   sjekk(
-    "Tre bred kan ikke begynne i kolonne tre",
-    klemInn(lag("a", 3, 0, 3, 1)).x,
-    1,
+    "En widget kan ikke stikke ut til høyre",
+    klemInn(lag("a", MAKS_BREDDE - 1, 0, 3, 1)).x,
+    MAKS_BREDDE - 3,
   );
 
   // ── Overlapp løses opp ────────────────────────────────────
@@ -102,7 +117,9 @@ function main() {
 
   // ── Mange på én gang ──────────────────────────────────────
   const mange = pakk(
-    Array.from({ length: 20 }, (_, i) => lag(`w${i}`, i % 4, 0, 2, 2)),
+    Array.from({ length: 20 }, (_, i) =>
+      lag(`w${i}`, (i % 3) * 3, 0, MAKS_BREDDE / 2, 2),
+    ),
   );
   sjekk("Tjue overlappende blir ryddet", overlapp(mange), 0);
   sjekk("Ingen havner utenfor", utenfor(mange), 0);

@@ -157,6 +157,14 @@ body {
  *
  * Grensen må stemme med xl:grid-cols-4 i rutenett.tsx.
  */
+/*
+ * Høyden gjelder overalt. Uten den ville en widget på smale skjermer blitt
+ * én rad høy — 3,5rem — og innholdet ville blitt klippet.
+ */
+.widget-plassert {
+  grid-row: span var(--wh);
+}
+
 @media (min-width: 80rem) {
   .widget-plassert {
     grid-column: var(--wx) / span var(--ww);

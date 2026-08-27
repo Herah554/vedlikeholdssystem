@@ -41,6 +41,9 @@ import { lagreOppsett } from "./tilpass/actions";
 /** Mellomrommet mellom rutene, i piksler. Må stemme med gap-4 under. */
 const MELLOMROM = 16;
 
+/** Selve radhøyden, uten mellomrommet. Må stemme med auto-rows under. */
+const RAD_HOYDE = RAD_PIKSLER - MELLOMROM;
+
 type Draging = {
   id: string;
   /** Hvor i widgeten man tok tak, i ruter. Ellers ville den hoppet til musa. */
@@ -169,7 +172,7 @@ export function Rutenett({
     const rute = ruteFraPunkt(
       mal.rect,
       mal.kolonner,
-      RAD_PIKSLER - MELLOMROM,
+      RAD_HOYDE,
       MELLOMROM,
       e.clientX,
       e.clientY,
@@ -208,7 +211,7 @@ export function Rutenett({
       const rute = ruteFraPunkt(
         mal.rect,
         mal.kolonner,
-        RAD_PIKSLER - MELLOMROM,
+        RAD_HOYDE,
         MELLOMROM,
         e.clientX,
         e.clientY,
@@ -324,7 +327,7 @@ export function Rutenett({
       <div
         ref={rutenett}
         className={cn(
-          "grid auto-rows-[7rem] grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4",
+          "grid auto-rows-[3.5rem] grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-12",
           // Mens man drar skal ikke teksten i andre widgets bli markert
           aktiv && "touch-none select-none",
         )}
@@ -354,7 +357,9 @@ export function Rutenett({
               }
               className={cn(
                 "widget-plassert relative min-h-0 [&>*]:h-full",
-                w.w >= 2 && "sm:col-span-2",
+                // På to kolonner tar en widget som er halve bredden eller
+                // mer hele raden. Fri plassering gjelder først fra tolv.
+                w.w >= MAKS_BREDDE / 2 && "sm:col-span-2",
                 !aktiv && "transition-all",
                 redigerer && !dennes && "cursor-grab",
                 dennes && "z-10 cursor-grabbing",
