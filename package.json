@@ -25,7 +25,7 @@
     "sjekk:plassering": "tsx src/verktoy/sjekk-plassering.ts",
     "sjekk:delebehov": "tsx src/verktoy/sjekk-delebehov.ts",
     "sjekk:sletting": "tsx src/verktoy/sjekk-sletting.ts",
-    "sjekk:alt": "tsc --noEmit && npm run sjekk:isolering && npm run sjekk:plassering && npm run sjekk:planer && npm run sjekk:lister && npm run sjekk:skjema && npm run sjekk:deling && npm run sjekk:passord && npm run sjekk:import && npm run sjekk:avvik && npm run sjekk:dokumentsok && npm run sjekk:delebehov && npm run sjekk:sletting"
+    "sjekk:alt": "next typegen && tsc --noEmit && npm run sjekk:isolering && npm run sjekk:plassering && npm run sjekk:planer && npm run sjekk:lister && npm run sjekk:skjema && npm run sjekk:deling && npm run sjekk:passord && npm run sjekk:import && npm run sjekk:avvik && npm run sjekk:dokumentsok && npm run sjekk:delebehov && npm run sjekk:sletting"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.117.1",
