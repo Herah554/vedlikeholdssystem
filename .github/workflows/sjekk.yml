@@ -1,0 +1,82 @@
+# Kjører alle kontrollene på hver push.
+#
+# De elleve sjekkskriptene fantes fra før, men kjørte bare når noen husket
+# det. Det holdt ikke: en typefeil rakk å komme helt til Vercel og velte
+# bygget der, fordi den som endret koden testet noe annet enn det som var
+# ødelagt. Nå kjører alt, hver gang, uten at noen må huske noe.
+#
+# Halvparten av sjekkene trenger en ekte database — de bygger komplette
+# demobedrifter og sletter dem igjen for å kontrollere at ingen kunde kan se
+# eller ødelegge en annens data. Derfor står det en Postgres her, og ikke
+# bare en typesjekk.
+
+name: Sjekk
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# En ny push gjør den forrige kjøringen uinteressant
+concurrency:
+  group: sjekk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sjekk:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        # Samme hovedversjon som utvikles på, slik at en feil som avhenger
+        # av databaseversjonen ikke først dukker opp hos en kunde.
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: vedlikehold
+        ports:
+          - 5432:5432
+        # Uten dette starter stegene før databasen tar imot tilkoblinger
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/vedlikehold
+      # Bare for at signeringen skal ha noe å bruke i testene. Ingen ekte
+      # økter utstedes her, og verdien gir ingen tilgang noe sted.
+      AUTH_SECRET: bare-for-testkjoring-ikke-i-bruk-noe-sted-32
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      # ci, ikke install: låsefila skal bestemme, ellers tester vi andre
+      # versjoner enn de som havner i produksjon
+      - run: npm ci
+
+      # Lager tabellene og pg_trgm-utvidelsen søket er avhengig av
+      - run: npx prisma migrate deploy
+
+      # sjekk:deling og sjekk:passord slår opp navngitte brukere fra seeden,
+      # og stopper med «Kjør npm run db:seed først» uten den. De andre lager
+      # sine egne demobedrifter og bryr seg ikke.
+      - run: npm run db:seed
+
+      # Først den som fant kaskaderendringen i delesøket — typesjekken så
+      # den ikke, og den ville ikke vist seg som annet enn treghet
+      - run: npm run lint
+
+      # tsc og de elleve skriptene, inkludert flerklient-isoleringen
+      - run: npm run sjekk:alt
+
+      # Til slutt hele bygget, som er det Vercel gjør. En side kan feile her
+      # selv om typene stemmer.
+      - run: npm run build

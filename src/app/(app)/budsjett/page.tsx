@@ -50,6 +50,10 @@ export default async function BudsjettSide(props: PageProps<"/budsjett">) {
   const dagerGatt =
     ar === iAr
       ? Math.ceil(
+          // Dette er en tjenerkomponent: den tegnes én gang per forespørsel,
+          // så «nå» er en fast verdi gjennom hele gjengivelsen. Regelen
+          // skiller ikke tjener fra klient, og advarer likevel.
+          // eslint-disable-next-line react-hooks/purity
           (Date.now() - new Date(ar, 0, 1).getTime()) / 86400_000,
         )
       : dagerIAr;

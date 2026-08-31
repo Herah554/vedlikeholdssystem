@@ -101,7 +101,14 @@ export function Rutenett({
    * hele tiden mens man drar.
    */
   const draging = useRef<Draging | null>(null);
-  draging.current = drar;
+
+  // Settes etter gjengivelsen, ikke under den. En gjengivelse React kaster
+  // fra seg skal ikke få lov til å legge igjen en verdi her — da ville
+  // lytterne dratt widgeten etter en tilstand som aldri kom på skjermen.
+  // Denne effekten står før lytternes egen, så verdien er på plass i tide.
+  useEffect(() => {
+    draging.current = drar;
+  });
 
   /**
    * Siste oppsett, tilgjengelig utenfor React sin gjengivelse.

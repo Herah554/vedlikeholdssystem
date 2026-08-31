@@ -322,6 +322,10 @@ async function UtloperSnart({ db }: Ctx) {
         <ul className="min-h-0 flex-1 divide-y divide-kant overflow-auto">
           {dokumenter.map((d) => {
             const dager = Math.ceil(
+              // Tjenerkomponent: tegnes én gang per forespørsel, så «nå»
+              // står stille gjennom hele lista. Regelen skiller ikke tjener
+              // fra klient.
+              // eslint-disable-next-line react-hooks/purity
               (d.validUntil!.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
             );
             const utgatt = dager < 0;
