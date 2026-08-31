@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { krev, requireTenant } from "@/lib/auth";
 
-export type Resultat = { ok: boolean; feil?: string };
+export type Resultat = { ok: boolean; feil?: string; melding?: string };
 
 const nyDelSkjema = z.object({
   number: z.string().trim().min(1, "Delenummer er påkrevd.").max(40),
@@ -131,7 +131,7 @@ export async function registrerInnkjop(
   revalidatePath(`/reservedeler/${partId}`);
   revalidatePath("/reservedeler");
   revalidatePath("/dashbord");
-  return { ok: true };
+  return { ok: true, melding: "Lagret." };
 }
 
 /**
@@ -182,5 +182,108 @@ export async function justerBeholdning(
 
   revalidatePath(`/reservedeler/${partId}`);
   revalidatePath("/reservedeler");
+  return { ok: true };
+}
+
+const endreDelSkjema = z.object({
+  number: z.string().trim().min(1, "Delenummer er påkrevd.").max(40),
+  name: z.string().trim().min(2, "Navnet må ha minst to tegn."),
+  description: z.string().trim().optional(),
+  manufacturer: z.string().trim().optional(),
+  manufacturerPartNo: z.string().trim().optional(),
+  unit: z.string().trim().min(1),
+  unitCost: z.coerce.number().min(0, "Pris kan ikke være negativ."),
+  minStock: z.coerce.number().min(0, "Minimum kan ikke være negativt."),
+  maxStock: z.string().trim().optional(),
+  binLocation: z.string().trim().optional(),
+  supplierId: z.string().trim().optional(),
+  leadTimeDays: z.string().trim().optional(),
+});
+
+/**
+ * Retter opplysningene på en reservedel.
+ *
+ * Minimums- og maksimumsnivået er det som oftest må endres. De settes når
+ * delen registreres, før noen vet hvor fort den faktisk går med, og først
+ * etter et halvår ser man at to på lager er for lite. Uten en vei til å
+ * rette det, blir «deler under minimum» en liste ingen stoler på.
+ *
+ * Beholdningen står ikke her. Den endres bare gjennom lagerbevegelser, slik
+ * at reskontroen alltid summerer seg til det som står på hylla. Skal et tall
+ * korrigeres, gjøres det som en opptelling — da vet man hvem som gjorde det
+ * og hvorfor.
+ */
+export async function endreDel(
+  partId: string,
+  _forrige: Resultat,
+  formData: FormData,
+): Promise<Resultat> {
+  const { db, session } = await requireTenant();
+  krev(session, "reservedeler", "administrere");
+
+  const parsed = endreDelSkjema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { ok: false, feil: parsed.error.issues[0].message };
+  const d = parsed.data;
+
+  const del = await db.part.findFirst({
+    where: { id: partId },
+    select: { id: true, number: true },
+  });
+  if (!del) return { ok: false, feil: "Fant ikke delen." };
+
+  if (d.number !== del.number) {
+    const opptatt = await db.part.findFirst({
+      where: { number: d.number, id: { not: partId } },
+      select: { id: true },
+    });
+    if (opptatt) {
+      return { ok: false, feil: `Delenummer «${d.number}» finnes allerede.` };
+    }
+  }
+
+  const maks = d.maxStock ? Number(d.maxStock) : null;
+  const gyldigMaks = maks != null && !Number.isNaN(maks) ? maks : null;
+
+  // Et maksimum under minimum gir en bestillingsberegning som ber om mindre
+  // enn det delen skal ha på lager
+  if (gyldigMaks != null && gyldigMaks < d.minStock) {
+    return {
+      ok: false,
+      feil: "Maksimum kan ikke være lavere enn minimum.",
+    };
+  }
+
+  if (d.supplierId) {
+    const lev = await db.supplier.findFirst({
+      where: { id: d.supplierId },
+      select: { id: true },
+    });
+    if (!lev) return { ok: false, feil: "Fant ikke leverandøren." };
+  }
+
+  const ledetid = d.leadTimeDays ? Number(d.leadTimeDays) : null;
+
+  await db.part.update({
+    where: { id: partId },
+    data: {
+      number: d.number,
+      name: d.name,
+      description: d.description || null,
+      manufacturer: d.manufacturer || null,
+      manufacturerPartNo: d.manufacturerPartNo || null,
+      unit: d.unit,
+      unitCost: d.unitCost,
+      minStock: d.minStock,
+      maxStock: gyldigMaks,
+      binLocation: d.binLocation || null,
+      supplierId: d.supplierId || null,
+      leadTimeDays:
+        ledetid != null && !Number.isNaN(ledetid) ? ledetid : null,
+    },
+  });
+
+  revalidatePath(`/reservedeler/${partId}`);
+  revalidatePath("/reservedeler");
+  revalidatePath("/dashbord");
   return { ok: true };
 }

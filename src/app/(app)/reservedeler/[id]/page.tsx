@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { requireModul, requireTenant } from "@/lib/auth";
+import { kanSession, requireModul, requireTenant } from "@/lib/auth";
 import { LAGER_BEVEGELSE } from "@/lib/domene";
 import { datoTid, kroner, ordreNummer, tall, toNumber } from "@/lib/format";
 import {
@@ -18,6 +18,7 @@ import {
   Tr,
 } from "@/components/ui";
 import { InnkjopSkjema, OpptellingSkjema } from "./skjemaer";
+import { RedigerDel } from "./rediger";
 import { justerBeholdning, registrerInnkjop } from "../actions";
 
 export async function generateMetadata(
@@ -31,7 +32,7 @@ export async function generateMetadata(
 
 export default async function DelSide(props: PageProps<"/reservedeler/[id]">) {
   const { id } = await props.params;
-  const { db } = await requireModul("reservedeler");
+  const { db, session } = await requireModul("reservedeler");
 
   const del = await db.part.findFirst({
     where: { id },
@@ -52,6 +53,14 @@ export default async function DelSide(props: PageProps<"/reservedeler/[id]">) {
   });
 
   if (!del) notFound();
+
+  const kanEndre = kanSession(session, "reservedeler", "administrere");
+  const leverandorer = kanEndre
+    ? await db.supplier.findMany({
+        select: { id: true, name: true },
+        orderBy: { name: "asc" },
+      })
+    : [];
 
   const forbruk = del.movements
     .filter((m) => m.type === "UT")
@@ -216,6 +225,28 @@ export default async function DelSide(props: PageProps<"/reservedeler/[id]">) {
                 </p>
               )}
             </CardBody>
+            {kanEndre && (
+              <CardBody className="border-t border-kant">
+                <RedigerDel
+                  partId={del.id}
+                  leverandorer={leverandorer}
+                  verdier={{
+                    number: del.number,
+                    name: del.name,
+                    description: del.description,
+                    manufacturer: del.manufacturer,
+                    manufacturerPartNo: del.manufacturerPartNo,
+                    unit: del.unit,
+                    unitCost: toNumber(del.unitCost),
+                    minStock: del.minStock,
+                    maxStock: del.maxStock,
+                    binLocation: del.binLocation,
+                    supplierId: del.supplierId,
+                    leadTimeDays: del.leadTimeDays,
+                  }}
+                />
+              </CardBody>
+            )}
           </Card>
 
           <Card>

@@ -49,6 +49,7 @@ export function RedigerBrukerSkjema({
     role: Role;
     phone: string | null;
     hourlyRate: string | null;
+    dailyHours: number;
   };
 }) {
   const [state, action] = useActionState(lagre, { ok: true });
@@ -86,6 +87,22 @@ export function RedigerBrukerSkjema({
           />
         </Field>
       </div>
+
+      <Field
+        label="Timer per dag"
+        required
+        hint="Ukeplanen bruker den til å vise hvor mye som er igjen. Deltid og skift settes her."
+      >
+        <Input
+          name="dailyHours"
+          type="number"
+          min="0"
+          max="24"
+          step="0.5"
+          defaultValue={bruker.dailyHours}
+          required
+        />
+      </Field>
 
       <Tilbakemelding state={state} />
       <Lagre tekst="Lagre endringer" ikon={<Save className="size-4" aria-hidden />} />

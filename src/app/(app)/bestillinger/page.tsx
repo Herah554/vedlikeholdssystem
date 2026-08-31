@@ -181,9 +181,21 @@ export default async function BestillingerSide(props: PageProps<"/bestillinger">
                       )}
                     </Td>
                     <Td>
-                      <Badge className={BESTILLING_STATUS[b.status].klasse}>
-                        {BESTILLING_STATUS[b.status].tekst}
-                      </Badge>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <Badge className={BESTILLING_STATUS[b.status].klasse}>
+                          {BESTILLING_STATUS[b.status].tekst}
+                        </Badge>
+                        {/* Bestillingen har vokst siden noen så på den. Uten
+                            dette merket kunne den blitt sendt uten at noen
+                            oppdaget at det kom en linje til. */}
+                        {b.pendingChanges > 0 && (
+                          <Badge className="bg-amber-100 text-amber-900 ring-amber-300 dark:bg-amber-500/20 dark:text-amber-200 dark:ring-amber-500/40">
+                            {b.pendingChanges === 1
+                              ? "1 endring"
+                              : `${b.pendingChanges} endringer`}
+                          </Badge>
+                        )}
+                      </div>
                     </Td>
                     <Td className="hidden text-right text-sm text-tekst-svak tabular-nums sm:table-cell">
                       {b.lines.length}

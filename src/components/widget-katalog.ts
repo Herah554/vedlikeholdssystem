@@ -4,6 +4,7 @@ import {
   CalendarClock,
   ClipboardList,
   Clock,
+  Link2,
   PackageSearch,
   Repeat2,
   Wallet,
@@ -23,6 +24,7 @@ export type WidgetType =
   | "forfalt-pm"
   | "lav-beholdning"
   | "delebehov"
+  | "hurtiglenker"
   | "nedetid-30"
   | "kostnad-hittil"
   | "pm-etterlevelse"
@@ -83,6 +85,7 @@ export const WIDGET_KATALOG: {
   { type: "nedetid-30", navn: "Nedetid siste 30 dager", beskrivelse: "Sum stopptid meldt på arbeidsordre", bredde: 3, hoyde: 2 },
   { type: "kostnad-hittil", navn: "Kostnad hittil i år", beskrivelse: "Timer og deler samlet", bredde: 3, hoyde: 2 },
   { type: "pm-etterlevelse", navn: "PM-etterlevelse", beskrivelse: "Andel forebyggende arbeid utført i tide", bredde: 3, hoyde: 2 },
+  { type: "hurtiglenker", navn: "Hurtiglenker", beskrivelse: "Dine egne snarveier til sider du bruker ofte", bredde: 3, hoyde: 3 },
   { type: "ordrer-per-status", navn: "Arbeidsordre per status", beskrivelse: "Søylediagram over statusfordelingen", bredde: 6, hoyde: 4 },
   { type: "kostnad-per-maaned", navn: "Kostnad per måned", beskrivelse: "Arbeid og deler siste tolv måneder", bredde: 6, hoyde: 4 },
   { type: "nedetid-per-utstyr", navn: "Nedetid per utstyr", beskrivelse: "Utstyret som stopper produksjonen mest", bredde: 6, hoyde: 4 },
@@ -110,6 +113,7 @@ export const WIDGET_IKON: Record<WidgetType, typeof ClipboardList> = {
   "forfalt-pm": Repeat2,
   "lav-beholdning": Boxes,
   delebehov: PackageSearch,
+  hurtiglenker: Link2,
   "nedetid-30": Clock,
   "kostnad-hittil": Wallet,
   "pm-etterlevelse": Repeat2,

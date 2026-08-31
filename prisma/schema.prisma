@@ -74,6 +74,7 @@ model Organization {
   assetDocs      AssetDoc[]
   deviations     Deviation[]
   partRequests   PartRequest[]
+  quickLinks     QuickLink[]
 
   @@map("organizations")
 }
@@ -134,6 +135,10 @@ model User {
   name              String
   passwordHash      String
   role              Role      @default(TEKNIKER)
+  /// Timer personen normalt er tilgjengelig per arbeidsdag. Ukeplanen bruker
+  /// den til å vise hvor mye som er igjen før dagen er full. Deltid og skift
+  /// finnes, så den er per person og ikke en fast verdi i koden.
+  dailyHours        Float     @default(7.5)
   /// Timepris for kostnadsberegning. Null = bruk organisasjonens sats.
   hourlyRate        Decimal?  @db.Decimal(10, 2)
   phone             String?
@@ -162,6 +167,7 @@ model User {
   dashboardShares    DashboardShare[]
   passwordResets     PasswordReset[]
   assetDocs          AssetDoc[]
+  quickLinks         QuickLink[]
   requestedParts     PartRequest[]    @relation("BehovMeldt")
   handledParts       PartRequest[]    @relation("BehovBehandlet")
   startedForms       FormResponse[]   @relation("SkjemaStartet")
@@ -574,6 +580,14 @@ model PurchaseOrder {
   sentAt      DateTime?
   receivedAt  DateTime?
 
+  /// Linjer som er kommet til fra et delebehov etter at bestillingen var
+  /// laget, og som ingen har kvittert ut ennå.
+  ///
+  /// Uten dette kunne en bestilling vokse i ryggen på den som holdt på med
+  /// den: teknikeren melder et behov, systemet legger det på utkastet, og
+  /// innkjøperen sender av gårde noe annet enn det hen leste.
+  pendingChanges Int @default(0)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -591,16 +605,19 @@ model PurchaseOrder {
 }
 
 model PurchaseOrderLine {
-  id               String  @id @default(cuid())
+  id               String   @id @default(cuid())
   purchaseOrderId  String
   partId           String
   quantity         Float
   /// Pris kopieres inn ved bestilling, så senere prisendringer ikke
   /// omskriver hva denne bestillingen kostet
-  unitCost         Decimal @db.Decimal(12, 2)
+  unitCost         Decimal  @db.Decimal(12, 2)
   /// Hvor mye som faktisk er mottatt. Delleveranser er normalt.
-  receivedQuantity Float   @default(0)
+  receivedQuantity Float    @default(0)
   note             String?
+  /// Sann til noen har kvittert for at de har sett at linja kom til
+  addedLater       Boolean  @default(false)
+  createdAt        DateTime @default(now())
 
   purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
   part          Part          @relation(fields: [partId], references: [id], onDelete: Restrict)
@@ -1177,4 +1194,32 @@ model PartRequest {
   @@index([partId])
   @@index([purchaseOrderId])
   @@map("part_requests")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Hurtiglenker
+// ─────────────────────────────────────────────────────────────
+
+/// Snarveier den enkelte legger inn selv på dashbordet.
+///
+/// Hver person har sine egne rutiner, og et vedlikeholdssystem lever ved
+/// siden av leverandørkataloger, driftsinstrukser og maskinsider som ikke
+/// hører hjemme i menyen vår.
+model QuickLink {
+  id             String   @id @default(cuid())
+  organizationId String
+  userId         String
+  label          String
+  /// Enten en intern sti («/arbeidsordre») eller http/https. Andre
+  /// protokoller avvises, siden «javascript:» i en lenke andre kan klikke på
+  /// er en åpen dør.
+  url            String
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, userId, sortOrder])
+  @@map("quick_links")
 }

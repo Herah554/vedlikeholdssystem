@@ -25,6 +25,7 @@ import {
   LinjeHandlinger,
   MottakSkjema,
   SendPanel,
+  EndringsVarsel,
 } from "./handlinger";
 
 export async function generateMetadata(
@@ -120,6 +121,13 @@ export default async function BestillingSide(props: PageProps<"/bestillinger/[id
         </div>
       </div>
 
+      {bestilling.pendingChanges > 0 && (
+        <EndringsVarsel
+          bestillingId={bestilling.id}
+          antall={bestilling.pendingChanges}
+        />
+      )}
+
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
           <Card>
@@ -146,7 +154,14 @@ export default async function BestillingSide(props: PageProps<"/bestillinger/[id
                 </thead>
                 <tbody>
                   {bestilling.lines.map((l) => (
-                    <Tr key={l.id}>
+                    <Tr
+                      key={l.id}
+                      className={
+                        l.addedLater
+                          ? "bg-amber-50/70 dark:bg-amber-500/10"
+                          : undefined
+                      }
+                    >
                       <Td>
                         <Link
                           href={`/reservedeler/${l.part.id}`}
@@ -154,6 +169,11 @@ export default async function BestillingSide(props: PageProps<"/bestillinger/[id
                         >
                           {l.part.name}
                         </Link>
+                        {l.addedLater && (
+                          <span className="ml-1.5 rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-900 dark:bg-amber-500/20 dark:text-amber-200">
+                            ny
+                          </span>
+                        )}
                         <p className="font-mono text-xs text-tekst-svak">
                           {l.part.number}
                           {l.part.manufacturerPartNo &&

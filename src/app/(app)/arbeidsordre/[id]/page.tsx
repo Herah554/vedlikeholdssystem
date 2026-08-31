@@ -28,6 +28,7 @@ import {
   TimeSkjema,
 } from "./handlinger";
 import { Delebehov } from "./delebehov";
+import { RedigerOrdre } from "./rediger";
 import {
   meldDelebehov,
   sokDeler,
@@ -91,7 +92,16 @@ export default async function OrdreSide(props: PageProps<"/arbeidsordre/[id]">) 
 
   if (!ordre) notFound();
 
-  const [liknende, aarsaker, vedlegg, dokumenttyper, skjemaer, skjemamaler] =
+  const [
+    liknende,
+    aarsaker,
+    vedlegg,
+    dokumenttyper,
+    ordretyper,
+    utstyrsliste,
+    skjemaer,
+    skjemamaler,
+  ] =
     await Promise.all([
     liknendeSaker(session.organizationId, {
       id: ordre.id,
@@ -110,6 +120,14 @@ export default async function OrdreSide(props: PageProps<"/arbeidsordre/[id]">) 
       orderBy: { createdAt: "asc" },
     }),
     hentListe(db, "dokumenttype", true),
+    hentListe(db, "ordretype", true),
+    db.asset.findMany({
+      // Utrangert utstyr skal ikke kunne velges på nytt, men det som allerede
+      // står på ordren beholdes — feltet nedenfor viser den verdien uansett.
+      where: { status: { not: "UTRANGERT" } },
+      select: { id: true, code: true, name: true },
+      orderBy: [{ path: "asc" }],
+    }),
       db.formResponse.findMany({
         where: { workOrderId: id },
         include: {
@@ -387,6 +405,29 @@ export default async function OrdreSide(props: PageProps<"/arbeidsordre/[id]">) 
                 )}
               </dl>
             </CardBody>
+            {/* En lukket ordre er historikk noen har gått god for. Serveren
+                avviser endringer på den; her skjules knappen også. */}
+            {ordre.status !== "LUKKET" &&
+              kanSession(session, "arbeidsordre", "endre") && (
+                <CardBody className="border-t border-kant">
+                  <RedigerOrdre
+                    ordreId={ordre.id}
+                    utstyr={utstyrsliste}
+                    typer={ordretyper}
+                    verdier={{
+                      title: ordre.title,
+                      description: ordre.description,
+                      type: ordre.type,
+                      priority: ordre.priority,
+                      assetId: ordre.assetId,
+                      dueDate: ordre.dueDate
+                        ? ordre.dueDate.toISOString().slice(0, 10)
+                        : "",
+                      estimatedHours: ordre.estimatedHours,
+                    }}
+                  />
+                </CardBody>
+              )}
           </Card>
 
           <Card>

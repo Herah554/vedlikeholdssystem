@@ -21,6 +21,7 @@ import {
   endreLinje,
   fjernLinje,
   kansellerBestilling,
+  kvitterEndringer,
   markerSomSendt,
   mottaVarer,
   sendBestilling,
@@ -445,6 +446,68 @@ export function KansellerKnapp({ bestillingId }: { bestillingId: string }) {
         </Button>
       </div>
       <Feil melding={feil} />
+    </div>
+  );
+}
+
+/**
+ * Varsel om at bestillingen har endret seg siden noen så på den.
+ *
+ * Et delebehov kan legge en linje på en bestilling som allerede lå der som
+ * utkast. Det er med vilje — innkjøperen skal slippe fem halvferdige
+ * bestillinger til samme leverandør — men da kan bestillingen vokse mellom to
+ * ganger man leser den. Uten dette varselet kunne man sendt av gårde noe annet
+ * enn det man leste, og oppdaget det først når regningen kom.
+ *
+ * Merket blir stående til noen sier at de har sett det, eller til
+ * bestillingen sendes — da har man uansett gått god for innholdet.
+ */
+export function EndringsVarsel({
+  bestillingId,
+  antall,
+}: {
+  bestillingId: string;
+  antall: number;
+}) {
+  const [venter, start] = useTransition();
+  const [feil, settFeil] = useState<string>();
+  const router = useRouter();
+
+  return (
+    <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 dark:border-amber-500/40 dark:bg-amber-500/10">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <p className="flex items-start gap-2 text-sm text-amber-900 dark:text-amber-200">
+          <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
+          <span>
+            <strong className="font-medium">
+              {antall === 1
+                ? "Én endring er kommet til"
+                : `${antall} endringer er kommet til`}
+            </strong>{" "}
+            etter at bestillingen ble laget. Teknikere har meldt delebehov som
+            er lagt inn her. Se gjennom linjene under før du sender.
+          </span>
+        </p>
+        <Button
+          variant="sekundær"
+          disabled={venter}
+          onClick={() =>
+            start(async () => {
+              const svar = await kvitterEndringer(bestillingId);
+              if (svar.ok) router.refresh();
+              else settFeil(svar.feil);
+            })
+          }
+        >
+          <Check className="size-4" aria-hidden />
+          {venter ? "Lagrer …" : "Jeg har sett det"}
+        </Button>
+      </div>
+      {feil && (
+        <p role="alert" className="mt-2 text-sm text-red-700 dark:text-red-300">
+          {feil}
+        </p>
+      )}
     </div>
   );
 }

@@ -17,7 +17,7 @@ import type { WorkOrderStatus } from "@/generated/prisma/client";
  * eller hvilket firma hen tilhører — det leses kun fra sesjonskapselen.
  */
 
-export type Resultat = { ok: boolean; feil?: string };
+export type Resultat = { ok: boolean; feil?: string; melding?: string };
 
 const nyOrdreSkjema = z.object({
   title: z.string().trim().min(3, "Tittelen må ha minst tre tegn."),
@@ -394,4 +394,88 @@ export async function kryssAvSjekkpunkt(
 
   revalidatePath(`/arbeidsordre/${ordreId}`);
   return { ok: true };
+}
+
+const endreOrdreSkjema = z.object({
+  title: z.string().trim().min(3, "Tittelen må ha minst tre tegn."),
+  description: z.string().trim().optional(),
+  type: z.string().trim().min(1),
+  priority: z.enum(["KRITISK", "HOY", "NORMAL", "LAV"]),
+  assetId: z.string().trim().optional(),
+  dueDate: z.string().trim().optional(),
+  estimatedHours: z.string().trim().optional(),
+});
+
+/**
+ * Retter opplysningene på en arbeidsordre.
+ *
+ * Det som meldes inn i farten er sjelden helt riktig: feil maskin, en tittel
+ * som ikke sier noe, en frist ingen satte. Uten en vei til å rette det, blir
+ * historikken full av ordrer ingen kan søke seg fram til senere.
+ *
+ * Status står ikke her. Den har sin egen flyt med egne regler, og å kunne
+ * hoppe rett til «Lukket» gjennom et redigeringsskjema ville gått utenom
+ * dem alle.
+ *
+ * En lukket ordre kan ikke endres. Da er den historikk — noen har gått god
+ * for at jobben ble gjort slik det står — og systemet lover andre steder at
+ * historikk ikke endrer mening i ettertid.
+ */
+export async function endreOrdre(
+  ordreId: string,
+  _forrige: Resultat,
+  formData: FormData,
+): Promise<Resultat> {
+  const { db, session } = await requireTenant();
+  krev(session, "arbeidsordre", "endre");
+
+  const parsed = endreOrdreSkjema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { ok: false, feil: parsed.error.issues[0].message };
+  const d = parsed.data;
+
+  const ordre = await db.workOrder.findFirst({
+    where: { id: ordreId },
+    select: { id: true, status: true },
+  });
+  if (!ordre) return { ok: false, feil: "Fant ikke arbeidsordren." };
+
+  if (ordre.status === "LUKKET") {
+    return {
+      ok: false,
+      feil:
+        "Ordren er lukket og står som historikk. Skal noe rettes, må den " +
+        "åpnes igjen først.",
+    };
+  }
+
+  // Utstyret må høre til samme bedrift. Uten denne kontrollen kunne en
+  // tilfeldig id fra utsiden knytte ordren til en annen kundes maskin.
+  if (d.assetId) {
+    const utstyr = await db.asset.findFirst({
+      where: { id: d.assetId },
+      select: { id: true },
+    });
+    if (!utstyr) return { ok: false, feil: "Fant ikke utstyret." };
+  }
+
+  const timer = d.estimatedHours ? Number(d.estimatedHours) : null;
+
+  await db.workOrder.update({
+    where: { id: ordreId },
+    data: {
+      title: d.title,
+      description: d.description || null,
+      type: d.type,
+      priority: d.priority,
+      assetId: d.assetId || null,
+      dueDate: tilDato(d.dueDate),
+      estimatedHours:
+        timer != null && !Number.isNaN(timer) && timer > 0 ? timer : null,
+    },
+  });
+
+  revalidatePath(`/arbeidsordre/${ordreId}`);
+  revalidatePath("/arbeidsordre");
+  revalidatePath("/ukeplan");
+  return { ok: true, melding: "Lagret." };
 }

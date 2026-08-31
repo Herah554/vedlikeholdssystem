@@ -3,15 +3,24 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { assertRole, hashPassword, requireTenant } from "@/lib/auth";
-import type { Role } from "@/generated/prisma/client";
+import { Role } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+
+/**
+ * Rollene, hentet fra schemaet framfor skrevet av.
+ *
+ * Den håndskrevne lista manglet DELELAGER. Nedtrekkslista i skjemaet viste
+ * rollen fordi den leser fra ROLLE i domene.ts, men serveren avviste den —
+ * så rollen fantes, var synlig, og kunne likevel ikke tildeles.
+ */
+const ROLLER = Object.keys(Role) as [Role, ...Role[]];
 
 export type Resultat = { ok: boolean; feil?: string; melding?: string };
 
 const brukerSkjema = z.object({
   name: z.string().trim().min(2, "Navnet må ha minst to tegn."),
   email: z.email("Skriv inn en gyldig e-postadresse."),
-  role: z.enum(["ADMIN", "LEDER", "PLANLEGGER", "TEKNIKER", "GJEST"]),
+  role: z.enum(ROLLER),
   password: z.string().min(8, "Passordet må ha minst åtte tegn."),
   hourlyRate: z.string().trim().optional(),
   phone: z.string().trim().optional(),
@@ -56,6 +65,11 @@ export async function endreRolle(
 ): Promise<Resultat> {
   const { db, session } = await requireTenant();
   assertRole(session.role, "ADMIN");
+
+  // Typen sier Role, men en server-handling tar imot det klienten sender og
+  // typer finnes ikke ved kjøring. Uten denne linja ville en ukjent verdi
+  // gått helt ned til databasen og kommet tilbake som en ubehandlet feil.
+  if (!ROLLER.includes(rolle)) return { ok: false, feil: "Ukjent rolle." };
 
   // Uten denne sperren kan siste administrator degradere seg selv og
   // låse hele organisasjonen ute fra brukeradministrasjonen.
@@ -152,9 +166,13 @@ export async function opprettBudsjett(
 const redigerBrukerSkjema = z.object({
   name: z.string().trim().min(2, "Navnet må ha minst to tegn."),
   email: z.email("Skriv inn en gyldig e-postadresse."),
-  role: z.enum(["ADMIN", "LEDER", "PLANLEGGER", "TEKNIKER", "GJEST"]),
+  role: z.enum(ROLLER),
   phone: z.string().trim().optional(),
   hourlyRate: z.string().trim().optional(),
+  dailyHours: z.coerce
+    .number()
+    .min(0, "Timer per dag kan ikke være negativt.")
+    .max(24, "Et døgn har tjuefire timer."),
 });
 
 export async function oppdaterBruker(
@@ -200,6 +218,7 @@ export async function oppdaterBruker(
       role: d.role,
       phone: d.phone || null,
       hourlyRate: sats != null && !Number.isNaN(sats) ? sats : null,
+      dailyHours: d.dailyHours,
     },
   });
 

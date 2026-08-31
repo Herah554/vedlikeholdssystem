@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Hurtiglenker } from "@/app/(app)/dashbord/hurtiglenker";
 import type { Session } from "@/lib/auth";
 import type { WidgetType } from "@/components/widget-katalog";
 import type { TenantDb } from "@/lib/tenant";
@@ -255,6 +256,27 @@ async function SisteOrdrer({ db }: Ctx) {
   );
 }
 
+/**
+ * Brukerens egne snarveier.
+ *
+ * Lenkene hentes her og vises av en klientkomponent, siden det å legge til og
+ * fjerne skjer uten at man forlater dashbordet.
+ */
+async function Snarveier({ db, session }: Ctx) {
+  const lenker = await db.quickLink.findMany({
+    where: { userId: session.userId },
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    select: { id: true, label: true, url: true },
+  });
+
+  return (
+    <Card className="flex h-full flex-col">
+      <CardHeader title="Hurtiglenker" description="Dine egne snarveier" />
+      <Hurtiglenker lenker={lenker} />
+    </Card>
+  );
+}
+
 // ─── Fordeler ─────────────────────────────────────────────────
 
 /** Velger riktig widget ut fra typen som er lagret i oppsettet. */
@@ -282,6 +304,8 @@ export function Widget({ type, db, session }: Ctx & { type: WidgetType }) {
       return <SisteOrdrer db={db} session={session} />;
     case "utloper-snart":
       return <UtloperSnart db={db} session={session} />;
+    case "hurtiglenker":
+      return <Snarveier db={db} session={session} />;
     default:
       return null;
   }

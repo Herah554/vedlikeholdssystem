@@ -5,6 +5,7 @@ import { requireModul } from "@/lib/auth";
 import { APNE_STATUSER } from "@/lib/domene";
 import { ukeNummer } from "@/lib/format";
 import { PageHeader } from "@/components/ui";
+import { beleggForDag, type Person } from "@/lib/kapasitet";
 import { Tavle, type Dag, type Jobb } from "./tavle";
 
 export const metadata: Metadata = { title: "Ukeplan" };
@@ -30,7 +31,7 @@ export default async function UkeplanSide(props: PageProps<"/ukeplan">) {
 
   const iDagIso = new Date().toISOString().slice(0, 10);
 
-  const [iUka, uplanlagte] = await Promise.all([
+  const [iUka, uplanlagte, mannskap] = await Promise.all([
     db.workOrder.findMany({
       where: {
         status: { in: APNE_STATUSER },
@@ -51,7 +52,20 @@ export default async function UkeplanSide(props: PageProps<"/ukeplan">) {
       orderBy: [{ priority: "asc" }, { createdAt: "desc" }],
       take: 40,
     }),
+    // Bare de som faktisk gjør jobber. En leder eller en gjest i lista ville
+    // sett ut som ledig kapasitet som ikke finnes.
+    db.user.findMany({
+      where: { isActive: true, role: { in: ["TEKNIKER", "DELELAGER"] } },
+      select: { id: true, name: true, dailyHours: true },
+      orderBy: { name: "asc" },
+    }),
   ]);
+
+  const personer: Person[] = mannskap.map((b) => ({
+    id: b.id,
+    navn: b.name,
+    timerPerDag: b.dailyHours,
+  }));
 
   type Rad = (typeof iUka)[number];
   const tilJobb = (o: Rad): Jobb => ({
@@ -63,6 +77,7 @@ export default async function UkeplanSide(props: PageProps<"/ukeplan">) {
     estimatedHours: o.estimatedHours,
     assetCode: o.asset?.code ?? null,
     assignedTo: o.assignedTo?.name ?? null,
+    assignedToId: o.assignedToId,
   });
 
   const ukedagsnavn = new Intl.DateTimeFormat("nb-NO", {
@@ -77,19 +92,22 @@ export default async function UkeplanSide(props: PageProps<"/ukeplan">) {
     // Lokal ISO-dato, ikke UTC — ellers havner jobber på feil dag om natta
     const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
+    const jobber = iUka
+      .filter((o) => {
+        const p = o.plannedDate!;
+        return (
+          `${p.getFullYear()}-${String(p.getMonth() + 1).padStart(2, "0")}-${String(p.getDate()).padStart(2, "0")}` ===
+          iso
+        );
+      })
+      .map(tilJobb);
+
     return {
       iso,
       navn: ukedagsnavn.format(d),
       erIDag: iso === iDagIso,
-      jobber: iUka
-        .filter((o) => {
-          const p = o.plannedDate!;
-          return (
-            `${p.getFullYear()}-${String(p.getMonth() + 1).padStart(2, "0")}-${String(p.getDate()).padStart(2, "0")}` ===
-            iso
-          );
-        })
-        .map(tilJobb),
+      jobber,
+      belegg: beleggForDag(jobber, personer),
     };
   });
 

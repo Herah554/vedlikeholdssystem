@@ -365,6 +365,8 @@ export async function sendBestilling(bestillingId: string): Promise<SendResultat
         sentAt: new Date(),
         sentToEmail: til,
         sentMethod: "smtp",
+        // Sender man den, har man gått god for innholdet slik det står
+        pendingChanges: 0,
       },
     });
 
@@ -404,6 +406,7 @@ export async function markerSomSendt(bestillingId: string): Promise<Resultat> {
       sentAt: new Date(),
       sentToEmail: b.supplier.email,
       sentMethod: "manuell",
+      pendingChanges: 0,
     },
   });
 
@@ -531,4 +534,39 @@ export async function mottaVarer(
   revalidatePath("/reservedeler");
   revalidatePath("/dashbord");
   return { ok: true, melding: "Varene er ført inn på lager." };
+}
+
+/**
+ * Kvitterer for at man har sett hva som kom til.
+ *
+ * Et delebehov kan legge en linje på en bestilling som allerede lå der som
+ * utkast. Det er med vilje — innkjøperen skal slippe fem halvferdige
+ * bestillinger til samme leverandør — men det betyr at bestillingen kan endre
+ * seg mellom to ganger man ser på den. Merket blir stående til noen sier at
+ * de har sett det, slik at ingen sender av gårde noe annet enn de leste.
+ */
+export async function kvitterEndringer(bestillingId: string): Promise<Resultat> {
+  const { db, session } = await requireTenant();
+  krev(session, "bestillinger", "endre");
+
+  const b = await db.purchaseOrder.findFirst({
+    where: { id: bestillingId },
+    select: { id: true },
+  });
+  if (!b) return { ok: false, feil: "Fant ikke bestillingen." };
+
+  await db.$transaction([
+    db.purchaseOrder.update({
+      where: { id: bestillingId },
+      data: { pendingChanges: 0 },
+    }),
+    db.purchaseOrderLine.updateMany({
+      where: { purchaseOrderId: bestillingId, addedLater: true },
+      data: { addedLater: false },
+    }),
+  ]);
+
+  revalidatePath("/bestillinger");
+  revalidatePath(`/bestillinger/${bestillingId}`);
+  return { ok: true };
 }

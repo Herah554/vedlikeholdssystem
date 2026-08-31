@@ -13,6 +13,7 @@ import { ordreType, PRIORITET } from "@/lib/domene";
 import { ordreNummer, timer } from "@/lib/format";
 import { Badge } from "@/components/ui";
 import { planleggOrdre } from "@/app/(app)/arbeidsordre/actions";
+import type { Dagsbelegg } from "@/lib/kapasitet";
 
 export type Jobb = {
   id: string;
@@ -24,9 +25,16 @@ export type Jobb = {
   estimatedHours: number | null;
   assetCode: string | null;
   assignedTo: string | null;
+  assignedToId: string | null;
 };
 
-export type Dag = { iso: string; navn: string; erIDag: boolean; jobber: Jobb[] };
+export type Dag = {
+  iso: string;
+  navn: string;
+  erIDag: boolean;
+  jobber: Jobb[];
+  belegg: Dagsbelegg;
+};
 
 /**
  * Dratilstanden kortene og kolonnene deler.
@@ -105,6 +113,7 @@ export function Tavle({
             jobber={d.jobber}
             fremhev={d.erIDag}
             tom="Ingen jobber"
+            belegg={d.belegg}
             styring={styring}
           />
         ))}
@@ -203,6 +212,7 @@ function Kolonne({
   jobber,
   fremhev,
   tom,
+  belegg,
   styring,
 }: {
   nokkel: string;
@@ -211,6 +221,7 @@ function Kolonne({
   jobber: Jobb[];
   fremhev?: boolean;
   tom: string;
+  belegg?: Dagsbelegg;
   styring: Tavlestyring;
 }) {
   const { over, settOver, drar, settDrar, flytt } = styring;
@@ -250,6 +261,8 @@ function Kolonne({
         </p>
       </div>
 
+      {belegg && <Belegg belegg={belegg} />}
+
       {jobber.length === 0 ? (
         <p className="px-1 py-6 text-center text-xs text-tekst-svakest">{tom}</p>
       ) : (
@@ -258,6 +271,55 @@ function Kolonne({
             <Kort key={j.id} jobb={j} styring={styring} />
           ))}
         </ul>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Hvem som har tid igjen denne dagen.
+ *
+ * En sum for hele dagen sier ingenting om det planleggeren lurer på: hvem kan
+ * ta denne jobben på onsdag? Tolv timer er helt greit fordelt på tre, og
+ * umulig på én. Mest ledig står øverst, siden det er der man leter.
+ *
+ * Jobber ingen har fått vises for seg. De belaster ingen, men de skal ikke
+ * kunne bli usynlige — det er nettopp dem som må fordeles.
+ */
+function Belegg({ belegg }: { belegg: Dagsbelegg }) {
+  const noeSkjer =
+    belegg.ufordelt > 0 || belegg.personer.some((p) => p.planlagt > 0);
+  if (!noeSkjer) return null;
+
+  return (
+    <div className="mb-2 space-y-0.5 rounded-lg bg-flate/60 px-2 py-1.5">
+      {belegg.personer.map((p) => (
+        <div key={p.brukerId} className="flex items-baseline justify-between gap-2">
+          <span className="truncate text-[11px] text-tekst-svak">{p.navn}</span>
+          <span
+            className={`shrink-0 text-[11px] tabular-nums ${
+              p.igjen < 0
+                ? "font-medium text-red-700 dark:text-red-300"
+                : p.igjen === 0
+                  ? "text-tekst-svakest"
+                  : "text-emerald-700 dark:text-emerald-400"
+            }`}
+            title={`${timer(p.planlagt)} av ${timer(p.timerPerDag)} planlagt`}
+          >
+            {p.igjen < 0
+              ? `${timer(Math.abs(p.igjen))} over`
+              : `${timer(p.igjen)} igjen`}
+          </span>
+        </div>
+      ))}
+
+      {belegg.ufordelt > 0 && (
+        <div className="flex items-baseline justify-between gap-2 border-t border-kant pt-0.5">
+          <span className="text-[11px] text-tekst-svak">Ufordelt</span>
+          <span className="shrink-0 text-[11px] tabular-nums text-amber-700 dark:text-amber-400">
+            {timer(belegg.ufordelt)}
+          </span>
+        </div>
       )}
     </div>
   );

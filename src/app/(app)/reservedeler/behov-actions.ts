@@ -338,6 +338,11 @@ export async function bestillBehov(
         orderBy: { createdAt: "desc" },
       });
 
+      // Om bestillingen fantes fra før, er dette en endring i noe en annen
+      // allerede har sett på. Da må det merkes — ellers sender innkjøperen
+      // av gårde noe annet enn det hen leste.
+      const varFraFor = Boolean(bestilling);
+
       if (!bestilling) {
         const number = await nextCounterValue(
           session.organizationId,
@@ -363,16 +368,20 @@ export async function bestillBehov(
               partId: linje.partId,
             },
           },
-          select: { id: true, quantity: true },
+          select: { id: true, quantity: true, addedLater: true },
         });
 
         if (finnes) {
           // Delen står der fra før. Øk antallet i stedet for å prøve å legge
           // inn en linje til — det ville brutt den unike nøkkelen og stoppet
-          // hele bestillingen.
+          // hele bestillingen. Et økt antall er like mye en endring som en ny
+          // linje: bestillingen koster mer enn den gjorde.
           await tx.purchaseOrderLine.update({
             where: { id: finnes.id },
-            data: { quantity: finnes.quantity + linje.quantity },
+            data: {
+              quantity: finnes.quantity + linje.quantity,
+              addedLater: varFraFor ? true : finnes.addedLater,
+            },
           });
         } else {
           await tx.purchaseOrderLine.create({
@@ -381,7 +390,15 @@ export async function bestillBehov(
               partId: linje.partId,
               quantity: linje.quantity,
               unitCost: linje.unitCost,
+              addedLater: varFraFor,
             },
+          });
+        }
+
+        if (varFraFor) {
+          await tx.purchaseOrder.update({
+            where: { id: bestilling.id },
+            data: { pendingChanges: { increment: 1 } },
           });
         }
 

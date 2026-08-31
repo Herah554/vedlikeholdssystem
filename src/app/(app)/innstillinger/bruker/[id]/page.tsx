@@ -78,6 +78,7 @@ export default async function BrukerSide(
                     bruker.hourlyRate != null
                       ? String(toNumber(bruker.hourlyRate))
                       : null,
+                  dailyHours: bruker.dailyHours,
                 }}
               />
             </CardBody>
