@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { requireModul } from "@/lib/auth";
+import { Users } from "lucide-react";
+import { kanSession, requireModul } from "@/lib/auth";
 import {
   arbeidsfordeling,
   delerMestBrukt,
@@ -15,6 +16,7 @@ import {
 import { ordreType } from "@/lib/domene";
 import { kroner, tall } from "@/lib/format";
 import {
+  ButtonLink,
   Card,
   CardBody,
   CardHeader,
@@ -79,6 +81,16 @@ export default async function RapporterSide() {
       <PageHeader
         title="Rapporter"
         description="Tallene bak driften — siste tolv måneder"
+        action={
+          // Personopplysninger. Vises bare for dem som leder arbeidet, samme
+          // sperre som står på selve siden.
+          kanSession(session, "arbeidsordre", "administrere") ? (
+            <ButtonLink href="/rapporter/medarbeidere" variant="sekundær">
+              <Users className="size-4" aria-hidden />
+              Medarbeidere
+            </ButtonLink>
+          ) : undefined
+        }
       />
 
       <div className="mb-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
