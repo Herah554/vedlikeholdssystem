@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Info } from "lucide-react";
+import { ArrowLeft, Download, Info } from "lucide-react";
 import { kanSession, requireModul } from "@/lib/auth";
-import { andel, malMedarbeidere, OMGANG_DAGER } from "@/lib/medarbeidere";
+import { andel, leggTilTrend, OMGANG_DAGER } from "@/lib/medarbeidere";
+import { hentMaling, maalingTillater } from "@/lib/medarbeiderdata";
 import { tall, timer as timerTekst } from "@/lib/format";
 import {
   Card,
@@ -50,47 +51,26 @@ export default async function MedarbeidereSide(
   // Tjenerkomponent: tegnes én gang per forespørsel, så «nå» står stille
   // gjennom hele sida. Regelen skiller ikke tjener fra klient.
   // eslint-disable-next-line react-hooks/purity
-  const fra = new Date(Date.now() - valgt.dager * 86400_000);
+  const naa = new Date();
+  const fra = new Date(naa.getTime() - valgt.dager * 86400_000);
 
-  const [ordrer, timeforing, folk, korrektive] = await Promise.all([
-    db.workOrder.findMany({
-      where: { completedAt: { gte: fra } },
-      select: {
-        id: true,
-        assignedToId: true,
-        assetId: true,
-        priority: true,
-        estimatedHours: true,
-        dueDate: true,
-        completedAt: true,
-        resolution: true,
-      },
-    }),
-    db.timeEntry.groupBy({
-      by: ["userId"],
-      _sum: { hours: true },
-      where: { workedOn: { gte: fra } },
-    }),
-    db.user.findMany({
-      where: { isActive: true, role: { in: ["TEKNIKER", "DELELAGER", "PLANLEGGER"] } },
-      select: { id: true, name: true },
-      orderBy: { name: "asc" },
-    }),
-    // Korrektive jobber fra perioden og framover, slik at en reparasjon helt
-    // i slutten av perioden også kan få en omgang mot seg.
-    db.workOrder.findMany({
-      where: { type: "KORREKTIV", createdAt: { gte: fra } },
-      select: { id: true, assetId: true, createdAt: true },
-    }),
+  const org = await db.organization.findUniqueOrThrow({
+    where: { id: session.organizationId },
+    select: { personMaling: true },
+  });
+
+  // Bedriften må ha tatt stilling til dette. Standarden er «Egne tall», så
+  // ledervisningen finnes ikke før noen har slått den på med vilje.
+  if (!maalingTillater(org.personMaling).andres) notFound();
+
+  const forrigeFra = new Date(fra.getTime() - valgt.dager * 86400_000);
+
+  const [denne, forrige] = await Promise.all([
+    hentMaling(db, fra, naa),
+    hentMaling(db, forrigeFra, fra),
   ]);
 
-  const timerPer = new Map(
-    timeforing.map((t) => [t.userId, t._sum.hours ?? 0]),
-  );
-
-  const personer = folk.map((b) => ({ id: b.id, navn: b.name }));
-
-  const maling = malMedarbeidere(ordrer, personer, timerPer, korrektive).filter(
+  const maling = leggTilTrend(denne, forrige).filter(
     // Den som verken har fullført noe eller ført timer i perioden sier
     // ingenting, og en rad med bare nuller ser ut som en dom.
     (m) => m.utfort > 0 || m.timer > 0,
@@ -110,7 +90,7 @@ export default async function MedarbeidereSide(
         title="Medarbeidere"
         description={`Fullført arbeid siste ${valgt.tekst.toLowerCase()}`}
         action={
-          <div className="flex items-center gap-1">
+          <div className="flex flex-wrap items-center gap-1">
             {PERIODER.map((p) => (
               <Link
                 key={p.dager}
@@ -124,6 +104,13 @@ export default async function MedarbeidereSide(
                 {p.tekst}
               </Link>
             ))}
+            <a
+              href={`/rapporter/medarbeidere/eksport?dager=${valgt.dager}`}
+              className="ml-1 inline-flex min-h-11 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-tekst ring-1 ring-kant-sterk ring-inset hover:bg-flate-hover"
+            >
+              <Download className="size-4" aria-hidden />
+              Last ned
+            </a>
           </div>
         }
       />
@@ -164,6 +151,7 @@ export default async function MedarbeidereSide(
                   <Th className="text-right">Utført</Th>
                   <Th className="text-right">Tunge</Th>
                   <Th className="text-right">Timer</Th>
+                  <Th className="text-right">Skrutid</Th>
                   <Th className="text-right">Mot anslag</Th>
                   <Th className="text-right">I tide</Th>
                   <Th className="text-right">Dokumentert</Th>
@@ -179,12 +167,29 @@ export default async function MedarbeidereSide(
                   return (
                     <Tr key={m.brukerId}>
                       <Td className="text-sm font-medium text-tekst">{m.navn}</Td>
-                      <Td className="text-right text-sm tabular-nums">{m.utfort}</Td>
+                      <Td className="text-right text-sm tabular-nums">
+                        {m.utfort}
+                        {/* Ni utført sier ingenting alene. Ni mot seks sier noe. */}
+                        {m.forrige && (
+                          <Endring naa={m.utfort} forrige={m.forrige.utfort} />
+                        )}
+                      </Td>
                       <Td className="text-right text-sm tabular-nums text-tekst-svak">
                         {m.tunge}
                       </Td>
                       <Td className="text-right text-sm tabular-nums">
                         {timerTekst(m.timer)}
+                      </Td>
+                      <Td className="text-right text-sm tabular-nums">
+                        {m.skrutid == null ? (
+                          <span className="text-tekst-svakest">–</span>
+                        ) : (
+                          <span
+                            title={`${timerTekst(m.timer)} av ${timerTekst(m.tilgjengelig)} tilgjengelig`}
+                          >
+                            {Math.round(m.skrutid * 100)} %
+                          </span>
+                        )}
                       </Td>
                       <Td className="text-right text-sm tabular-nums">
                         {m.motAnslag == null ? (
@@ -214,6 +219,14 @@ export default async function MedarbeidereSide(
 
         <CardBody className="border-t border-kant">
           <dl className="space-y-2 text-xs text-tekst-svak">
+            <Forklaring navn="Skrutid">
+              Timer ført, delt på tiden personen normalt var på jobb. Det eneste
+              målet her som først og fremst sier noe om driften framfor om
+              personen: er den lav, går tiden med til venting på deler, leting
+              og møter — eller så føres ikke timene. Tallet forutsetter at all
+              arbeidstid havner på en arbeidsordre. Helligdager og ferie er
+              ikke trukket fra, så lange perioder ser lavere ut enn de er.
+            </Forklaring>
             <Forklaring navn="Tunge">
               Av de fullførte: hvor mange var kritiske eller høy prioritet. Uten
               denne ser den som tar de tre verste havariene i måneden bare ut
@@ -241,6 +254,26 @@ export default async function MedarbeidereSide(
         </CardBody>
       </Card>
     </>
+  );
+}
+
+/** Endringen fra forrige periode, med retning. */
+function Endring({ naa, forrige }: { naa: number; forrige: number }) {
+  const diff = naa - forrige;
+  if (diff === 0) return null;
+
+  return (
+    <span
+      className={
+        diff > 0
+          ? "ml-1 text-xs text-emerald-700 dark:text-emerald-400"
+          : "ml-1 text-xs text-tekst-svakest"
+      }
+      title={`Forrige periode: ${forrige}`}
+    >
+      {diff > 0 ? "↑" : "↓"}
+      {Math.abs(diff)}
+    </span>
   );
 }
 

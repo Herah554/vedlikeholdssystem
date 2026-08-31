@@ -12,7 +12,7 @@ import {
   type Modul,
   type Nivaa,
 } from "@/lib/rettigheter";
-import type { Role } from "@/generated/prisma/client";
+import { PersonMaling, type Role } from "@/generated/prisma/client";
 import { LISTER, TONE_IDER } from "@/lib/lister";
 
 export type Resultat = { ok: boolean; feil?: string; melding?: string };
@@ -312,4 +312,36 @@ export async function settListeverdiAktiv(formData: FormData): Promise<void> {
 
   await db.listValue.updateMany({ where: { id }, data: { isActive: aktiv } });
   revalidatePath("/oppsett");
+}
+
+/**
+ * Setter hvor langt måling av enkeltpersoner får gå.
+ *
+ * Bare administrator. Dette er en avgjørelse om arbeidsforholdene i
+ * bedriften, ikke en innstilling en planlegger justerer i forbifarten — og
+ * «Hele laget» utløser drøftingsplikt med tillitsvalgte etter
+ * arbeidsmiljøloven kapittel 9.
+ */
+export async function settPersonMaling(
+  verdi: PersonMaling,
+): Promise<{ ok: boolean; feil?: string }> {
+  const { db, session } = await requireTenant();
+  assertRole(session.role, "ADMIN");
+
+  // Typen sier PersonMaling, men en server-handling tar imot det klienten
+  // sender, og typer finnes ikke ved kjøring.
+  if (!Object.keys(PersonMaling).includes(verdi)) {
+    return { ok: false, feil: "Ukjent verdi." };
+  }
+
+  await db.organization.update({
+    where: { id: session.organizationId },
+    data: { personMaling: verdi },
+  });
+
+  revalidatePath("/oppsett");
+  revalidatePath("/rapporter");
+  revalidatePath("/rapporter/medarbeidere");
+  revalidatePath("/rapporter/meg");
+  return { ok: true };
 }

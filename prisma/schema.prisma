@@ -19,24 +19,28 @@ datasource db {
 // ─────────────────────────────────────────────────────────────
 
 model Organization {
-  id          String  @id @default(cuid())
+  id           String       @id @default(cuid())
   /// Brukes i URL og som kundeidentifikator
-  slug        String  @unique
-  name        String
-  orgNumber   String?
+  slug         String       @unique
+  name         String
+  orgNumber    String?
   /// Deaktivert bedrift beholder alle data, men ingen kommer inn.
-  isActive    Boolean @default(true)
+  isActive     Boolean      @default(true)
   /// Hva hver rolle får se, endre og administrere. Null = standardoppsettet
   /// i src/lib/rettigheter.ts. Se der for formatet.
-  permissions Json?
+  permissions  Json?
   /// Hva kunden betaler for
-  plan        Plan    @default(BASIS)
+  plan         Plan         @default(BASIS)
   /// Enkeltfunksjoner slått av eller på for denne kunden, uavhengig av planen.
   /// Formatet står i src/lib/planer.ts.
-  features    Json?
+  features     Json?
   /// Standard timepris brukt når bruker mangler egen sats
-  hourlyRate  Decimal @default(950) @db.Decimal(10, 2)
-  currency    String  @default("NOK")
+  hourlyRate   Decimal      @default(950) @db.Decimal(10, 2)
+  /// Standarden er EGNE og ikke ALLE med vilje. Et system som slår på
+  /// måling av kolleger uten at noen har tatt stilling til det, tar en
+  /// avgjørelse som hører hjemme hos arbeidsgiveren — ikke hos oss.
+  personMaling PersonMaling @default(EGNE)
+  currency     String       @default("NOK")
 
   /// Kontaktopplysninger. Brukes som avsender og leveringsadresse i
   /// bestillinger som sendes til leverandør.
@@ -117,6 +121,19 @@ enum Plan {
   BASIS
   PLUSS
   PRO
+}
+
+/// Hvor langt måling av enkeltpersoner får gå i en bedrift.
+///
+/// Tre tilstander, ikke av og på. Skillet går mellom å se sine egne tall og
+/// at andre ser dem, og det er nettopp der den juridiske og den menneskelige
+/// forskjellen ligger: egne tall om eget arbeid er tilbakemelding, mens en
+/// oversikt over kolleger er et kontrolltiltak etter arbeidsmiljøloven
+/// kapittel 9 — med plikt til drøfting med tillitsvalgte først.
+enum PersonMaling {
+  AV // ingen ser tall om enkeltpersoner
+  EGNE // hver enkelt ser sine egne, ingen ser andres
+  ALLE // de som leder arbeidet ser hele laget
 }
 
 enum Role {

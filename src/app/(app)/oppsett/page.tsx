@@ -9,6 +9,7 @@ import { Card, CardBody, CardHeader, PageHeader } from "@/components/ui";
 import { Aarsaker } from "./aarsaker";
 import { Verdiliste } from "./lister";
 import { Skjemamaler } from "./maler";
+import { Maaling } from "./maaling";
 import { RettighetsMatrise } from "./matrise";
 
 export const metadata: Metadata = { title: "Oppsett" };
@@ -23,7 +24,7 @@ export default async function OppsettSide() {
   const [org, aarsaker, maler, ...lister] = await Promise.all([
     db.organization.findUniqueOrThrow({
       where: { id: session.organizationId },
-      select: { permissions: true },
+      select: { permissions: true, personMaling: true },
     }),
     db.failureCause.findMany({
       orderBy: [{ isActive: "desc" }, { sortOrder: "asc" }, { code: "asc" }],
@@ -64,6 +65,8 @@ export default async function OppsettSide() {
             <RettighetsMatrise matrise={lesMatrise(org.permissions)} />
           </CardBody>
         </Card>
+
+        <Maaling naavaerende={org.personMaling} />
 
         <Card>
           <CardHeader

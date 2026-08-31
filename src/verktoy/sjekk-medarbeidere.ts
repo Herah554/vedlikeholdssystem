@@ -1,5 +1,12 @@
 import "dotenv/config";
-import { andel, malMedarbeidere, OMGANG_DAGER } from "@/lib/medarbeidere";
+import {
+  andel,
+  arbeidsdager,
+  leggTilTrend,
+  malMedarbeidere,
+  OMGANG_DAGER,
+} from "@/lib/medarbeidere";
+import { maalingTillater } from "@/lib/medarbeiderdata";
 import type { Korrektiv, OrdreForMaling } from "@/lib/medarbeidere";
 import { kanSession, type Session } from "@/lib/auth";
 import { VALGBARE_ROLLER } from "@/lib/rettigheter";
@@ -195,6 +202,62 @@ function main() {
     [{ id: "k9", assetId: "A", createdAt: dager(2) }],
   );
   sjekk("En jobb er ikke sin egen omgang", segSelv[0].omganger, 0);
+
+  // ── Arbeidsdager ──────────────────────────────────────────
+  // Én uke, mandag til søndag, gir fem. Er denne feil, blir skrutiden
+  // feil for alle.
+  sjekk("Hele uka gir fem", arbeidsdager(new Date("2026-06-01"), new Date("2026-06-07")), 5);
+  sjekk("Bare helga gir null", arbeidsdager(new Date("2026-06-06"), new Date("2026-06-07")), 0);
+  sjekk("Én ukedag gir én", arbeidsdager(new Date("2026-06-03"), new Date("2026-06-03")), 1);
+  sjekk("To uker gir ti", arbeidsdager(new Date("2026-06-01"), new Date("2026-06-14")), 10);
+
+  // ── Skrutid ───────────────────────────────────────────────
+  const skrutid = malMedarbeidere(
+    [ordre({ id: "a" })],
+    [{ id: "u1", navn: "Jonas", timerPerDag: 7.5 }],
+    new Map([["u1", 30]]),
+    [],
+    20,
+  );
+  sjekk("Tilgjengelig tid er dager ganger timer", skrutid[0].tilgjengelig, 150);
+  sjekk("Tretti av hundreogfemti er en femtedel", skrutid[0].skrutid, 0.2);
+
+  // Uten arbeidsdager kan skrutid ikke regnes, og skal ikke påstås
+  const utenDager = malMedarbeidere(
+    [ordre({ id: "a" })],
+    [{ id: "u1", navn: "Jonas", timerPerDag: 7.5 }],
+    new Map([["u1", 30]]),
+    [],
+  );
+  sjekk("Uten periode gir ingen skrutid", utenDager[0].skrutid, null);
+
+  // ── Trend ─────────────────────────────────────────────────
+  const naaTall = malMedarbeidere(
+    [ordre({ id: "a" }), ordre({ id: "b" }), ordre({ id: "c", assignedToId: "u2" })],
+    folk,
+    new Map([["u1", 10]]),
+    [],
+  );
+  const forTall = malMedarbeidere(
+    [ordre({ id: "x" })],
+    folk,
+    new Map([["u1", 4]]),
+    [],
+  );
+  const trend = leggTilTrend(naaTall, forTall);
+  const jonas = trend.find((m) => m.brukerId === "u1")!;
+  const mona = trend.find((m) => m.brukerId === "u2")!;
+
+  sjekk("Forrige periode følger med", jonas.forrige, { utfort: 1, timer: 4 });
+  sjekk("To mot én er framgang", jonas.utfort - jonas.forrige!.utfort, 1);
+  // Den som ikke fantes forrige periode skal ikke få en pil
+  sjekk("Uten forrige periode ingen påstand", mona.forrige, null);
+
+  // ── Innstillingen i bedriften ─────────────────────────────
+  // Skillet går mellom å se sine egne tall og at andre ser dem.
+  sjekk("Av: ingen ser noe", maalingTillater("AV"), { egne: false, andres: false });
+  sjekk("Egne: bare sine egne", maalingTillater("EGNE"), { egne: true, andres: false });
+  sjekk("Alle: også andres", maalingTillater("ALLE"), { egne: true, andres: true });
 
   // ── Hvem som slipper inn ──────────────────────────────────
   // Dette er tall om navngitte kolleger. Nivået «administrere» på

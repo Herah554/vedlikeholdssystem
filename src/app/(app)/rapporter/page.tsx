@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Users } from "lucide-react";
+import { User, Users } from "lucide-react";
 import { kanSession, requireModul } from "@/lib/auth";
+import { maalingTillater } from "@/lib/medarbeiderdata";
 import {
   arbeidsfordeling,
   delerMestBrukt,
@@ -39,6 +40,12 @@ export const metadata: Metadata = { title: "Rapporter" };
 
 export default async function RapporterSide() {
   const { db, session } = await requireModul("rapporter");
+
+  const org = await db.organization.findUniqueOrThrow({
+    where: { id: session.organizationId },
+    select: { personMaling: true },
+  });
+  const maaling = maalingTillater(org.personMaling);
 
   const [kostnad, nedetid, etterlevelse, fordeling, deler] = await Promise.all([
     kostnadPerUtstyr(session.organizationId),
@@ -82,14 +89,23 @@ export default async function RapporterSide() {
         title="Rapporter"
         description="Tallene bak driften — siste tolv måneder"
         action={
-          // Personopplysninger. Vises bare for dem som leder arbeidet, samme
-          // sperre som står på selve siden.
-          kanSession(session, "arbeidsordre", "administrere") ? (
-            <ButtonLink href="/rapporter/medarbeidere" variant="sekundær">
-              <Users className="size-4" aria-hidden />
-              Medarbeidere
-            </ButtonLink>
-          ) : undefined
+          <div className="flex flex-wrap gap-2">
+            {maaling.egne && (
+              <ButtonLink href="/rapporter/meg" variant="sekundær">
+                <User className="size-4" aria-hidden />
+                Mitt arbeid
+              </ButtonLink>
+            )}
+            {/* Personopplysninger. Krever både at bedriften har slått det
+                på og at man leder arbeidet — samme sperre som på siden. */}
+            {maaling.andres &&
+              kanSession(session, "arbeidsordre", "administrere") && (
+                <ButtonLink href="/rapporter/medarbeidere" variant="sekundær">
+                  <Users className="size-4" aria-hidden />
+                  Medarbeidere
+                </ButtonLink>
+              )}
+          </div>
         }
       />
 

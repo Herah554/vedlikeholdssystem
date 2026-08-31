@@ -73,6 +73,18 @@ export type Maling = {
   omganger: number;
   /** Fullførte jobber knyttet til utstyr — nevneren for omganger */
   medUtstyr: number;
+
+  /** Timer personen normalt var tilgjengelig i perioden */
+  tilgjengelig: number;
+  /**
+   * Andel av tilgjengelig tid som er ført på jobber.
+   *
+   * Det klassiske vedlikeholdsmålet, og det eneste her som først og fremst
+   * sier noe om driften framfor om personen. Ligger den på tjue prosent, er
+   * ikke problemet teknikeren — det er at tiden går med til å vente på
+   * deler, lete etter tegninger og sitte i møter.
+   */
+  skrutid: number | null;
 };
 
 const TUNGE = ["KRITISK", "HOY"];
@@ -86,10 +98,12 @@ const TUNGE = ["KRITISK", "HOY"];
  */
 export function malMedarbeidere(
   ordrer: OrdreForMaling[],
-  personer: { id: string; navn: string }[],
+  personer: { id: string; navn: string; timerPerDag?: number }[],
   timerPerBruker: Map<string, number>,
   /** Korrektive jobber, til å se om en reparasjon holdt */
   korrektive: Korrektiv[],
+  /** Arbeidsdager i perioden. Null slår av skrutidsberegningen. */
+  arbeidsdager = 0,
 ): Maling[] {
   // Korrektive jobber per utstyr, sortert på tid, slik at oppslaget under
   // slipper å gå gjennom alle for hver eneste fullførte jobb.
@@ -144,6 +158,7 @@ export function malMedarbeidere(
       }
 
       const timer = timerPerBruker.get(p.id) ?? 0;
+      const tilgjengelig = arbeidsdager * (p.timerPerDag ?? 0);
 
       // Faktiske timer mot anslag regnes bare på jobbene som faktisk har
       // anslag. Blander man inn jobbene uten, blir forholdstallet meningsløst.
@@ -163,6 +178,8 @@ export function malMedarbeidere(
         dokumentert,
         omganger,
         medUtstyr,
+        tilgjengelig,
+        skrutid: tilgjengelig > 0 ? timer / tilgjengelig : null,
       };
     })
     .sort((a, b) => b.utfort - a.utfort || a.navn.localeCompare(b.navn, "nb"));
@@ -172,4 +189,57 @@ export function malMedarbeidere(
 export function andel(teller: number, nevner: number): number | null {
   if (nevner <= 0) return null;
   return Math.round((teller / nevner) * 100);
+}
+
+/**
+ * Arbeidsdager mellom to datoer, begge dager talt med.
+ *
+ * Lørdag og søndag holdes utenfor. Helligdager gjør det ikke: de flytter seg
+ * fra år til år, og en tabell over dem ville vært en ny ting å holde
+ * oppdatert. Det betyr at skrutiden i påske- og julemåneder ser lavere ut enn
+ * den er, og det er en feil man skal kjenne til framfor å bli overrasket av.
+ */
+export function arbeidsdager(fra: Date, til: Date): number {
+  let n = 0;
+  const d = new Date(fra);
+  d.setHours(12, 0, 0, 0);
+  const slutt = new Date(til);
+  slutt.setHours(12, 0, 0, 0);
+
+  while (d <= slutt) {
+    const ukedag = d.getDay();
+    if (ukedag !== 0 && ukedag !== 6) n += 1;
+    d.setDate(d.getDate() + 1);
+  }
+  return n;
+}
+
+/** Et mål sammenliknet med forrige periode. */
+export type MedTrend = Maling & {
+  forrige: { utfort: number; timer: number } | null;
+};
+
+/**
+ * Kobler denne perioden mot forrige.
+ *
+ * «Ni utført» sier ingenting alene. «Ni, mot seks forrige periode» sier noe.
+ * Uten sammenlikningen kan ikke en leder skille den som er på vei opp fra
+ * den som er på vei ned — begge ser like ut i tabellen.
+ *
+ * Den som ikke fantes i forrige periode får ingen pil. Å vise «opp fra null»
+ * for en nyansatt er å påstå en framgang som ikke har skjedd.
+ */
+export function leggTilTrend(naa: Maling[], forrige: Maling[]): MedTrend[] {
+  const tidligere = new Map(forrige.map((m) => [m.brukerId, m]));
+
+  return naa.map((m) => {
+    const f = tidligere.get(m.brukerId);
+    return {
+      ...m,
+      forrige:
+        f && (f.utfort > 0 || f.timer > 0)
+          ? { utfort: f.utfort, timer: f.timer }
+          : null,
+    };
+  });
 }
