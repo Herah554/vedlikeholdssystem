@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireSuperadmin, startSession } from "@/lib/auth";
-import { opprettBedrift } from "@/lib/bedrift";
+import { opprettBedrift, tomAlleTabeller } from "@/lib/bedrift";
 import { opprettDemobedrift } from "@/lib/demo";
 import {
   FUNKSJON_IDER,
@@ -254,4 +254,96 @@ export async function settFunksjon(formData: FormData): Promise<void> {
 
   revalidatePath("/plattform");
   revalidatePath(`/plattform/${id}`);
+}
+
+// ─── Sletting ─────────────────────────────────────────────────
+
+/**
+ * Sletter en kunde og alt de har lagt inn.
+ *
+ * Dette er den eneste handlingen i systemet som ikke kan angres, og den er
+ * derfor bygget for å være vanskelig å gjøre ved et uhell:
+ *
+ *   1. Bedriften må være deaktivert først. Det steget er reversibelt, og det
+ *      tvinger fram et opphold mellom «jeg vil bli kvitt denne» og at den
+ *      faktisk er borte.
+ *   2. Firmanavnet må skrives inn nøyaktig. En avkryssingsboks krysses av
+ *      uten å leses; et navn må man se på skjermen for å skrive.
+ *   3. Sitt eget firma kan ikke slettes, uansett hva man skriver.
+ *
+ * Slettingen føres i plattformeierens egen logg. Kundens egen logg forsvinner
+ * sammen med kunden, så uten dette hadde det ikke stått noe sted at det
+ * skjedde.
+ */
+export async function slettBedrift(
+  _forrige: Resultat,
+  formData: FormData,
+): Promise<Resultat> {
+  const session = await requireSuperadmin();
+
+  const id = String(formData.get("id") ?? "");
+  const skrevet = String(formData.get("bekreftNavn") ?? "").trim();
+
+  const meg = await prisma.user.findUniqueOrThrow({
+    where: { id: session.userId },
+    select: { organizationId: true },
+  });
+
+  if (id === meg.organizationId) {
+    return { ok: false, feil: "Du kan ikke slette ditt eget firma." };
+  }
+
+  const org = await prisma.organization.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      name: true,
+      isActive: true,
+      _count: { select: { users: true, workOrders: true, assets: true } },
+    },
+  });
+
+  if (!org) return { ok: false, feil: "Fant ikke bedriften." };
+
+  if (org.isActive) {
+    return {
+      ok: false,
+      feil:
+        "Deaktiver bedriften først. Da er tilgangen stengt uten at noe er " +
+        "borte, og du kan ombestemme deg.",
+    };
+  }
+
+  if (skrevet !== org.name) {
+    return {
+      ok: false,
+      feil: `Skriv firmanavnet nøyaktig slik det står: «${org.name}».`,
+    };
+  }
+
+  await tomAlleTabeller(org.id);
+  await prisma.organization.delete({ where: { id: org.id } });
+
+  // Føres i vår egen logg, siden kundens forsvant med kunden
+  await prisma.auditLog.create({
+    data: {
+      organizationId: meg.organizationId,
+      userId: session.userId,
+      action: "SLETTET_BEDRIFT",
+      entityType: "Organization",
+      entityId: org.id,
+      changes: {
+        navn: org.name,
+        brukere: org._count.users,
+        arbeidsordre: org._count.workOrders,
+        anlegg: org._count.assets,
+      },
+    },
+  });
+
+  revalidatePath("/plattform");
+  return {
+    ok: true,
+    melding: `${org.name} er slettet med alt innhold.`,
+  };
 }

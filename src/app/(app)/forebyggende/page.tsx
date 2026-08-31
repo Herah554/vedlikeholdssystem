@@ -107,7 +107,11 @@ export default async function ForebyggendeSide() {
             return (
               <Card
                 key={p.id}
-                className={erForfalt ? "border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/15/40" : undefined}
+                className={
+                  erForfalt
+                    ? "border-red-200 bg-red-50 dark:border-red-500/30 dark:bg-red-500/15"
+                    : undefined
+                }
               >
                 <CardBody className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0 flex-1">

@@ -20,12 +20,13 @@ import {
   Select,
   StatCard,
 } from "@/components/ui";
-import { settFunksjon, settPlan } from "../actions";
+import { settAktiv, settFunksjon, settPlan } from "../actions";
+import { SlettKort } from "./slettkort";
 
 export const metadata: Metadata = { title: "Kunde" };
 
 export default async function KundeSide(props: PageProps<"/plattform/[id]">) {
-  await requireSuperadmin();
+  const session = await requireSuperadmin();
   const { id } = await props.params;
 
   // Direkte mot prisma: dette er plattformsiden, som med hensikt ser på
@@ -48,6 +49,11 @@ export default async function KundeSide(props: PageProps<"/plattform/[id]">) {
   });
 
   if (!org) notFound();
+
+  const meg = await prisma.user.findUniqueOrThrow({
+    where: { id: session.userId },
+    select: { organizationId: true },
+  });
 
   const unntak = lesUnntak(org.features);
 
@@ -209,6 +215,21 @@ export default async function KundeSide(props: PageProps<"/plattform/[id]">) {
           </p>
         </CardBody>
       </Card>
+
+      {org.id !== meg.organizationId && (
+        <SlettKort
+          id={org.id}
+          navn={org.name}
+          aktiv={org.isActive}
+          innhold={{
+            brukere: org._count.users,
+            anlegg: org._count.assets,
+            arbeidsordre: org._count.workOrders,
+            avvik: org._count.deviations,
+          }}
+          deaktiver={settAktiv}
+        />
+      )}
     </main>
   );
 }
