@@ -1,4 +1,4 @@
-import { del, put } from "@vercel/blob";
+import { del, get, put } from "@vercel/blob";
 
 /**
  * Lagring av bilder og dokumenter.
@@ -34,7 +34,7 @@ export function harLagring(): boolean {
   return Boolean(process.env.BLOB_READ_WRITE_TOKEN);
 }
 
-export type Lagret = { nokkel: string; url: string };
+export type Lagret = { nokkel: string };
 
 /** Renser filnavnet så det er trygt å bruke i en adresse. */
 function trygtNavn(navn: string): string {
@@ -106,20 +106,53 @@ export async function lagreFil(opts: {
 
   const nokkel = `${opts.organizationId}/${trygtNavn(opts.filnavn)}`;
 
+  // Privat, ikke offentlig. Et kalibreringsbevis skal ikke ligge på en åpen
+  // adresse som virker for alltid for hvem som helst — en lenke som havner i
+  // en e-post eller et skjermbilde blir aldri ugyldig igjen.
+  //
+  // Filene hentes i stedet gjennom /vedlegg/[id]/fil, som krever innlogging
+  // og slår opp raden gjennom organisasjonsfilteret.
   const svar = await put(nokkel, opts.data as ArrayBuffer, {
-    access: "public",
+    access: "private",
     contentType: opts.mimeType,
     addRandomSuffix: true,
   });
 
-  return { nokkel: svar.pathname, url: svar.url };
+  return { nokkel: svar.pathname };
 }
 
-/** Fjerner fila. Feiler den, er det ikke verdt å stoppe brukeren for det. */
-export async function slettFil(url: string): Promise<void> {
+/**
+ * Henter en fil ut igjen.
+ *
+ * Kalleren har allerede kontrollert at den innloggede har lov til å se
+ * filen. Denne funksjonen gjør ingen slik kontroll selv, og skal derfor
+ * aldri kalles direkte fra en rute uten at oppslaget har gått gjennom
+ * organisasjonsfilteret først.
+ */
+export async function hentFil(
+  nokkel: string,
+): Promise<{ stream: ReadableStream; mimeType: string | null } | null> {
+  if (!harLagring()) return null;
+
+  const svar = await get(nokkel, { access: "private" });
+  if (!svar) return null;
+
+  return {
+    stream: svar.stream as ReadableStream,
+    mimeType: svar.blob?.contentType ?? null,
+  };
+}
+
+/**
+ * Fjerner fila. Feiler den, er det ikke verdt å stoppe brukeren for det.
+ *
+ * Tar nøkkelen og ikke en adresse: private filer har ingen offentlig adresse
+ * å slette etter.
+ */
+export async function slettFil(nokkel: string): Promise<void> {
   if (!harLagring()) return;
   try {
-    await del(url);
+    await del(nokkel);
   } catch {
     // Filen kan allerede være borte. Raden i databasen er det som betyr noe.
   }

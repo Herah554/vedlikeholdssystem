@@ -105,14 +105,19 @@ Kunden godtar at databehandleren bruker disse:
 
 | Underleverandør | Rolle | Hvor dataene ligger |
 |---|---|---|
-| Vercel Inc. | Drift av selve applikasjonen | `[fyll ut region]` |
-| Neon Inc. | Database | `[fyll ut region — se Vercel → Storage]` |
+| Neon Inc. | Database | Frankfurt, Tyskland (`eu-central-1`) |
+| Vercel Inc. | Drift av applikasjonen og fillagring | Frankfurt, Tyskland (`fra1`) |
 | `[e-posttjeneste]` | Utsending av e-post, som passordlenker | `[region]` |
 | Anthropic PBC | Kun hvis kunden tar i bruk AI-assistenten | USA |
 
-> **Må avklares før avtalen sendes:** ligger databasen utenfor EØS, må
-> overføringen ha et gyldig grunnlag — som EUs standard personvernbestemmelser
-> eller en gyldig adekvansbeslutning. Ligger den i EØS, fjernes dette avsnittet.
+**Kundens data lagres i Tyskland**, altså innenfor EØS. Både databasen og
+filene ligger i Frankfurt.
+
+Tar kunden i bruk AI-assistenten, sendes teksten i spørsmålet og de
+arbeidsordrene assistenten slår opp i, til Anthropic i USA for å bli besvart.
+Overføringen skjer på grunnlag av EUs standard personvernbestemmelser.
+Assistenten er slått av med mindre kunden ber om den, og kunden kan når som
+helst be om at den slås av igjen.
 
 Databehandleren varsler kunden **minst 30 dager før** en ny underleverandør
 tas i bruk eller byttes ut. Kunden kan protestere skriftlig, og kan si opp

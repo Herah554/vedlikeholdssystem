@@ -108,7 +108,9 @@ export async function lastOppVedlegg(
       data: innhold,
     });
 
-    await db.attachment.create({
+    // Adressen settes etter at raden finnes, siden den peker på radens
+    // egen id. Filen har ingen offentlig adresse å peke på.
+    const rad = await db.attachment.create({
       data: {
         organizationId: session.organizationId,
         workOrderId: feste.type === "arbeidsordre" ? feste.id : null,
@@ -117,11 +119,16 @@ export async function lastOppVedlegg(
         uploadedById: session.userId,
         fileName: fil.name,
         storagePath: lagret.nokkel,
-        url: lagret.url,
+        url: "",
         mimeType: fil.type,
         sizeBytes: fil.size,
         extractedText: tekst,
       },
+    });
+
+    await db.attachment.update({
+      where: { id: rad.id },
+      data: { url: `/vedlegg/${rad.id}/fil` },
     });
 
     antall += 1;
@@ -142,6 +149,7 @@ export async function slettVedlegg(id: string): Promise<{ ok: boolean; feil?: st
       workOrderId: true,
       deviationId: true,
       assetId: true,
+      storagePath: true,
     },
   });
 
@@ -159,7 +167,7 @@ export async function slettVedlegg(id: string): Promise<{ ok: boolean; feil?: st
   // Raden fjernes først. Blir fila liggende igjen hos lagringstjenesten er
   // det til å leve med; en rad som peker på ingenting er verre.
   await db.attachment.deleteMany({ where: { id } });
-  await slettFil(vedlegg.url);
+  await slettFil(vedlegg.storagePath);
 
   revalidatePath(sti(feste));
   return { ok: true };
