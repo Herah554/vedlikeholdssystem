@@ -153,7 +153,7 @@ export function Velger({ start }: { start: WidgetOppsett[] }) {
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-tekst">{meta?.navn}</p>
                     <p className="text-xs text-tekst-svak">
-                      {v.w === 2 ? "Bred" : "Smal"}
+                      {v.w} bred · {v.h} høy
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-0.5">

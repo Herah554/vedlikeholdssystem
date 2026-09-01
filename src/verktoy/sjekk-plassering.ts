@@ -1,4 +1,10 @@
-import { fyllUtPlassering, klemInn, pakk, type Plassert } from "@/lib/plassering";
+import {
+  finnMal,
+  fyllUtPlassering,
+  klemInn,
+  pakk,
+  type Plassert,
+} from "@/lib/plassering";
 import {
   MAKS_BREDDE,
   MAKS_HOYDE,
@@ -21,6 +27,7 @@ let feil = 0;
 function sjekk(hva: string, faktisk: unknown, forventet: unknown) {
   const ok = JSON.stringify(faktisk) === JSON.stringify(forventet);
   if (!ok) feil += 1;
+
   console.log(`${ok ? "✓" : "✗"} ${hva}`);
   if (!ok) {
     console.log(
@@ -194,6 +201,23 @@ function main() {
   const medHull = pakk([lag("a", 0, 0, 3, 2), lag("b", 6, 9, 3, 2)]);
   sjekk("Også med tomrom", pakk(medHull), medHull);
 
+  // ── Hvilken mal er i bruk ─────────────────────────────────
+  // Uten dette sier alle malknappene «Bruk denne», også den man nettopp
+  // tok i bruk — og man mister oversikten over hva man står i.
+  for (const mal of MALER) {
+    sjekk(`Malen «${mal.navn}» kjennes igjen`, finnMal(mal.oppsett, MALER), mal.id);
+  }
+
+  // Flytter man én widget, er det ikke lenger malen
+  const endret = MALER[0].oppsett.map((w, i) =>
+    i === 0 ? { ...w, y: w.y + 3 } : w,
+  );
+  sjekk("Én flyttet widget bryter gjenkjennelsen", finnMal(endret, MALER), undefined);
+  sjekk("Tomt oppsett treffer ingen mal", finnMal([], MALER), undefined);
+
+  // Id-ene skal ikke avgjøre — det er plasseringen man ser
+  const andreIder = MALER[1].oppsett.map((w, i) => ({ ...w, id: `x${i}` }));
+  sjekk("Andre id-er gjenkjennes fortsatt", finnMal(andreIder, MALER), MALER[1].id);
   console.log(feil === 0 ? "\nAlt stemmer." : `\n${feil} sjekk(er) feilet.`);
   process.exit(feil === 0 ? 0 : 1);
 }

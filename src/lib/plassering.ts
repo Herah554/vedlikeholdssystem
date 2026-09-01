@@ -172,3 +172,25 @@ export function ruteFraPunkt(
     y: Math.max(0, Math.floor((klientY - rutenett.top) / (radHoyde + mellomrom))),
   };
 }
+
+/**
+ * Hvilken mal oppsettet svarer til, hvis noen.
+ *
+ * Sammenlikningen går på hva man faktisk ser — type, plass og størrelse —
+ * og ikke på id-ene. En mal er «i bruk» bare når alt står nøyaktig der malen
+ * satte det; flytter man én widget, er det ikke lenger malen, og da skal
+ * knappen heller ikke påstå det.
+ */
+export function finnMal(
+  oppsett: readonly WidgetOppsett[],
+  maler: readonly { id: string; oppsett: readonly WidgetOppsett[] }[],
+): string | undefined {
+  const fingeravtrykk = (w: readonly WidgetOppsett[]) =>
+    w
+      .map((x) => `${x.type}:${x.x}:${x.y}:${x.w}:${x.h}`)
+      .sort()
+      .join("|");
+
+  const mitt = fingeravtrykk(oppsett);
+  return maler.find((m) => fingeravtrykk(m.oppsett) === mitt)?.id;
+}

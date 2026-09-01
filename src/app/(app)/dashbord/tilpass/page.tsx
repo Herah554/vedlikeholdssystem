@@ -3,7 +3,8 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { requireTenant } from "@/lib/auth";
 import { PageHeader } from "@/components/ui";
-import { STANDARD_OPPSETT } from "@/components/widget-katalog";
+import { MALER, STANDARD_OPPSETT } from "@/components/widget-katalog";
+import { finnMal } from "@/lib/plassering";
 import { hentOppsett } from "../oppsett";
 import { deltMedMeg, delingsStatus } from "./deling";
 import { DelKort, MottattKort } from "./delingskort";
@@ -36,7 +37,7 @@ export default async function TilpassSide() {
       />
 
       <div className="mb-5">
-        <Maler />
+        <Maler aktiv={finnMal(oppsett, MALER)} />
       </div>
 
       <Velger start={oppsett} />

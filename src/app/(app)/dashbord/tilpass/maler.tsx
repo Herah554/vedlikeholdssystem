@@ -4,28 +4,37 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { LayoutTemplate } from "lucide-react";
 import { Button, Card, CardBody, CardHeader } from "@/components/ui";
-import { MALER, type Mal } from "@/components/widget-katalog";
+import { MAKS_BREDDE, MALER, type Mal } from "@/components/widget-katalog";
 import { lagreOppsett } from "./actions";
 
 /**
  * Et lite bilde av hvordan malen ser ut.
  *
- * Fire kolonner og noen rader, tegnet med de samme forholdstallene som det
- * ekte rutenettet. Det er lettere å kjenne igjen en form enn å lese en liste
- * over widget-navn.
+ * Tolv kolonner, tegnet med de samme forholdstallene som det ekte rutenettet.
+ * Det er lettere å kjenne igjen en form enn å lese en liste over widget-navn.
+ *
+ * Kolonnetallet må følge MAKS_BREDDE. Da rutenettet gikk fra fire til tolv
+ * kolonner ble denne stående på fire, og alle malene så like ut: en widget
+ * som spenner seks kolonner fylte hele bredden uansett hvilken mal det var.
  */
 function Forhandsvisning({ mal }: { mal: Mal }) {
   return (
     <div
-      className="grid grid-cols-4 gap-1 rounded-md bg-flate-dempet p-1.5"
-      style={{ gridAutoRows: "0.6rem" }}
+      className="grid gap-0.5 rounded-md bg-flate-dempet p-1.5"
+      style={{
+        gridTemplateColumns: `repeat(${MAKS_BREDDE}, minmax(0, 1fr))`,
+        gridAutoRows: "0.35rem",
+      }}
       aria-hidden
     >
       {mal.oppsett.map((w) => (
         <div
           key={w.id}
           className="rounded-sm bg-merke-500/35"
-          style={{ gridColumn: `span ${w.w}`, gridRow: `span ${w.h}` }}
+          style={{
+            gridColumn: `${w.x + 1} / span ${w.w}`,
+            gridRow: `${w.y + 1} / span ${w.h}`,
+          }}
         />
       ))}
     </div>
