@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   Boxes,
   CalendarDays,
@@ -175,7 +176,21 @@ export function Sidemeny({
   );
 }
 
-/** Uttrekkbar meny på nettbrett og mobil. */
+/**
+ * Uttrekkbar meny på nettbrett og mobil.
+ *
+ * Panelet legges i document.body med en portal, ikke der knappen står. Det
+ * ser omstendelig ut, men er nødvendig: knappen ligger inne i sidetoppen, og
+ * sidetoppen har backdrop-blur. Et element med backdrop-filter blir
+ * «containing block» for alt med position: fixed inni seg — så «fixed inset-0»
+ * ble målt mot sidetoppen og ikke mot vinduet.
+ *
+ * Følgen var at hele menyen ble klemt inn i en stripe på 68 piksler: firmanavn
+ * og lukkekryss så vidt synlig, ingen lenker, og innholdet bak ikke mørklagt.
+ * På mobil satt man dermed helt uten meny og måtte bla seg fram.
+ *
+ * Fjerner noen backdrop-blur fra sidetoppen senere, virker dette fortsatt.
+ */
 export function MobilMeny({
   organisasjon,
   synlige,
@@ -185,6 +200,24 @@ export function MobilMeny({
 }) {
   const [åpen, settÅpen] = useState(false);
 
+  // Escape lukker, og siden bak skal ikke kunne rulle mens menyen dekker den
+  useEffect(() => {
+    if (!åpen) return;
+
+    function tast(e: KeyboardEvent) {
+      if (e.key === "Escape") settÅpen(false);
+    }
+
+    const forrige = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", tast);
+
+    return () => {
+      document.body.style.overflow = forrige;
+      document.removeEventListener("keydown", tast);
+    };
+  }, [åpen]);
+
   return (
     <>
       <button
@@ -192,36 +225,41 @@ export function MobilMeny({
         onClick={() => settÅpen(true)}
         className="flex size-11 items-center justify-center rounded-lg text-tekst-svak hover:bg-flate-dempet lg:hidden"
         aria-label="Åpne meny"
+        aria-expanded={åpen}
       >
         <Menu className="size-5" aria-hidden />
       </button>
 
-      {åpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <button
-            type="button"
-            className="absolute inset-0 bg-slate-900/40"
-            onClick={() => settÅpen(false)}
-            aria-label="Lukk meny"
-          />
-          <div className="relative flex h-full w-64 flex-col bg-flate shadow-xl">
-            <div className="flex items-center justify-between border-b border-kant">
-              <div className="min-w-0 flex-1">
-                <Merke organisasjon={organisasjon} />
+      {/* Panelet tegnes bare etter et klikk, altså aldri på serveren — derfor
+          trengs ingen egen sjekk på at document finnes. */}
+      {åpen &&
+        createPortal(
+          <div className="fixed inset-0 z-50 lg:hidden">
+            <button
+              type="button"
+              className="absolute inset-0 bg-slate-900/40"
+              onClick={() => settÅpen(false)}
+              aria-label="Lukk meny"
+            />
+            <div className="relative flex h-full w-64 max-w-[85vw] flex-col bg-flate shadow-xl">
+              <div className="flex items-center justify-between border-b border-kant">
+                <div className="min-w-0 flex-1">
+                  <Merke organisasjon={organisasjon} />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => settÅpen(false)}
+                  className="mr-2 flex size-11 shrink-0 items-center justify-center rounded-lg text-tekst-svak hover:bg-flate-dempet"
+                  aria-label="Lukk meny"
+                >
+                  <X className="size-5" aria-hidden />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => settÅpen(false)}
-                className="mr-2 flex size-11 shrink-0 items-center justify-center rounded-lg text-tekst-svak hover:bg-flate-dempet"
-                aria-label="Lukk meny"
-              >
-                <X className="size-5" aria-hidden />
-              </button>
+              <Lenker synlige={synlige} onNavigate={() => settÅpen(false)} />
             </div>
-            <Lenker synlige={synlige} onNavigate={() => settÅpen(false)} />
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </>
   );
 }
