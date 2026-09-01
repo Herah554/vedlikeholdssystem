@@ -44,7 +44,7 @@ export default async function MineTallSide(props: PageProps<"/rapporter/meg">) {
   const valgt = PERIODER.find((p) => String(p.dager) === sp.dager) ?? PERIODER[1];
 
   // Tjenerkomponent: tegnes én gang per forespørsel, så «nå» står stille.
-  // eslint-disable-next-line react-hooks/purity
+   
   const naa = new Date();
   const fra = new Date(naa.getTime() - valgt.dager * 86400_000);
   const forrigeFra = new Date(fra.getTime() - valgt.dager * 86400_000);

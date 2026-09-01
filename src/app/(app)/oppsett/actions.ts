@@ -12,7 +12,7 @@ import {
   type Modul,
   type Nivaa,
 } from "@/lib/rettigheter";
-import { PersonMaling, type Role } from "@/generated/prisma/client";
+import { PersonMaling } from "@/generated/prisma/client";
 import { LISTER, TONE_IDER } from "@/lib/lister";
 
 export type Resultat = { ok: boolean; feil?: string; melding?: string };

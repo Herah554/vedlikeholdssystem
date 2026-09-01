@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Plus, Repeat2 } from "lucide-react";
 import { requireModul } from "@/lib/auth";
-import { PM_UTLOSER, PRIORITET } from "@/lib/domene";
+import { PRIORITET } from "@/lib/domene";
 import { dato, relativTid, tall, timer } from "@/lib/format";
 import {
   Badge,

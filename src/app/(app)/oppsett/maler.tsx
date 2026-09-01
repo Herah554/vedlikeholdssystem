@@ -10,10 +10,9 @@ import {
   ClipboardList,
   Plus,
   Power,
-  Save,
   Trash2,
 } from "lucide-react";
-import { Badge, Button, Field, Input, Select, Textarea } from "@/components/ui";
+import { Badge, Button, Field, Input, Select } from "@/components/ui";
 import { FELTTYPER, type Felt, type Felttype } from "@/lib/skjema";
 import { lagreMalFelter, opprettMal, settMalAktiv, type Resultat } from "./maler-actions";
 

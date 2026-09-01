@@ -12,7 +12,6 @@ import {
   APNE_STATUSER,
   KRITIKALITET,
   ORDRE_STATUS,
-  PRIORITET,
 } from "@/lib/domene";
 import { dato, kroner, ordreNummer, tall, toNumber } from "@/lib/format";
 import { Vedleggsliste } from "@/components/vedlegg";

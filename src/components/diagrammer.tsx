@@ -84,7 +84,7 @@ export function KostnadLinje({
 }: {
   data: { maned: string; arbeid: number; deler: number }[];
 } & MedHoyde) {
-  const { akse, rutenett, boks, markor } = farger(useErMorkt());
+  const { akse, rutenett, boks } = farger(useErMorkt());
 
   return (
     <ResponsiveContainer width="100%" height={hoyde}>

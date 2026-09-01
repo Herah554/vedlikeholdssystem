@@ -349,6 +349,11 @@ export function Rutenett({
       window.removeEventListener("pointerup", slipp);
       window.removeEventListener("pointercancel", slipp);
     };
+    // endreStorrelse står med vilje ikke her. Den lages på nytt ved hver
+    // gjengivelse, så tas den med, rives lytterne ned og bygges opp igjen
+    // for hver musebevegelse — seksti ganger i sekundet mens man drar.
+    // Den leser bare refs og et stabilt lagre(), så den kan ikke bli utdatert.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [endrer, lagre]);
 
   const aktiv = drar?.id ?? endrer?.id;

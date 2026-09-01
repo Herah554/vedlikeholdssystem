@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, ShoppingCart } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { kanSession, requireModul } from "@/lib/auth";
 import { grupperBehov } from "@/lib/delebehov";
 import { ordreNummer, toNumber } from "@/lib/format";
