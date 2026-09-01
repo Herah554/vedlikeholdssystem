@@ -1,9 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { z } from "zod";
 import { assertRole, hashPassword, requireTenant } from "@/lib/auth";
 import { Role } from "@/generated/prisma/client";
+import { lagLenkeForBruker } from "@/lib/passord";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -300,4 +302,42 @@ export async function oppdaterOrganisasjon(
 
   revalidatePath("/innstillinger");
   return { ok: true, melding: "Organisasjonen er oppdatert." };
+}
+
+/**
+ * Lager en engangslenke administratoren kan gi videre.
+ *
+ * Erstatter det å skrive inn et passord for noen andre. Brukeren setter sitt
+ * eget, og administratoren får aldri vite det — da kan ingen logge inn som
+ * en kollega og se ut som hen i loggen.
+ *
+ * Lenka virker i én time og bare én gang, som alle andre passordlenker.
+ */
+export async function lagPassordlenke(
+  brukerId: string,
+): Promise<{ ok: boolean; feil?: string; lenke?: string; navn?: string }> {
+  const { db, session } = await requireTenant();
+  assertRole(session.role, "ADMIN");
+
+  // Gjennom flerklient-filteret: en administrator skal ikke kunne lage en
+  // lenke til en bruker i en annen bedrift ved å gjette en id.
+  const bruker = await db.user.findFirst({
+    where: { id: brukerId },
+    select: { id: true },
+  });
+  if (!bruker) return { ok: false, feil: "Fant ikke brukeren." };
+
+  const svar = await lagLenkeForBruker(brukerId);
+  if (!svar.ok) return { ok: false, feil: svar.feil };
+
+  const h = await headers();
+  const vert = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
+  const protokoll =
+    h.get("x-forwarded-proto") ?? (vert.startsWith("localhost") ? "http" : "https");
+
+  return {
+    ok: true,
+    navn: svar.navn,
+    lenke: `${protokoll}://${vert}/nytt-passord?token=${svar.token}`,
+  };
 }

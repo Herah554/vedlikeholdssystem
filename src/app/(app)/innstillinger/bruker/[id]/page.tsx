@@ -7,6 +7,7 @@ import { ROLLE } from "@/lib/domene";
 import { datoTid, kroner, toNumber } from "@/lib/format";
 import { Badge, Card, CardBody, CardHeader, PageHeader } from "@/components/ui";
 import { nullstillPassord, oppdaterBruker } from "../../actions";
+import { Passordlenke } from "./lenke";
 import { PassordSkjema, RedigerBrukerSkjema } from "./skjema";
 
 export async function generateMetadata(
@@ -86,14 +87,32 @@ export default async function BrukerSide(
 
           <Card>
             <CardHeader
-              title="Nullstill passord"
-              description="Brukeren mister det gamle passordet med én gang"
+              title="Glemt passord"
+              description="Gi en engangslenke framfor å sette et passord for noen andre"
             />
             <CardBody>
-              <PassordSkjema
-                nullstill={nullstillPassord.bind(null, bruker.id)}
+              <Passordlenke
+                brukerId={bruker.id}
                 navn={bruker.name.split(" ")[0]}
               />
+            </CardBody>
+            <CardBody className="border-t border-kant">
+              <details>
+                <summary className="cursor-pointer text-sm text-tekst-svak hover:text-tekst">
+                  Sett et passord for {bruker.name.split(" ")[0]} i stedet
+                </summary>
+                <div className="mt-3">
+                  <p className="mb-3 text-xs text-tekst-svak">
+                    Da kjenner du passordet til en kollega, og kan logge inn som
+                    hen — i loggen ser det ut som om {bruker.name.split(" ")[0]}{" "}
+                    gjorde det selv. Bruk det bare når lenka ikke lar seg sende.
+                  </p>
+                  <PassordSkjema
+                    nullstill={nullstillPassord.bind(null, bruker.id)}
+                    navn={bruker.name.split(" ")[0]}
+                  />
+                </div>
+              </details>
             </CardBody>
           </Card>
         </div>

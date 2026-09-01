@@ -151,3 +151,56 @@ export function likeVerdier(a: string, b: string): boolean {
   if (x.length !== y.length) return false;
   return timingSafeEqual(x, y);
 }
+
+/**
+ * Lager en engangslenke for en bruker administratoren har pekt ut.
+ *
+ * Alternativet, som er det systemet hadde før, er at administratoren skriver
+ * inn et passord og forteller det videre. Da kjenner administratoren
+ * passordet til en kollega og kan logge inn som hen — og i loggen ser det ut
+ * som om vedkommende gjorde det selv. Med en lenke setter brukeren sitt eget
+ * passord, og ingen andre får vite det.
+ *
+ * Dette er også den eneste veien inn så lenge serveren ikke sender e-post.
+ * Og selv med e-post på plass er den verdt å ha: mange teknikere deler en
+ * terminal i verkstedet og har ingen jobbadresse å få lenka på.
+ *
+ * Kalleren har allerede kontrollert at den innloggede er administrator i
+ * samme bedrift. Denne funksjonen slår opp brukeren uten flerklient-filteret,
+ * på samme måte som resten av fila, og krever derfor at kontrollen er gjort.
+ */
+export async function lagLenkeForBruker(
+  brukerId: string,
+): Promise<{ ok: true; token: string; navn: string } | { ok: false; feil: string }> {
+  const bruker = await prisma.user.findFirst({
+    where: { id: brukerId, isActive: true },
+    select: { id: true, name: true },
+  });
+
+  if (!bruker) return { ok: false, feil: "Fant ikke brukeren." };
+
+  // Samme sperre som den offentlige veien. En administrator har ingen grunn
+  // til å lage fem lenker i timen, og skjer det, er det verdt å stoppe.
+  const enTimeSiden = new Date(Date.now() - 60 * 60 * 1000);
+  const nylige = await prisma.passwordReset.count({
+    where: { userId: bruker.id, createdAt: { gt: enTimeSiden } },
+  });
+  if (nylige >= MAKS_PER_TIME) {
+    return {
+      ok: false,
+      feil: `Det er laget ${MAKS_PER_TIME} lenker for denne brukeren den siste timen. Vent litt.`,
+    };
+  }
+
+  const token = randomBytes(32).toString("base64url");
+
+  await prisma.passwordReset.create({
+    data: {
+      userId: bruker.id,
+      tokenHash: hashAvToken(token),
+      expiresAt: new Date(Date.now() + LEVETID_MINUTTER * 60 * 1000),
+    },
+  });
+
+  return { ok: true, token, navn: bruker.name };
+}

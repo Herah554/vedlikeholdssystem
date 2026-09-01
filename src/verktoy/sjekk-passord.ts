@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { authenticate, verifyPassword } from "@/lib/auth";
 import {
   bestillNyttPassord,
+  lagLenkeForBruker,
   settNyttPassord,
   sjekkToken,
 } from "@/lib/passord";
@@ -120,6 +121,69 @@ async function main() {
       ),
       true,
     );
+    // ── Lenke laget av administrator ──────────────────────────
+    // Den eneste veien inn så lenge serveren ikke sender e-post, og den
+    // som gjør at ingen administrator trenger å kjenne en kollegas
+    // passord. Den må virke nøyaktig som den offentlige veien.
+    const adminLenke = await lagLenkeForBruker(bruker.id);
+    sjekk("Administrator kan lage en lenke", adminLenke.ok, true);
+
+    if (adminLenke.ok) {
+      const kontroll = await sjekkToken(adminLenke.token);
+      sjekk("Lenka er gyldig med en gang", kontroll.gyldig, true);
+
+      // Den lagres hashet, som alle andre
+      const lagret = await prisma.passwordReset.findFirst({
+        where: { userId: bruker.id },
+        orderBy: { createdAt: "desc" },
+        select: { tokenHash: true },
+      });
+      sjekk(
+        "Også admin-tokenet lagres hashet",
+        lagret?.tokenHash === adminLenke.token,
+        false,
+      );
+
+      // Brukes én gang, og bare én gang
+      const forste = await settNyttPassord(adminLenke.token, "etGodtPassord123");
+      sjekk("Lenka virker første gang", forste.ok, true);
+
+      const andre = await settNyttPassord(adminLenke.token, "etAnnetPassord456");
+      sjekk("Samme lenke virker ikke to ganger", andre.ok, false);
+    }
+
+    // En bruker som er slått av skal ikke kunne få en lenke
+    await prisma.user.update({
+      where: { id: bruker.id },
+      data: { isActive: false },
+    });
+    const avslatt = await lagLenkeForBruker(bruker.id);
+    sjekk("Deaktivert bruker får ingen lenke", avslatt.ok, false);
+    await prisma.user.update({
+      where: { id: bruker.id },
+      data: { isActive: true },
+    });
+
+    sjekk("Ukjent bruker-id gir ingen lenke", (await lagLenkeForBruker("finnes-ikke")).ok, false);
+
+    // Ber noen om to lenker og bruker den ene, skal den andre dø med det
+    // samme. Fant jeg ved et uhell: en test brukte den ene lenka og de
+    // senere testene mistet sin. Det var riktig oppførsel — en glemt lenke
+    // i en innboks skal ikke kunne åpne kontoen etter at passordet er
+    // byttet — men den var ikke prøvd noe sted.
+    const forste = await lagLenkeForBruker(bruker.id);
+    const andre = await lagLenkeForBruker(bruker.id);
+
+    if (forste.ok && andre.ok) {
+      await settNyttPassord(forste.token, "endaEtPassord789");
+      const gammel = await sjekkToken(andre.token);
+      sjekk(
+        "En ubrukt lenke dør når passordet settes med en annen",
+        gammel.gyldig,
+        false,
+      );
+    }
+
   } finally {
     // Sett testbrukeren tilbake slik README-en beskriver
     await prisma.user.update({

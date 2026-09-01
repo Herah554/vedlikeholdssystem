@@ -49,8 +49,9 @@ export function GlemtSkjema() {
             Denne serveren sender ikke e-post
           </p>
           <p className="mt-1 text-tekst-svak">
-            Be administratoren i firmaet ditt om å sette et nytt passord for
-            deg. Det gjør de under Innstillinger.
+            Be administratoren i firmaet ditt om en engangslenke. De finner
+            knappen under Innstillinger, på din bruker — da velger du
+            passordet selv, og ingen andre får vite det.
           </p>
         </div>
       </div>
