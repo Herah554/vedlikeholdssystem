@@ -79,12 +79,18 @@ export async function lastOppVedlegg(
   const finnes = await (feste.type === "arbeidsordre"
     ? db.workOrder.findFirst({ where: { id: feste.id }, select: { id: true } })
     : feste.type === "avvik"
-      ? db.deviation.findFirst({ where: { id: feste.id }, select: { id: true } })
+      ? db.deviation.findFirst({
+          where: { id: feste.id },
+          select: { id: true },
+        })
       : db.asset.findFirst({ where: { id: feste.id }, select: { id: true } }));
 
-  if (!finnes) return { ok: false, feil: "Fant ikke raden vedlegget hører til." };
+  if (!finnes)
+    return { ok: false, feil: "Fant ikke raden vedlegget hører til." };
 
-  const filer = formData.getAll("filer").filter((f): f is File => f instanceof File);
+  const filer = formData
+    .getAll("filer")
+    .filter((f): f is File => f instanceof File);
   if (filer.length === 0) return { ok: false, feil: "Velg minst én fil." };
 
   let antall = 0;
@@ -93,52 +99,72 @@ export async function lastOppVedlegg(
     const kontroll = sjekkFil(fil.name, fil.type, fil.size);
     if (!kontroll.ok) return { ok: false, feil: kontroll.feil, antall };
 
-    const innhold = new Uint8Array(await fil.arrayBuffer());
+    try {
+      const innhold = new Uint8Array(await fil.arrayBuffer());
 
-    // Teksten leses ut før filen sendes videre, slik at assistenten kan søke
-    // i manualer og sertifikater. Finner den ingenting — for eksempel i en
-    // skannet PDF uten tekstlag — lagres filen likevel.
-    const tekst =
-      fil.type === "application/pdf" ? await lesPdfTekst(innhold) : null;
+      // Teksten leses ut før filen sendes videre, slik at assistenten kan søke
+      // i manualer og sertifikater. Finner den ingenting — for eksempel i en
+      // skannet PDF uten tekstlag — lagres filen likevel.
+      const tekst =
+        fil.type === "application/pdf" ? await lesPdfTekst(innhold) : null;
 
-    const lagret = await lagreFil({
-      organizationId: session.organizationId,
-      filnavn: fil.name,
-      mimeType: fil.type,
-      data: innhold,
-    });
-
-    // Adressen settes etter at raden finnes, siden den peker på radens
-    // egen id. Filen har ingen offentlig adresse å peke på.
-    const rad = await db.attachment.create({
-      data: {
+      const lagret = await lagreFil({
         organizationId: session.organizationId,
-        workOrderId: feste.type === "arbeidsordre" ? feste.id : null,
-        deviationId: feste.type === "avvik" ? feste.id : null,
-        assetId: feste.type === "anlegg" ? feste.id : null,
-        uploadedById: session.userId,
-        fileName: fil.name,
-        storagePath: lagret.nokkel,
-        url: "",
+        filnavn: fil.name,
         mimeType: fil.type,
-        sizeBytes: fil.size,
-        extractedText: tekst,
-      },
-    });
+        data: innhold,
+      });
 
-    await db.attachment.update({
-      where: { id: rad.id },
-      data: { url: `/vedlegg/${rad.id}/fil` },
-    });
+      // Adressen settes etter at raden finnes, siden den peker på radens
+      // egen id. Filen har ingen offentlig adresse å peke på.
+      const rad = await db.attachment.create({
+        data: {
+          organizationId: session.organizationId,
+          workOrderId: feste.type === "arbeidsordre" ? feste.id : null,
+          deviationId: feste.type === "avvik" ? feste.id : null,
+          assetId: feste.type === "anlegg" ? feste.id : null,
+          uploadedById: session.userId,
+          fileName: fil.name,
+          storagePath: lagret.nokkel,
+          url: "",
+          mimeType: fil.type,
+          sizeBytes: fil.size,
+          extractedText: tekst,
+        },
+      });
 
-    antall += 1;
+      await db.attachment.update({
+        where: { id: rad.id },
+        data: { url: `/vedlegg/${rad.id}/fil` },
+      });
+
+      antall += 1;
+    } catch (e) {
+      // Uten dette blir enhver feil her til en blank serverfeilside, og
+      // brukeren sitter igjen uten å vite om filen kom fram eller ikke.
+      // Det skjedde: pdfjs tømte bufferet, lagringen fikk ingenting, og
+      // resultatet var en hvit side uten forklaring.
+      //
+      // Filene før denne er allerede lagret, og antallet sier hvor mange.
+      console.error("Opplasting feilet", { filnavn: fil.name, feil: e });
+      return {
+        ok: false,
+        antall,
+        feil:
+          `«${fil.name}» kunne ikke lagres. ` +
+          (antall > 0 ? `De ${antall} første kom inn. ` : "") +
+          "Prøv igjen, eller si fra hvis det gjentar seg.",
+      };
+    }
   }
 
   revalidatePath(sti(feste));
   return { ok: true, antall };
 }
 
-export async function slettVedlegg(id: string): Promise<{ ok: boolean; feil?: string }> {
+export async function slettVedlegg(
+  id: string,
+): Promise<{ ok: boolean; feil?: string }> {
   const { db, session } = await requireTenant();
 
   const vedlegg = await db.attachment.findFirst({

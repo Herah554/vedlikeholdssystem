@@ -27,7 +27,18 @@ export async function lesPdfTekst(data: Uint8Array): Promise<string | null> {
   try {
     const { extractText, getDocumentProxy } = await import("unpdf");
 
-    const dokument = await getDocumentProxy(data);
+    // Kopi, ikke originalen. pdfjs overtar eierskapet til bufferet det får,
+    // og etterpå er originalen tom — «detached», i JavaScript-termer.
+    //
+    // Det er ikke synlig her, men det velter den som kaller: opplastingen
+    // leste teksten først og sendte så det samme bufferet videre til
+    // lagringen, som fikk ingenting. Bilder gikk fint, PDF-er ga
+    // serverfeil.
+    //
+    // Kopien tas her og ikke hos kalleren, slik at ingen fremtidig kaller
+    // kan gå i den samme fella.
+    const kopi = new Uint8Array(data);
+    const dokument = await getDocumentProxy(kopi);
     const { text } = await extractText(dokument, { mergePages: true });
 
     const renset = String(text ?? "")

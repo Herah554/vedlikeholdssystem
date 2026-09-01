@@ -59,6 +59,30 @@ async function main() {
     null,
   );
 
+  // Denne fanget en ekte feil i produksjon. pdfjs overtar eierskapet til
+  // bufferet det får, og etterpå er originalen tom. Opplastingen leste
+  // teksten først og sendte så det samme bufferet til lagringen, som fikk
+  // ingenting — «Cannot perform ArrayBuffer.prototype.slice on a detached
+  // ArrayBuffer». Bilder gikk fint, siden de ikke leses.
+  //
+  // Den gamle testen leste bare teksten og brukte aldri bufferet etterpå,
+  // og så derfor ingenting. Denne bruker det.
+  const bevares = lagPdf("Kalibreringsbevis for trykkmaaler TM-14");
+  const foerLengde = bevares.byteLength;
+  await lesPdfTekst(bevares);
+
+  sjekk("Bufferet lever etter lesing", bevares.byteLength, foerLengde);
+
+  let kunneBrukes = false;
+  try {
+    // Det opplastingen faktisk gjør med bufferet etterpå
+    bevares.buffer.slice(0);
+    kunneBrukes = true;
+  } catch {
+    kunneBrukes = false;
+  }
+  sjekk("Bufferet kan fortsatt lastes opp etterpå", kunneBrukes, true);
+
   const { org, bruker } = await opprettBedrift({
     firma: `Doksok ${Date.now()}`,
     navn: "Test Testesen",
