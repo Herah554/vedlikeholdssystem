@@ -37,6 +37,20 @@ function farger(morkt: boolean) {
         : "0 4px 12px rgb(15 23 42 / 0.08)",
     },
     markor: { fill: morkt ? "#1a2334" : "#f1f5f9" },
+
+    /**
+     * Teksten inne i forklaringsboksen.
+     *
+     * contentStyle farger bare selve boksen. Radene inni tegner Recharts med
+     * sine egne standardfarger — en mørk grå som forsvinner helt mot mørk
+     * bakgrunn. Derfor må både etiketten og verdilinja settes uttrykkelig.
+     */
+    etikett: {
+      color: morkt ? "#e8edf5" : "#0f172a",
+      fontWeight: 600,
+      marginBottom: 2,
+    },
+    verdi: { color: morkt ? "#cbd5e1" : "#334155" },
   };
 }
 
@@ -55,7 +69,7 @@ export function StatusSoyler({
 }: {
   data: { navn: string; antall: number; farge: string }[];
 } & MedHoyde) {
-  const { akse, rutenett, boks, markor } = farger(useErMorkt());
+  const { akse, rutenett, boks, etikett, verdi, markor } = farger(useErMorkt());
 
   return (
     <ResponsiveContainer width="100%" height={hoyde}>
@@ -65,6 +79,8 @@ export function StatusSoyler({
         <YAxis tick={akse} tickLine={false} axisLine={false} allowDecimals={false} />
         <Tooltip
           contentStyle={boks}
+          labelStyle={etikett}
+          itemStyle={verdi}
           formatter={(v) => [`${Number(v)} stk`, "Antall"]}
           cursor={markor}
         />
@@ -84,7 +100,7 @@ export function KostnadLinje({
 }: {
   data: { maned: string; arbeid: number; deler: number }[];
 } & MedHoyde) {
-  const { akse, rutenett, boks } = farger(useErMorkt());
+  const { akse, rutenett, boks, etikett, verdi } = farger(useErMorkt());
 
   return (
     <ResponsiveContainer width="100%" height={hoyde}>
@@ -99,6 +115,8 @@ export function KostnadLinje({
         />
         <Tooltip
           contentStyle={boks}
+          labelStyle={etikett}
+          itemStyle={verdi}
           formatter={(v, navn) => [kroner(Number(v)), navn === "arbeid" ? "Arbeid" : "Deler"]}
         />
         <Legend
@@ -118,7 +136,7 @@ export function NedetidSoyler({
 }: {
   data: { kode: string; navn: string; minutter: number }[];
 } & MedHoyde) {
-  const { akse, rutenett, boks, markor } = farger(useErMorkt());
+  const { akse, rutenett, boks, etikett, verdi, markor } = farger(useErMorkt());
 
   return (
     <ResponsiveContainer width="100%" height={hoyde}>
@@ -145,6 +163,8 @@ export function NedetidSoyler({
         />
         <Tooltip
           contentStyle={boks}
+          labelStyle={etikett}
+          itemStyle={verdi}
           formatter={(v) => [`${tall(Number(v) / 60, 1)} timer`, "Nedetid"]}
           labelFormatter={(kode) =>
             data.find((d) => d.kode === String(kode))?.navn ?? kode
@@ -162,7 +182,7 @@ export function BudsjettSoyler({
 }: {
   data: { navn: string; budsjett: number; forbrukt: number }[];
 }) {
-  const { akse, rutenett, boks, markor } = farger(useErMorkt());
+  const { akse, rutenett, boks, etikett, verdi, markor } = farger(useErMorkt());
 
   return (
     <ResponsiveContainer width="100%" height={280}>
@@ -177,6 +197,8 @@ export function BudsjettSoyler({
         />
         <Tooltip
           contentStyle={boks}
+          labelStyle={etikett}
+          itemStyle={verdi}
           formatter={(v, navn) => [
             kroner(Number(v)),
             navn === "budsjett" ? "Budsjett" : "Forbrukt",
@@ -207,7 +229,7 @@ export function MeldtUtfortSoyler({
 }: {
   data: { maned: string; meldt: number; utfort: number }[];
 } & MedHoyde) {
-  const { akse, rutenett, boks, markor } = farger(useErMorkt());
+  const { akse, rutenett, boks, etikett, verdi, markor } = farger(useErMorkt());
 
   return (
     <ResponsiveContainer width="100%" height={hoyde}>
@@ -217,6 +239,8 @@ export function MeldtUtfortSoyler({
         <YAxis tick={akse} tickLine={false} axisLine={false} allowDecimals={false} />
         <Tooltip
           contentStyle={boks}
+          labelStyle={etikett}
+          itemStyle={verdi}
           cursor={markor}
           formatter={(v, n) => [`${Number(v)} stk`, n === "meldt" ? "Meldt inn" : "Utført"]}
         />
@@ -244,7 +268,7 @@ export function ArbeidstypeSoyler({
 }: {
   data: { maned: string; forebyggende: number; korrektiv: number; annet: number }[];
 } & MedHoyde) {
-  const { akse, rutenett, boks, markor } = farger(useErMorkt());
+  const { akse, rutenett, boks, etikett, verdi, markor } = farger(useErMorkt());
 
   const navn: Record<string, string> = {
     forebyggende: "Forebyggende",
@@ -260,6 +284,8 @@ export function ArbeidstypeSoyler({
         <YAxis tick={akse} tickLine={false} axisLine={false} allowDecimals={false} />
         <Tooltip
           contentStyle={boks}
+          labelStyle={etikett}
+          itemStyle={verdi}
           cursor={markor}
           formatter={(v, n) => [`${Number(v)} stk`, navn[String(n)] ?? String(n)]}
         />
@@ -287,7 +313,7 @@ export function ReparasjonstidLinje({
 }: {
   data: { maned: string; snitt: number | null; median: number | null }[];
 } & MedHoyde) {
-  const { akse, rutenett, boks, markor } = farger(useErMorkt());
+  const { akse, rutenett, boks, etikett, verdi, markor } = farger(useErMorkt());
 
   return (
     <ResponsiveContainer width="100%" height={hoyde}>
@@ -297,6 +323,8 @@ export function ReparasjonstidLinje({
         <YAxis tick={akse} tickLine={false} axisLine={false} />
         <Tooltip
           contentStyle={boks}
+          labelStyle={etikett}
+          itemStyle={verdi}
           cursor={markor}
           formatter={(v, n) => [
             v === null ? "ingen data" : `${tall(Number(v), 1)} dager`,
