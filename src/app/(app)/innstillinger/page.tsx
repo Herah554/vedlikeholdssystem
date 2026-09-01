@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Download } from "lucide-react";
 import { requireTenant } from "@/lib/auth";
 import { hasRole } from "@/lib/auth";
 import { BUDSJETT_KATEGORI, ROLLE_BESKRIVELSE } from "@/lib/domene";
@@ -239,6 +240,47 @@ export default async function InnstillingerSide() {
             )}
           </Card>
         </div>
+
+        {erAdmin && (
+          <Card>
+            <CardHeader
+              title={
+                <span className="inline-flex items-center gap-2">
+                  <Download className="size-4 text-tekst-svak" aria-hidden />
+                  Last ned alt dere har lagt inn
+                </span>
+              }
+              description="Dataene er deres. Ta en kopi når som helst."
+            />
+            <CardBody>
+              <p className="mb-3 text-sm text-tekst-svak">
+                Hele bedriften i én fil: anlegg, arbeidsordre, timer, deler,
+                avvik, skjemaer og alt annet. Regnearket har ett ark per
+                tabell og kan åpnes med en gang. JSON er til den som skal
+                lese fila maskinelt eller flytte dataene til et annet system.
+              </p>
+              <p className="mb-4 text-sm text-tekst-svak">
+                Passord er ikke med. De lagres bare som hash og kan ikke leses
+                ut av noen — heller ikke av oss.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <a
+                  href="/innstillinger/eksport"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-tekst ring-1 ring-kant-sterk ring-inset hover:bg-flate-hover"
+                >
+                  <Download className="size-4" aria-hidden />
+                  Regneark
+                </a>
+                <a
+                  href="/innstillinger/eksport?format=json"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-tekst-svak ring-1 ring-kant ring-inset hover:bg-flate-hover hover:text-tekst"
+                >
+                  JSON
+                </a>
+              </div>
+            </CardBody>
+          </Card>
+        )}
       </div>
     </>
   );

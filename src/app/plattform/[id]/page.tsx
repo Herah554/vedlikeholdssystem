@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Check, Minus, Package, X } from "lucide-react";
+import { ArrowLeft, Check, Download, Minus, Package, X } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requireSuperadmin } from "@/lib/auth";
 import {
@@ -213,6 +213,39 @@ export default async function KundeSide(props: PageProps<"/plattform/[id]">) {
             rapporter er med i alle planer. Et vedlikeholdssystem uten
             arbeidsordre er ikke et vedlikeholdssystem.
           </p>
+        </CardBody>
+      </Card>
+
+      <Card className="mt-6">
+        <CardHeader
+          title={
+            <span className="inline-flex items-center gap-2">
+              <Download className="size-4 text-tekst-svak" aria-hidden />
+              Ta en kopi
+            </span>
+          }
+          description="Hele bedriften i én fil"
+        />
+        <CardBody>
+          <p className="mb-3 text-sm text-tekst-svak">
+            Sikkerhetskopien du kan forklare på ett minutt. Ta den før du
+            gjør noe som ikke kan angres.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <a
+              href={`/plattform/${org.id}/eksport`}
+              className="inline-flex min-h-11 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-tekst ring-1 ring-kant-sterk ring-inset hover:bg-flate-hover"
+            >
+              <Download className="size-4" aria-hidden />
+              JSON
+            </a>
+            <a
+              href={`/plattform/${org.id}/eksport?format=xlsx`}
+              className="inline-flex min-h-11 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-tekst-svak ring-1 ring-kant ring-inset hover:bg-flate-hover hover:text-tekst"
+            >
+              Regneark
+            </a>
+          </div>
         </CardBody>
       </Card>
 

@@ -27,7 +27,8 @@
     "sjekk:sletting": "tsx src/verktoy/sjekk-sletting.ts",
     "sjekk:lenker": "tsx src/verktoy/sjekk-lenker.ts",
     "sjekk:medarbeidere": "tsx src/verktoy/sjekk-medarbeidere.ts",
-    "sjekk:alt": "next typegen && tsc --noEmit && npm run sjekk:isolering && npm run sjekk:plassering && npm run sjekk:planer && npm run sjekk:lister && npm run sjekk:skjema && npm run sjekk:deling && npm run sjekk:passord && npm run sjekk:import && npm run sjekk:avvik && npm run sjekk:dokumentsok && npm run sjekk:delebehov && npm run sjekk:sletting && npm run sjekk:lenker && npm run sjekk:medarbeidere"
+    "sjekk:eksport": "tsx src/verktoy/sjekk-eksport.ts",
+    "sjekk:alt": "next typegen && tsc --noEmit && npm run sjekk:isolering && npm run sjekk:plassering && npm run sjekk:planer && npm run sjekk:lister && npm run sjekk:skjema && npm run sjekk:deling && npm run sjekk:passord && npm run sjekk:import && npm run sjekk:avvik && npm run sjekk:dokumentsok && npm run sjekk:delebehov && npm run sjekk:sletting && npm run sjekk:lenker && npm run sjekk:medarbeidere && npm run sjekk:eksport"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.117.1",
